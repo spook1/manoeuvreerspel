@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Motorboot Manoeuvreersimulatie</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+            gap: 12px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #bfdbfe;
+        }
+
+        .wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+
+        #simCanvas {
+            background:
+                radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.06), transparent 55%),
+                radial-gradient(circle at 80% 100%, rgba(15, 23, 42, 0.45), transparent 55%),
+                linear-gradient(to bottom, #023047, #035c8a 40%, #01243a);
+            border-radius: 18px;
+            box-shadow: 0 22px 60px rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 253, 0.18);
+            flex-shrink: 0;
+        }
+
+        .panel {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.98);
+            border-radius: 16px;
+            padding: 12px 14px;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.9);
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid rgba(148, 163, 253, 0.16);
+        }
+
+        .label {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .value {
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 4px 10px;
+            margin-top: 2px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            display: none;
+            /* Hide title to maximize space, put in UI instead if needed */
+        }
+
+        /* Hiding left menu items in Game Mode (but keep settings accessible) */
+        body.game-mode-active .hud-left {
+            display: none !important;
+        }
+
+        /* Top HUD Overlay - Integrated Design */
+        #topOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* Grid Layout for Headers */
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            align-items: stretch;
+            /* Force equal height for "same styling/alignment" */
+
+            z-index: 100;
+            pointer-events: none;
+            /* Let clicks pass through empty space */
+        }
+
+        /* DASHBOARD (New Professional UI) */
+        #gameDashboard {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 64px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(148, 163, 253, 0.2);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0 16px;
+            box-sizing: border-box;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+            /* Catch clicks */
+        }
+
+        .dash-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .dash-section.left {
+            justify-content: flex-start;
+        }
+
+        .dash-section.center {
+            justify-content: center;
+            position: relative;
+        }
+
+        .dash-section.right {
+            justify-content: flex-end;
+        }
+
+        /* Brand & Title */
+        .dash-brand {
+            font-weight: 700;
+            color: #e2e8f0;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Status Pills (Speed/Prop/Score) */
+        .status-pill {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.1;
+        }
+
+        .status-pill .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill .value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #facc15;
+            font-family: 'Courier New', monospace;
+            /* Technical look */
+        }
+
+        /* Wind Display (Center) */
+        .wind-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 16px;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #settingsPanel {
+            position: fixed;
+            top: 60px;
+            right: 16px;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 253, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            color: #e2e8f0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Standard Controls */
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .panel-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #93c5fd;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            margin-top: 8px;
+        }
+
+        button.icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        button.icon-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        button.icon-btn.active {
+            background: #3b82f6;
+        }
+
+        .levelBtn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #334155;
+            color: #94a3b8;
+        }
+
+        .levelBtn:hover:not(:disabled) {
+            background: #475569;
+            color: #fff;
+        }
+
+        .levelBtn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Canvas scaling container */
+        .wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            /* Letterbox fill */
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            alert("Error: " + msg + "\nLine: " + line + "\nCol: " + col);
+            return false;
+        };
+    </script>
+    <div class="wrapper">
+        <canvas id="simCanvas" style="display:block;"></canvas>
+
+        <!-- PROFESSIONAL DASHBOARD -->
+        <nav id="gameDashboard">
+            <!-- LEFT: Operations -->
+            <div class="dash-section left">
+                <div class="dash-brand">
+                    <span>⚓ Manoeuvreer Sim</span>
+                </div>
+
+                <!-- Harbor Selector (Compact) -->
+                <select id="harborSelector"
+                    style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
+                    <option value="" disabled selected>Kies Haven...</option>
+                    <optgroup label="Acties">
+                        <option value="create">➕ Nieuw Ontwerp...</option>
+                        <option value="import">📥 Importeer Bestand...</option>
+                    </optgroup>
+                    <optgroup label="Standaard" id="defaultHarborGroup"></optgroup>
+                    <optgroup label="Mijn Havens" id="customHarborGroup"></optgroup>
+                </select>
+
+                <!-- Status Label (Interactive) -->
+                <button id="gameModeLabel"
+                    onclick="if(gameMode==='practice') startGameMode(); else startPracticeMode();"
+                    style="font-size:12px; font-weight:bold; color:#4ade80; padding:4px 12px; background:rgba(74, 222, 128, 0.1); border:1px solid rgba(74, 222, 128, 0.2); border-radius:4px; cursor:pointer; text-transform:uppercase;">
+                    OEFENMODUS
+                </button>
+
+                <!-- Level Buttons (Hidden by default, shown in game mode) -->
+                <div id="levelSelection" style="display:none; gap:4px;">
+                    <button class="levelBtn" data-level="1" style="background:#22c55e; color:white;">1</button>
+                    <button class="levelBtn" data-level="2" disabled>2</button>
+                    <button class="levelBtn" data-level="3" disabled>3</button>
+                </div>
+            </div>
+
+            <!-- CENTER: Navigation (Wind Rose) -->
+            <div class="dash-section center">
+                <!-- The Wind Rose Canvas - Physically embedded here -->
+                <div class="wind-display">
+                    <canvas id="windRoseCanvas" width="50" height="50"></canvas>
+                    <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1;">
+                        <span id="windSpeedDisplay" style="font-weight:bold; color:#fbbf24; font-size:14px;">0 kn</span>
+                        <span style="font-size:10px; color:#cbd5e1;">WIND</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Telemetry & Controls -->
+            <div class="dash-section right">
+                <!-- Speed -->
+                <div class="status-pill">
+                    <span class="label">Snelheid</span>
+                    <span class="value" id="speedometer">0.0 kn</span>
+                </div>
+
+                <div style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
+
+                <!-- Score -->
+                <div class="status-pill">
+                    <span class="label">Score</span>
+                    <span class="value" id="scoreDisplay">100</span>
+                </div>
+
+                <div style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
+
+                <!-- Propeller -->
+                <div class="status-pill">
+                    <span class="label">Schroef</span>
+                    <span class="value" id="propellerStatus">Rechts</span>
+                </div>
+
+                <div style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
+
+                <!-- Action Buttons -->
+                <button onclick="resetCurrentLevel()" class="icon-btn" title="Herstart Level (R)">🔄</button>
+                <button id="settingsToggle" class="icon-btn" title="Instellingen Menu">⚙️</button>
+                <button onclick="document.getElementById('controlsModal').style.display='flex'" class="icon-btn"
+                    title="Help">?</button>
+            </div>
+        </nav>
+
+        <!-- SETTINGS PANEL (Dropdown) -->
+        <div id="settingsPanel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0; color:#fff;">Instellingen</h3>
+                <button onclick="document.getElementById('settingsPanel').style.display='none'"
+                    style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Harbor Edits -->
+            <div style="display:flex; gap:8px;">
+                <button id="editHarborBtn" onclick="startHarborEdit()"
+                    style="flex:1; padding:8px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">✏️
+                    Bewerk</button>
+                <button id="deleteHarborBtn"
+                    style="flex:1; display:none; padding:8px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">🗑️
+                    Verwijder</button>
+                <input type="file" id="hbrFileInput" accept=".hbr,.json" style="display:none;">
+            </div>
+
+            <!-- Environment -->
+            <div class="panel-header">Weer & Omgeving</div>
+
+            <div class="control-row">
+                <span>Wind Kracht</span>
+                <span><span id="windSpeedLabel">0</span> kn</span>
+            </div>
+            <input id="windSpeedSlider" type="range" min="0" max="35" step="1" value="0" style="width:100%;">
+
+            <div class="control-row" style="margin-top:8px;">
+                <span>Wind Richting</span>
+                <span><span id="windDirLabel">225</span>°</span>
+            </div>
+            <input id="windDirSlider" type="range" min="0" max="360" step="5" value="225" style="width:100%;">
+
+            <!-- Physics (Collapsible or just in list) -->
+            <div id="physicsControls">
+                <div class="panel-header">Geavanceerde Fysica</div>
+
+                <div class="control-row"><span>Motorkracht</span><span id="thrustGainValue">250</span></div>
+                <input id="thrustGainSlider" type="range" min="50" max="1000" step="10" value="250" style="width:100%;"
+                    oninput="THRUST_GAIN = parseFloat(this.value); updateUI();">
+
+                <div class="control-row"><span>Schroefstroom</span><span id="propwashGainValue">500</span></div>
+                <input id="propwashGainSlider" type="range" min="0" max="1500" step="10" value="500" style="width:100%;"
+                    oninput="RUDDER_WASH_GAIN = parseFloat(this.value); updateUI();">
+
+                <div class="control-row"><span>Roer Hydro</span><span id="rudderHydroGainValue">70</span></div>
+                <input id="rudderHydroGainSlider" type="range" min="0" max="100" step="1" value="3" style="width:100%;"
+                    oninput="RUDDER_HYDRO_GAIN = parseFloat(this.value); updateUI();">
+
+                <div class="control-row"><span>Massa</span><span id="massValue">10</span></div>
+                <input id="massSlider" type="range" min="5" max="50" step="1" value="10" style="width:100%;">
+
+                <div class="control-row"><span>Weerstand</span><span id="dragValue">0.10</span></div>
+                <input id="dragSlider" type="range" min="0.01" max="0.30" step="0.01" value="0.10" style="width:100%;">
+
+                <div class="control-row"><span>Dwars Weerstand</span><span id="lateralDragValue">100</span></div>
+                <input id="lateralDragSlider" type="range" min="10" max="200" step="5" value="100" style="width:100%;"
+                    oninput="LATERAL_DRAG_COEFF = parseFloat(this.value); document.getElementById('lateralDragValue').textContent = this.value;">
+
+                <div class="control-row"><span>Lijn Sterkte</span><span id="lineStrengthValue">5</span> (zwak↔sterk)
+                </div>
+                <input id="lineStrengthSlider" type="range" min="1" max="10" step="1" value="5" style="width:100%;"
+                    oninput="LINE_STRENGTH = parseFloat(this.value); document.getElementById('lineStrengthValue').textContent = this.value;">
+
+                <!-- Propeller Direction (In Settings) -->
+                <div class="control-row"
+                    style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
+                    <span>Schroefrichting</span>
+                    <button id="propDirToggle" onclick="togglePropDirection()"
+                        style="background:#3b82f6; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Rechts
+                        ↻</button>
+                </div>
+
+                <!-- Forces Toggle (In Settings) -->
+                <div class="control-row">
+                    <span>Toon Krachten</span>
+                    <input type="checkbox" id="showForcesCheck" onchange="showForces = this.checked;"
+                        style="width:16px; height:16px; cursor:pointer;">
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:10px; font-size:11px; color:#64748b;">
+            Use arrow keys / WASD to steer. SPACE for neutral.
+        </div>
+
+
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Center Feedback (Optional, for big messages) -->
+    <!-- Status Messages (Centered Top) -->
+    <!-- Status Messages (Centered Below Mode) -->
+    <div id="status-message-box"
+        style="position:absolute; top:150px; left:50%; transform:translateX(-50%); text-align:center; z-index:100; pointer-events:none;
+                       background:rgba(0,0,0,0.8); color:white; padding:8px 16px; border-radius:6px; border:1px solid rgba(255,255,255,0.2);">
+        <h2 id="status" style="font-size:16px; margin:0; font-weight:normal;">
+        </h2>
+    </div>
+    </div>
+    </div>
+
+    <!-- Intro / Instructions Modal (Improved) - No dark overlay -->
+    <!-- Intro / Instructions Modal (True Modal Style) -->
+    <div id="introModal" style="
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        transform: translate(-50%, -50%); 
+        z-index: 3000; 
+        width: 90%; 
+        max-width: 500px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+        border: 1px solid #334155; 
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        display: flex; /* Show on first load for new users */
+        flex-direction: column;
+        align-items: center;
+    ">
+        <h2 style="color:#60a5fa; font-size:28px; margin-bottom:12px; font-weight:800; letter-spacing: -0.5px;">
+            Welkom Kapitein!</h2>
+        <div style="width: 60px; height: 4px; background: #3b82f6; margin: 0 auto 20px auto; border-radius: 2px;">
+        </div>
+
+        <p style="margin-bottom:24px; font-size: 16px; color: #e2e8f0;">Haal <strong>100 punten</strong> door veilig
+            aan te leggen in de haven.</p>
+
+        <div
+            style="text-align:left; background: rgba(30, 41, 59, 0.5); padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #334155;">
+            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                <span
+                    style="display: inline-block; width: 8px; height: 8px; background: #4ade80; border-radius: 50%;"></span>
+                <span style="color: #cbd5e1;">Vaar naar de groene vlakken.</span>
+            </div>
+            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                <span
+                    style="display: inline-block; width: 8px; height: 8px; background: #4ade80; border-radius: 50%;"></span>
+                <span style="color: #cbd5e1;">Leg stil en maak <strong>3 lijnen</strong> vast.</span>
+            </div>
+            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                <span
+                    style="display: inline-block; width: 8px; height: 8px; background: #fbbf24; border-radius: 50%;"></span>
+                <span style="color: #cbd5e1;">Gebruik de motor verstandig.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span
+                    style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>
+                <span style="color: #cbd5e1;">Botsingen kosten punten!</span>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+            <button onclick="startGame()" style="
+                padding:12px 32px; 
+                font-size:18px; 
+                background:#2563eb; 
+                color:#fff; 
+                border:none; 
+                border-radius:8px; 
+                cursor:pointer; 
+                font-weight:700;
+                transition: transform 0.1s, background 0.2s;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            " onmouseover="this.style.background='#1d4ed8'; this.style.transform='translateY(-1px)'"
+                onmouseout="this.style.background='#2563eb'; this.style.transform='translateY(0)'">Start Spel</button>
+
+            <button onclick="startTutorial(); document.getElementById('introModal').style.display='none';" style="
+                padding:12px 32px; 
+                font-size:18px; 
+                background:#22c55e; 
+                color:#fff; 
+                border:none; 
+                border-radius:8px; 
+                cursor:pointer; 
+                font-weight:700;
+                transition: transform 0.1s, background 0.2s;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            " onmouseover="this.style.background='#16a34a'; this.style.transform='translateY(-1px)'"
+                onmouseout="this.style.background='#22c55e'; this.style.transform='translateY(0)'">📚 Tutorial</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorialOverlay" style="
+        display:none;
+        position:fixed;
+        bottom:20px;
+        left:50%;
+        transform:translateX(-50%);
+        z-index:2500;
+        background:rgba(15,23,42,0.95);
+        border:2px solid #22c55e;
+        border-radius:12px;
+        padding:20px 30px;
+        min-width:350px;
+        max-width:500px;
+        color:#f8fafc;
+        box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    ">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span id="tutorialProgress" style="color:#22c55e; font-size:14px;">Stap 1/7</span>
+            <button onclick="endTutorial()" style="
+                background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px;
+            " title="Tutorial beëindigen">✕</button>
+        </div>
+        <h3 id="tutorialTitle" style="margin:0 0 8px 0; color:#22c55e; font-size:20px;">Welkom!</h3>
+        <p id="tutorialInstruction" style="margin:0 0 16px 0; line-height:1.5; font-size:15px;">
+            Welkom bij de bootmanoeuvreersimulatie!
+        </p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button id="tutorialSkipBtn" onclick="nextTutorialStep()" style="
+                padding:8px 16px;
+                background:#3b82f6;
+                color:white;
+                border:none;
+                border-radius:6px;
+                cursor:pointer;
+                font-size:14px;
+            ">Volgende →</button>
+        </div>
+    </div>
+    <!-- Controls Modal (New) -->
+    <div id="controlsModal"
+        style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.95); z-index:3000; align-items:center; justify-content:center; overflow-y:auto;">
+        <div
+            style="background:#1e293b; border:1px solid #3b82f6; width:90%; max-width:700px; padding:2rem; border-radius:12px; box-shadow:0 0 40px rgba(0,0,0,0.5); color:#f8fafc; margin:20px auto;">
+            <h2 style="margin-top:0; color:#60a5fa; text-align:center;">🚢 Besturing & Uitleg</h2>
+            <div style="line-height:1.6; font-size:15px;">
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px;">🎮 Basisbesturing
+                </h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">⬆️ ⬇️ / <b>W S</b> : Gas geven / terugnemen (stappen van 50%)
+                    </li>
+                    <li style="margin-bottom:8px;">⬅️ ➡️ / <b>A D</b> : Roer naar bakboord / stuurboord (10°)</li>
+                    <li style="margin-bottom:8px;"><b>Spatiebalk</b> : Gas naar neutraal (0%)</li>
+                    <li style="margin-bottom:8px;"><b>R</b> : Reset boot naar startpositie</li>
+                </ul>
+
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px; margin-top:20px;">⚡
+                    Dubbeltik-functies</h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">⬆️⬆️ <b>Dubbeltik Gas</b> : Snelle gasverhoging (75% per tik
+                        i.p.v.
+                        50%)</li>
+                    <li style="margin-bottom:8px;">⬅️⬅️ <b>Dubbeltik Roer</b> : Grote roeruitslag (40° i.p.v. 10°)
+                    </li>
+                    <li style="margin-bottom:6px; color:#94a3b8; font-size:13px;">💡 Tik binnen 250ms twee keer voor
+                        de
+                        versnelde actie</li>
+                </ul>
+
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px; margin-top:20px;">🌀
+                    Schroefwater (Propwash)</h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">💧 Bij <b>vooruit gas</b> stroomt water van de schroef langs het
+                        roer
+                    </li>
+                    <li style="margin-bottom:8px;">🎯 Hierdoor kun je <b>sturen zonder vaart</b> – ideaal voor
+                        manoeuvreren in de haven</li>
+                    <li style="margin-bottom:8px;">⚠️ Bij <b>achteruit</b> gaat het schroefwater naar voren en werkt
+                        het
+                        roer nauwelijks</li>
+                </ul>
+
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px; margin-top:20px;">🔄
+                    Schroefeffect (Propeller Walk)</h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">↩️ Bij <b>achteruitvaren</b> duwt de schroef de achterkant opzij
+                    </li>
+                    <li style="margin-bottom:8px;">⚙️ <b>Rechtsdraaiend</b>: achtersteven gaat naar bakboord (links)
+                    </li>
+                    <li style="margin-bottom:8px;">⚙️ <b>Linksdraaiend</b>: achtersteven gaat naar stuurboord
+                        (rechts)
+                    </li>
+                    <li style="margin-bottom:6px; color:#94a3b8; font-size:13px;">💡 Schakel in het menu tussen
+                        rechts/links draaiend</li>
+                </ul>
+
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px; margin-top:20px;">🖱️
+                    Lijnen & Meren</h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">🟡 Klik op een <b>geel kruisje</b> (kikker) op de boot</li>
+                    <li style="margin-bottom:8px;">📍 Klik daarna op een <b>paal of bolder</b> om vast te maken</li>
+                    <li style="margin-bottom:8px;">🔓 <b>Losmaken</b>: klik nogmaals op dezelfde kikker en paal</li>
+                </ul>
+
+                <h3 style="color:#93c5fd; border-bottom:1px solid #334155; padding-bottom:8px; margin-top:20px;">ℹ️
+                    Tips
+                </h3>
+                <ul style="list-style:none; padding-left:0;">
+                    <li style="margin-bottom:8px;">✅ <b>Vast is vast:</b> Met 3+ lijnen heb je geen botsingschade
+                    </li>
+                    <li style="margin-bottom:8px;">💨 <b>Wind:</b> Let op de windpijl linksboven op het canvas</li>
+                    <li style="margin-bottom:8px;">🐌 <b>Rustig aan:</b> Vaar &lt; 2 knopen om schade te voorkomen</li>
+                </ul>
+            </div>
+            <div style="text-align:center; margin-top:24px;">
+                <button onclick="document.getElementById('controlsModal').style.display='none'"
+                    style="background:#3b82f6; color:white; border:none; padding:12px 32px; font-size:18px; border-radius:8px; cursor:pointer; font-weight:bold; transition:all 0.2s;">
+                    Begrepen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mooring Success Modal -->
+    <div id="mooringModal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); 
+         background:rgba(15,23,42,0.98); padding:30px 40px; border-radius:12px; border:3px solid #22c55e; z-index:2000; box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <h2 style="color:#22c55e; margin:0 0 16px 0; font-size:28px;">🎉 Goed Zo!</h2>
+        <p id="mooringMessage" style="color:#e5e7eb; font-size:20px; margin:0 0 20px 0;"></p>
+        <button id="closeMooringModal"
+            style="padding:12px 28px; font-size:16px; background:#22c55e; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Doorgaan</button>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div id="levelCompleteModal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); 
+         background:rgba(15,23,42,0.98); padding:40px 50px; border-radius:12px; border:3px solid #fbbf24; z-index:2000; box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <h2 style="color:#fbbf24; margin:0 0 20px 0; font-size:32px;">🏆 Level Voltooid!</h2>
+        <p id="levelCompleteMessage" style="color:#e5e7eb; font-size:20px; margin:0 0 12px 0;"></p>
+        <p id="levelUnlockMessage" style="color:#22c55e; font-size:18px; margin:0 0 24px 0;"></p>
+        <div style="display:flex; gap:12px;">
+            <button id="nextLevel"
+                style="flex:1; padding:12px 24px; font-size:16px; background:#22c55e; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Volgende
+                Level</button>
+            <button id="retryLevel"
+                style="flex:1; padding:12px 24px; font-size:16px; background:#6b7280; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Herhaal
+                Level</button>
+        </div>
+    </div>
+
+    <!-- Generic Message Modal -->
+    <div id="messageModal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); 
+         background:rgba(15,23,42,0.98); padding:30px 40px; border-radius:12px; border:1px solid #94a3b8; z-index:2500; box-shadow:0 25px 50px rgba(0,0,0,0.5); text-align:center;">
+        <h2 id="msgModalTitle" style="color:#e2e8f0; margin:0 0 16px 0; font-size:24px;"></h2>
+        <p id="msgModalText" style="color:#94a3b8; font-size:18px; margin:0 0 24px 0;"></p>
+        <button onclick="document.getElementById('messageModal').style.display='none'"
+            style="padding:10px 24px; font-size:16px; background:#3b82f6; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;">OK</button>
+    </div>
+
+
+    <!-- HARBOR EDITOR OVERLAY -->
+    <div id="editorOverlay"
+        style="display:none; position:absolute; top:70px; left:16px; bottom:16px; width:260px; pointer-events:none; z-index:1500; flex-direction:column; gap:8px;">
+        <!-- Toolbar -->
+        <div
+            style="background:rgba(15, 23, 42, 0.95); backdrop-filter:blur(12px); border:1px solid rgba(148,163,253,0.2); border-radius:12px; padding:12px; pointer-events:auto; display:flex; flex-direction:column; gap:8px;">
+            <div
+                style="font-size:14px; font-weight:bold; color:#fff; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;">
+                🛠️ Haven Editor
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <button class="editor-tool active" data-tool="select" title="Selecteer/Verplaats (S)">🖱️
+                    Select</button>
+                <button class="editor-tool" data-tool="jetty" title="Nieuwe Steiger (J)">🪵 Steiger</button>
+                <button class="editor-tool" data-tool="pile" title="Nieuwe Paal (P)">⚫ Paal</button>
+                <button class="editor-tool" data-tool="cleat" title="Nieuwe Kikker (C)">⚓ Kikker</button>
+                <button class="editor-tool" data-tool="wind" title="Wind Instellen (W)">💨 Wind</button>
+                <button class="editor-tool" data-tool="eraser" title="Verwijderen (Del)">❌ Gum</button>
+            </div>
+
+            <div id="toolProperties"
+                style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; font-size:12px; color:#cbd5e1;">
+                <!-- Contextual properties will be injected here -->
+                <div style="font-style:italic; opacity:0.7;">Selecteer een tool...</div>
+            </div>
+
+            <div style="display:flex; gap:6px; margin-top:8px;">
+                <button id="saveHarborBtn"
+                    style="flex:1; background:#22c55e; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;">Floppy
+                    Op.</button>
+                <button id="exitEditorBtn"
+                    style="flex:1; background:#ef4444; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;">Sluiten</button>
+            </div>
+        </div>
+
+        <!-- Hint Box -->
+        <div
+            style="background:rgba(0,0,0,0.6); padding:8px; border-radius:6px; color:#fff; font-size:12px; pointer-events:auto;">
+            <span id="editorHint">Klik en sleep om te bouwen</span>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
