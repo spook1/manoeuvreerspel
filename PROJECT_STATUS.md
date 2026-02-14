@@ -2,7 +2,7 @@
 
 
 ## 1. Status: Wat is er gedaan van het oude plan?
-> Laatst bijgewerkt: 14 februari 2026 (Deployment run 2 - Corrected Path)
+> Laatst bijgewerkt: 14 februari 2026 (Deployment run 3 - Secret Fix)
 
 | Sprint (Oud Plan) | Status | Toelichting |
 | :--- | :--- | :--- |
