@@ -1,6 +1,8 @@
 # Project Status & Nieuw Masterplan 🚀
 
+
 ## 1. Status: Wat is er gedaan van het oude plan?
+> Laatst bijgewerkt: 14 februari 2026 (Deployment run)
 
 | Sprint (Oud Plan) | Status | Toelichting |
 | :--- | :--- | :--- |
