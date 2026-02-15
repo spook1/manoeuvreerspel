@@ -13,3 +13,11 @@ Before using this, you need to set up the following SECRETS in your GitHub repos
 1. Generate an SSH Key pair if you don't have one: `ssh-keygen -t rsa -b 4096 -C "deploy_key"` (do not set a passphrase for CI/CD keys ideally, or manage it via ssh-agent).
 2. Add the PUBLIC key (`id_rsa.pub`) to `~/.ssh/authorized_keys` on your Versio server.
 3. Add the PRIVATE key (`id_rsa`) to GitHub Secrets as `SSH_PRIVATE_KEY`.
+
+## Troubleshooting Authentication
+If you experience "Permission denied" errors when pushing (`git push`), it likely means Windows is trying to use an old GitHub account stored in the Credential Manager.
+
+To fix this for THIS repository only without affecting other projects:
+1. Update the remote URL to include your username explicitly:
+   `git remote set-url origin https://YOUR_USERNAME@github.com/YOUR_USERNAME/REPO.git`
+2. Push again. Windows will now prompt you for the password/token for the correct account.
