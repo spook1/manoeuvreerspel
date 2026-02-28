@@ -92,7 +92,7 @@ export class Boat {
             // =====================================================
             // 3. WIND — At superstructure (forward of center)
             // =====================================================
-            const wind = gameState.harbor.wind;
+            const wind = gameState.activeWind;
             if (wind.force > 0) {
                 const windRad = (wind.direction + 180 - 90) * Math.PI / 180;
                 const windForce = wind.force * 0.5;

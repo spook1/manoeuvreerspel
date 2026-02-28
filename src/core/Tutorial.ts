@@ -48,7 +48,7 @@ export class Tutorial {
                     gs.boat.heading = 0; // Facing right
                     gs.boat.vx = 0; gs.boat.vy = 0; gs.boat.omega = 0;
                     gs.boat.throttle = 0; gs.boat.rudder = 0;
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                     gs.lines = [];
                 },
                 checkComplete: (_gs, tut) => tut.allCoinsCollected()
@@ -61,7 +61,7 @@ export class Tutorial {
                 coins: [{ x: 350, y: 280, collected: false, radius: 10 }],
                 setup: (gs) => {
                     // Keep current position, just add the coin
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                 },
                 checkComplete: (_gs, tut) => tut.allCoinsCollected()
             },
@@ -76,7 +76,7 @@ export class Tutorial {
                     const behindX = gs.boat.x - Math.cos(gs.boat.heading) * 150;
                     const behindY = gs.boat.y - Math.sin(gs.boat.heading) * 150;
                     this.coins = [{ x: behindX, y: Math.max(180, Math.min(500, behindY)), collected: false, radius: 10 }];
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                 },
                 checkComplete: (_gs, tut) => tut.allCoinsCollected()
             },
@@ -99,7 +99,7 @@ export class Tutorial {
                         });
                     }
                     this.coins = coins;
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                 },
                 checkComplete: (_gs, tut) => tut.allCoinsCollected()
             },
@@ -137,7 +137,7 @@ export class Tutorial {
                         { x: startX + 240, y: startY + 80, collected: false, radius: 10 },
                         { x: startX + 360, y: startY - 60, collected: false, radius: 10 },
                     ];
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                 },
                 checkComplete: (_gs, tut) => tut.allCoinsCollected()
             },
@@ -156,7 +156,7 @@ export class Tutorial {
                         x: 350, y: 155,
                         w: 80, h: 30
                     };
-                    gs.harbor.wind.force = 0;
+                    if (gs.harbor.wind) gs.harbor.wind.force = 0; else gs.harbor.wind = { direction: 0, force: 0 };
                 },
                 checkComplete: (gs, _tut) => {
                     // Complete when 2+ lines attached and boat nearly stopped

@@ -31,4 +31,15 @@ export const Constants = {
     DRAG_COEFF: 0.05,
     THRUST_GAIN: 50,
     TURN_SPEED: 0.3,
+
+    /** Reset alle mutable physics-velden terug naar hun standaardwaarden */
+    reset() {
+        this.LINE_STRENGTH = 5;
+        this.MASS = 5;
+        this.RUDDER_WASH_GAIN = 500;
+        this.RUDDER_HYDRO_GAIN = 3;
+        this.LATERAL_DRAG_COEFF = 100;
+        this.DRAG_COEFF = 0.05;
+        this.THRUST_GAIN = 50;
+    }
 };

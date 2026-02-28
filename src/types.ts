@@ -53,3 +53,10 @@ export interface Coin {
     collected: boolean;
     radius: number;
 }
+
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: 'student' | 'pro' | 'admin' | 'gamemaster';
+}

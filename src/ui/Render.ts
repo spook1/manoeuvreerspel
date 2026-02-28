@@ -3,6 +3,7 @@ import { Constants } from '../core/Constants';
 import { attachLocalPoint, getAttachmentWorld } from '../core/Utils';
 import { tutorial } from '../core/Tutorial';
 import { editor } from '../editor/HarborEditor';
+import { drawNPCDetail, NPC_SPECS } from './DrawNPC';
 
 export class Render {
     canvas: HTMLCanvasElement;
@@ -128,8 +129,51 @@ export class Render {
         tutorial.draw(ctx);
         this.drawCoins(gameState);
         editor.draw(ctx);
+        this.drawSEObjectHighlight(gameState);
         this.drawDebugForces(gameState);
+        this.drawScenarioHUD(gameState);
         this.drawUI(gameState);
+
+        ctx.restore();
+    }
+
+    private drawScenarioHUD(gameState: GameState) {
+        if (gameState.gameMode !== 'game') return;
+        const runner = (window as any)._scenarioRunner;
+        if (!runner || runner.state === 'idle') return;
+
+        const ctx = this.ctx;
+        const cw = this.canvas.width / Constants.GAME_SCALE;
+
+        ctx.save();
+
+        if (runner.state === 'failed') {
+            // Rood scherm overlay
+            ctx.fillStyle = 'rgba(239,68,68,0.35)';
+            ctx.fillRect(0, 0, cw, this.canvas.height / Constants.GAME_SCALE);
+
+            ctx.font = 'bold 28px system-ui';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('❌ Te laat! Scenario start opnieuw...', cw / 2, 300);
+        } else if (runner.state === 'complete') {
+            ctx.font = 'bold 28px system-ui';
+            ctx.fillStyle = '#4ade80';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✅ Scenario voltooid!', cw / 2, 300);
+        } else {
+            // Stap-indicator rechtsboven
+            const text = runner.hudText;
+            ctx.font = 'bold 16px system-ui';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(cw - 130, 12, 120, 28);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(text, cw - 16, 18);
+        }
 
         ctx.restore();
     }
@@ -141,7 +185,7 @@ export class Render {
     }
 
     drawWaves(gameState: GameState) {
-        const wind = gameState.harbor.wind;
+        const wind = gameState.activeWind;
         if (wind.force <= 0.1) return;
 
         const ctx = this.ctx;
@@ -260,6 +304,16 @@ export class Render {
             // Skip the quay body itself (full-width, y=0 jetties)
             if (j.y === 0 && j.w > 100) continue;
 
+            ctx.save();
+            // Rotation Logic (Center Pivot)
+            if (j.angle && j.angle !== 0) {
+                const cx = j.x + j.w / 2;
+                const cy = j.y + j.h / 2;
+                ctx.translate(cx, cy);
+                ctx.rotate(j.angle * Math.PI / 180);
+                ctx.translate(-cx, -cy);
+            }
+
             // Main jetty surface
             const jetGrad = ctx.createLinearGradient(j.x, j.y, j.x + j.w, j.y);
             jetGrad.addColorStop(0, '#8B6D3C');
@@ -291,10 +345,26 @@ export class Render {
             ctx.strokeStyle = 'rgba(0,0,0,0.25)';
             ctx.lineWidth = 1;
             ctx.strokeRect(j.x, j.y, j.w, j.h);
+
+            ctx.restore();
         }
 
-        // === PILES & CLEATS ===
+        // === SHORES (drawn before piles/cleats so they appear beneath) ===
+        this.drawShores(ctx, gameState);
+
+        // === NPCs (drawn before piles/cleats so kikkers are always on top) ===
+        this.drawNPCBoats(ctx, gameState);
+
+        // === PILES & CLEATS (always on top) ===
         for (const p of gameState.harbor.piles) {
+            ctx.save();
+            // Rotation Logic (Pivot is center/position)
+            if (p.angle && p.angle !== 0) {
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle * Math.PI / 180);
+                ctx.translate(-p.x, -p.y);
+            }
+
             if (p.type === 'cleat') {
                 // T-shaped cleat (bolder/kikker)
                 ctx.fillStyle = '#1e293b';
@@ -342,8 +412,103 @@ export class Render {
                 ctx.arc(p.x - 1, p.y - 1, 2, 0, Math.PI * 2);
                 ctx.fill();
             }
+            ctx.restore();
         }
     }
+
+    private drawShores(ctx: CanvasRenderingContext2D, gameState: GameState) {
+        const shores = gameState.harbor.shores;
+        if (!shores || shores.length === 0) return;
+
+        for (const s of shores) {
+            ctx.save();
+            const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+            ctx.translate(cx, cy);
+            ctx.rotate((s.angle ?? 0) * Math.PI / 180);
+
+            if (s.type === 'rock') {
+                ctx.fillStyle = '#6b6b6b';
+                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
+                ctx.fillStyle = '#888';
+                const rng = (seed: number) => ((seed * 9301 + 49297) % 233280) / 233280;
+                for (let i = 0; i < Math.floor(s.w * s.h / 600); i++) {
+                    const rx = (rng(i * 3 + 1) - 0.5) * s.w * 0.7;
+                    const ry = (rng(i * 3 + 2) - 0.5) * s.h * 0.7;
+                    const rr = 4 + rng(i * 3 + 3) * 8;
+                    ctx.beginPath();
+                    ctx.ellipse(rx, ry, rr * 1.3, rr * 0.8, rng(i) * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.strokeStyle = '#4a4a4a'; ctx.lineWidth = 1;
+                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
+            } else if (s.type === 'reed') {
+                ctx.fillStyle = '#2d6a1e';
+                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
+                ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 1.5;
+                const cols = Math.max(3, Math.floor(s.w / 6));
+                const rows = Math.max(2, Math.floor(s.h / 8));
+                for (let ci = 0; ci < cols; ci++) {
+                    for (let ri = 0; ri < rows; ri++) {
+                        const px = -s.w / 2 + (ci + 0.5) * (s.w / cols) + (ri % 2 === 0 ? 2 : -2);
+                        const py = -s.h / 2 + (ri + 0.3) * (s.h / rows);
+                        const ph = s.h / rows * 0.6;
+                        ctx.beginPath(); ctx.moveTo(px, py + ph); ctx.lineTo(px, py);
+                        ctx.moveTo(px, py); ctx.lineTo(px - 3, py - 3);
+                        ctx.moveTo(px, py); ctx.lineTo(px + 3, py - 3);
+                        ctx.stroke();
+                    }
+                }
+                ctx.strokeStyle = '#1b4d12'; ctx.lineWidth = 1;
+                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
+            } else {
+                ctx.fillStyle = '#a0a0a0';
+                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
+                ctx.strokeStyle = '#888'; ctx.lineWidth = 0.8;
+                const brickH = 12;
+                for (let by = -s.h / 2; by < s.h / 2; by += brickH) {
+                    const offset = Math.floor((by / brickH) % 2) * 18;
+                    ctx.beginPath(); ctx.moveTo(-s.w / 2, by); ctx.lineTo(s.w / 2, by); ctx.stroke();
+                    for (let bx = -s.w / 2 + offset; bx < s.w / 2; bx += 36) {
+                        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, Math.min(by + brickH, s.h / 2)); ctx.stroke();
+                    }
+                }
+                ctx.strokeStyle = '#777'; ctx.lineWidth = 1;
+                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
+            }
+            ctx.restore();
+        }
+    }
+
+    private drawNPCBoats(ctx: CanvasRenderingContext2D, gameState: GameState) {
+        const npcs = gameState.harbor.npcs;
+        if (!npcs || npcs.length === 0) return;
+
+        for (const n of npcs) {
+            ctx.save();
+            ctx.translate(n.x, n.y);
+            ctx.rotate((n.heading ?? 0) * Math.PI / 180);
+
+            const sc = n.scale ?? 1;
+            drawNPCDetail(ctx, n.type, sc);
+
+            if (n.name) {
+                ctx.save();
+                ctx.rotate(-(n.heading ?? 0) * Math.PI / 180);
+                ctx.font = `bold ${Math.round(10 * sc)}px system-ui`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.shadowColor = 'rgba(0,0,0,0.7)';
+                ctx.shadowBlur = 3;
+                ctx.fillStyle = '#fff';
+                const labelOffset = (NPC_SPECS[n.type]?.W ?? 14) * sc + 8;
+                ctx.fillText(n.name, 0, labelOffset);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+    }
+
 
     drawBoat(gameState: GameState) {
         const ctx = this.ctx;
@@ -630,7 +795,7 @@ export class Render {
 
         // Wind
         const windSpeedLabelEl = document.getElementById('windSpeedLabel');
-        if (windSpeedLabelEl) windSpeedLabelEl.textContent = gameState.harbor.wind.force.toFixed(0);
+        if (windSpeedLabelEl) windSpeedLabelEl.textContent = gameState.activeWind.force.toFixed(0);
 
         // Propeller Status
         const propEl = document.getElementById('propellerStatus');
@@ -692,6 +857,46 @@ export class Render {
 
             ctx.restore();
         }
+    }
+    private drawSEObjectHighlight(gameState: GameState) {
+        if (gameState.gameMode !== 'scenario-edit' || !gameState.selectedSEObject) return;
+        const ctx = this.ctx;
+        const obj = gameState.selectedSEObject;
+
+        ctx.save();
+        ctx.strokeStyle = '#facc15'; // Yellow highlight
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+
+        if (obj.width !== undefined) {
+            // Het is een mooring spot
+            const w = obj.width;
+            const h = obj.height ?? 40;
+            const cx = obj.x + w / 2;
+            const cy = obj.y + h / 2;
+            ctx.translate(cx, cy);
+            ctx.rotate((obj.angle || 0) * Math.PI / 180);
+            ctx.strokeRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8);
+
+            // Draw right resize handle (E)
+            const hd = 6;
+            ctx.fillStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([]);
+            ctx.strokeRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
+            ctx.fillRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
+
+            // Draw bottom resize handle (S)
+            ctx.strokeRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
+            ctx.fillRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
+        } else if (obj.value !== undefined) {
+            // Het is een coin
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, 22, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
     private drawDebugForces(gameState: GameState) {

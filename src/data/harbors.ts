@@ -10,6 +10,7 @@ export interface HarborPile {
     x: number;
     y: number;
     type: 'cleat' | 'pile';
+    angle?: number;
     id?: number;
 }
 
@@ -17,28 +18,135 @@ export interface HarborMooringSpot {
     x: number;
     y: number;
     width: number;
+    height?: number; // Optional, default 40
     points: number;
     angle: number;
     id?: string;
+    order?: number;      // Volgorde (1-gebaseerd). Zelfde nr = tegelijk actief
+    timeLimit?: number;  // Seconden dat dit object actief/zichtbaar is nadat het unlocked is (default 60)
 }
 
+export interface HarborCoin {
+    x: number;
+    y: number;
+    value: number; // Points
+    sequenceIndex?: number; // Order
+    timeout?: number; // Seconds to persist after previous coin
+    id?: number;
+    order?: number;      // Volgorde (1-gebaseerd). Zelfde nr = tegelijk actief
+    timeLimit?: number;  // Seconden dat dit object actief/zichtbaar is nadat het unlocked is (default 30)
+}
+
+/** Een scenario-stap binnen een game */
+export interface GameScenarioEntry {
+    scenarioId: string;
+    introText: string;       // Instructietekst getoond vóór start scenario
+    unlockAfterPrevious: boolean;  // false = altijd beschikbaar
+}
+
+/** Een volledige game: geordende reeks van scenario's */
+export interface GameData {
+    id: string;
+    name: string;
+    description: string;
+    createdBy?: string;      // user id
+    isPublished: boolean;
+    scenarios: GameScenarioEntry[];
+}
+
+/** Een oeverstrook: rotsoever of rietoever — werkt als obstakel */
+export interface HarborShore {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    angle: number;
+    type: 'rock' | 'reed' | 'concrete';
+    /** (toekomstig) botspenalty in punten per m/s */
+    collisionPenalty?: number;
+}
+
+/** Een decoratief/stationair NPC-bootje — werkt als obstakel */
+export interface HarborNPC {
+    x: number;
+    y: number;
+    heading: number;    // graden
+    type: 'small' | 'motorboat' | 'sailboat' | 'large';
+    scale?: number;     // 0.5 – 2.0, default 1
+    name?: string;
+    /** (toekomstig) botspenalty in punten per m/s */
+    collisionPenalty?: number;
+}
+
+/** Physics properties that a scenario can override */
+export interface ScenarioPhysics {
+    mass?: number;
+    dragCoeff?: number;
+    lateralDragCoeff?: number;
+    thrustGain?: number;
+    rudderWashGain?: number;
+    rudderHydroGain?: number;
+    lineStrength?: number;
+    propDirection?: 'rechts' | 'links';
+}
+
+/** Boot startpositie */
+export interface BoatStart {
+    x: number;
+    y: number;
+    heading: number; // degrees
+}
+
+/**
+ * HAVEN: De fysieke haven — steigers, palen, kikkers en standaard bootpositie.
+ * Dit is de basis die de scenario-editor gebruikt als achtergrond.
+ */
 export interface HarborData {
+    id: string;           // uniek ID, bv. 'h1' of een UUID
     name: string;
     version: string;
-    wind: {
-        direction: number;
-        force: number;
-    };
     jetties: HarborJetty[];
     piles: HarborPile[];
+    boatStart: BoatStart;  // Standaard startpositie voor oefenmodus
+
+    // Nieuwe objecten
+    shores?: HarborShore[];   // Oeverstroken (rots, riet, beton)
+    npcs?: HarborNPC[];       // Stationaire decoratieve boten (obstakel)
+
+    // Legacy velden — aanwezig in bestaande havens, worden genegeerd in gamemodus
+    wind?: { direction: number; force: number; };
+    mooringSpots?: HarborMooringSpot[];
+    coins?: HarborCoin[];
+}
+
+/**
+ * SCENARIO: Een spelinstelling bovenop een haven.
+ * Bevat wind, aanlegplaatsen, munten, optionele bootpositie en bootfysica.
+ * Meerdere scenario's kunnen verwijzen naar dezelfde haven.
+ */
+export interface ScenarioData {
+    id: string;
+    name: string;
+    harborId: string;      // verwijst naar HarborData.id
+    wind: { direction: number; force: number; };
     mooringSpots: HarborMooringSpot[];
+    coins: HarborCoin[];
+    boatStart?: BoatStart; // Overschrijft haven-default als aanwezig
+    physics?: ScenarioPhysics;  // Optionele bootsettings
+    coinSettings?: {
+        value: number;
+        count: number;
+        timeLimit: number;
+    };
 }
 
 export const DEFAULT_HARBORS: HarborData[] = [
     // Harbor 1
     {
+        "id": "h1",
         "name": "Harbour 1",
         "version": "1.0",
+        "boatStart": { "x": 200, "y": 500, "heading": 0 },
         "wind": {
             "direction": 0,
             "force": 0
@@ -498,70 +606,14 @@ export const DEFAULT_HARBORS: HarborData[] = [
                 "y": 150,
                 "type": "cleat"
             }
-        ],
-        "mooringSpots": [
-            {
-                "x": 120,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 220,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 330,
-                "y": 220,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 870,
-                "y": 210,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 670,
-                "y": 200,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 460,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 840,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 590,
-                "y": 190,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            }
         ]
     },
     // Harbor 2
     {
+        "id": "h2",
         "name": "Harbour 2",
         "version": "1.0",
+        "boatStart": { "x": 200, "y": 500, "heading": 0 },
         "wind": {
             "direction": 0,
             "force": 15
@@ -1021,70 +1073,14 @@ export const DEFAULT_HARBORS: HarborData[] = [
                 "y": 150,
                 "type": "cleat"
             }
-        ],
-        "mooringSpots": [
-            {
-                "x": 120,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 220,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 330,
-                "y": 220,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 870,
-                "y": 210,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 670,
-                "y": 200,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 460,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 840,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 590,
-                "y": 230,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            }
         ]
     },
     // Harbor 3
     {
+        "id": "h3",
         "name": "Harbour 3",
         "version": "1.0",
+        "boatStart": { "x": 200, "y": 500, "heading": 0 },
         "wind": {
             "direction": 90,
             "force": 20
@@ -1748,70 +1744,14 @@ export const DEFAULT_HARBORS: HarborData[] = [
                 "y": 450,
                 "type": "pile"
             }
-        ],
-        "mooringSpots": [
-            {
-                "x": 120,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 220,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
-            },
-            {
-                "x": 330,
-                "y": 220,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 680,
-                "y": 260,
-                "width": 50,
-                "points": 15,
-                "angle": 90
-            },
-            {
-                "x": 870,
-                "y": 230,
-                "width": 50,
-                "points": 10,
-                "angle": 90
-            },
-            {
-                "x": 330,
-                "y": 470,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 590,
-                "y": 480,
-                "width": 50,
-                "points": 15,
-                "angle": 90
-            },
-            {
-                "x": 870,
-                "y": 470,
-                "width": 50,
-                "points": 10,
-                "angle": 90
-            }
         ]
     },
     // Harbor 4
     {
+        "id": "h4",
         "name": "Harbour 4",
         "version": "1.0",
+        "boatStart": { "x": 200, "y": 500, "heading": 0 },
         "wind": {
             "direction": 180,
             "force": 35
@@ -2768,70 +2708,125 @@ export const DEFAULT_HARBORS: HarborData[] = [
                 "y": 450,
                 "type": "cleat"
             }
+        ]
+    }
+];
+
+// ============================================================
+// DEFAULT SCENARIOS — één per haven, gemigreerd vanuit originele havendata
+// ============================================================
+export const DEFAULT_SCENARIOS: ScenarioData[] = [
+    {
+        id: 's1', name: 'Harbour 1 – Standaard', harborId: 'h1',
+        wind: { direction: 0, force: 0 },
+        mooringSpots: [
+            { x: 120, y: 170, width: 50, points: 10, angle: 0, order: 1, timeLimit: 90 },
+            { x: 220, y: 170, width: 50, points: 10, angle: 0, order: 1, timeLimit: 90 },
+            { x: 330, y: 220, width: 50, points: 25, angle: 90, order: 2, timeLimit: 90 },
+            { x: 870, y: 210, width: 50, points: 25, angle: 90, order: 2, timeLimit: 90 },
+            { x: 670, y: 200, width: 50, points: 25, angle: 90, order: 3, timeLimit: 60 },
+            { x: 460, y: 170, width: 50, points: 10, angle: 0, order: 3, timeLimit: 60 },
+            { x: 840, y: 170, width: 50, points: 10, angle: 0, order: 4, timeLimit: 60 },
+            { x: 590, y: 190, width: 50, points: 25, angle: 90, order: 4, timeLimit: 60 }
         ],
-        "mooringSpots": [
+        coins: []
+    },
+    {
+        id: 's2', name: 'Harbour 2 – Wind 15kn', harborId: 'h2',
+        wind: { direction: 0, force: 15 },
+        mooringSpots: [
+            { x: 120, y: 170, width: 50, points: 10, angle: 0, order: 1, timeLimit: 90 },
+            { x: 220, y: 170, width: 50, points: 10, angle: 0, order: 2, timeLimit: 90 },
+            { x: 330, y: 220, width: 50, points: 25, angle: 90, order: 2, timeLimit: 90 },
+            { x: 870, y: 210, width: 50, points: 25, angle: 90, order: 3, timeLimit: 75 },
+            { x: 670, y: 200, width: 50, points: 25, angle: 90, order: 3, timeLimit: 75 },
+            { x: 460, y: 170, width: 50, points: 10, angle: 0, order: 4, timeLimit: 60 },
+            { x: 840, y: 170, width: 50, points: 10, angle: 0, order: 4, timeLimit: 60 },
+            { x: 590, y: 230, width: 50, points: 25, angle: 90, order: 5, timeLimit: 60 }
+        ],
+        coins: []
+    },
+    {
+        id: 's3', name: 'Harbour 3 – Wind 20kn zij', harborId: 'h3',
+        wind: { direction: 90, force: 20 },
+        mooringSpots: [
+            { x: 120, y: 170, width: 50, points: 10, angle: 0 },
+            { x: 220, y: 170, width: 50, points: 10, angle: 0 },
+            { x: 330, y: 220, width: 50, points: 25, angle: 90 },
+            { x: 680, y: 260, width: 50, points: 15, angle: 90 },
+            { x: 870, y: 230, width: 50, points: 10, angle: 90 },
+            { x: 330, y: 470, width: 50, points: 25, angle: 90 },
+            { x: 590, y: 480, width: 50, points: 15, angle: 90 },
+            { x: 870, y: 470, width: 50, points: 10, angle: 90 }
+        ],
+        coins: []
+    },
+    {
+        id: 's4', name: 'Harbour 4 – Storm 35kn', harborId: 'h4',
+        wind: { direction: 180, force: 35 },
+        mooringSpots: [
+            { x: 120, y: 170, width: 50, points: 10, angle: 0 },
+            { x: 220, y: 170, width: 50, points: 10, angle: 0 },
+            { x: 330, y: 220, width: 50, points: 25, angle: 90 },
+            { x: 870, y: 210, width: 50, points: 25, angle: 90 },
+            { x: 330, y: 410, width: 50, points: 25, angle: 90 },
+            { x: 680, y: 410, width: 50, points: 15, angle: 90 },
+            { x: 780, y: 420, width: 50, points: 10, angle: 90 },
+            { x: 670, y: 200, width: 50, points: 25, angle: 90 },
+            { x: 460, y: 170, width: 50, points: 10, angle: 0 }
+        ],
+        coins: []
+    }
+];
+
+// ============================================================
+// HELPER FUNCTIES
+// ============================================================
+export function getHarborById(id: string): HarborData | undefined {
+    return DEFAULT_HARBORS.find(h => h.id === id);
+}
+export function getScenariosForHarbor(harborId: string): ScenarioData[] {
+    return DEFAULT_SCENARIOS.filter(s => s.harborId === harborId);
+}
+export function getScenarioById(id: string): ScenarioData | undefined {
+    return DEFAULT_SCENARIOS.find(s => s.id === id);
+}
+/** Oefenmodus: gebruik haven-eigen wind/spots als "scenario" */
+export function harborToLegacyScenario(harbor: HarborData): ScenarioData {
+    return {
+        id: `practice_${harbor.id}`,
+        name: harbor.name,
+        harborId: harbor.id,
+        wind: harbor.wind ?? { direction: 0, force: 0 },
+        mooringSpots: harbor.mooringSpots ?? [],
+        coins: harbor.coins ?? []
+    };
+}
+
+// ============================================================
+// DEFAULT GAMES — klaar om te spelen, ook voor anonieme spelers
+// ============================================================
+export const DEFAULT_GAMES: GameData[] = [
+    {
+        id: 'game1',
+        name: 'Leer Aanleggen',
+        description: 'De basis van veilig aanleggen. Drie havens, oplopende wind.',
+        isPublished: true,
+        scenarios: [
             {
-                "x": 120,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
+                scenarioId: 's1',
+                introText: 'Welkom! Dit is haven 1.\n\nLeg de boot aan op de groene vlakken in de juiste volgorde. Een spot gloeit als hij aan de beurt is.\n\nSnel en netjes aanleggen geeft meer punten!',
+                unlockAfterPrevious: false
             },
             {
-                "x": 220,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
+                scenarioId: 's2',
+                introText: 'Nu waait het harder — 15 knopen wind van voren.\n\nLetop winddruk bij het aanleggen. Compenseer met motor en roer.',
+                unlockAfterPrevious: true
             },
             {
-                "x": 330,
-                "y": 220,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 870,
-                "y": 210,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 330,
-                "y": 410,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 680,
-                "y": 410,
-                "width": 50,
-                "points": 15,
-                "angle": 90
-            },
-            {
-                "x": 780,
-                "y": 420,
-                "width": 50,
-                "points": 10,
-                "angle": 90
-            },
-            {
-                "x": 670,
-                "y": 200,
-                "width": 50,
-                "points": 25,
-                "angle": 90
-            },
-            {
-                "x": 460,
-                "y": 170,
-                "width": 50,
-                "points": 10,
-                "angle": 0
+                scenarioId: 's3',
+                introText: 'Zijwind! 20 knopen dwars.\n\nAnder haven, andere opstelling. Gebruik boeglijn als ankerpunt.',
+                unlockAfterPrevious: true
             }
         ]
     }

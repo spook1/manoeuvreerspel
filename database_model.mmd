@@ -1,0 +1,65 @@
+﻿erDiagram
+    USERS {
+        uuid id PK
+        string email
+        string display_name
+        string role
+        timestamp created_at
+    }
+    HARBORS {
+        uuid id PK
+        uuid created_by FK
+        string name
+        json jetties
+        json piles
+        json boat_start
+        boolean is_public
+        timestamp created_at
+    }
+    SCENARIOS {
+        uuid id PK
+        uuid harbor_id FK
+        uuid created_by FK
+        string name
+        json wind
+        json mooring_spots
+        json coins
+        json boat_start
+        json physics
+        boolean is_public
+        timestamp created_at
+    }
+    GAMES {
+        uuid id PK
+        uuid created_by FK
+        string name
+        json scenario_sequence
+        boolean is_published
+        timestamp created_at
+    }
+    GAME_RESULTS {
+        uuid id PK
+        uuid game_id FK
+        uuid user_id FK
+        int score
+        int moorings_ok
+        float time_seconds
+        timestamp played_at
+    }
+    SCENARIO_RESULTS {
+        uuid id PK
+        uuid scenario_id FK
+        uuid user_id FK
+        int score
+        float time_seconds
+        timestamp played_at
+    }
+    USERS ||--o{ HARBORS : maakt
+    USERS ||--o{ SCENARIOS : maakt
+    USERS ||--o{ GAMES : maakt
+    USERS ||--o{ GAME_RESULTS : speelt
+    USERS ||--o{ SCENARIO_RESULTS : speelt
+    HARBORS ||--o{ SCENARIOS : basis
+    SCENARIOS ||--o{ SCENARIO_RESULTS : resultaten
+    SCENARIOS }o--o{ GAMES : zit-in
+    GAMES ||--o{ GAME_RESULTS : resultaten

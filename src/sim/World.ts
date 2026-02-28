@@ -200,5 +200,127 @@ export class World {
                 }
             }
         }
+
+        // 3. SHORE COLLISION (same physics as jetties — AABB)
+        if (gameState.harbor.shores) {
+            for (const shore of gameState.harbor.shores) {
+                // Convert shore (w,h,angle) to an equivalent jetty-style AABB for broad phase
+                // For now treat as axis-aligned rectangle (angle not rotated yet in collision)
+                if (boat.x + L < shore.x || boat.x - L > shore.x + shore.w ||
+                    boat.y + L < shore.y || boat.y - L > shore.y + shore.h) {
+                    continue;
+                }
+
+                let hitShore = false;
+                let overlapX = 0, overlapY = 0;
+                let bestContactWorldX = boat.x, bestContactWorldY = boat.y;
+
+                for (const c of corners) {
+                    const wx = boat.x + c.x * cosH - c.y * sinH;
+                    const wy = boat.y + c.x * sinH + c.y * cosH;
+                    if (wx > shore.x && wx < shore.x + shore.w && wy > shore.y && wy < shore.y + shore.h) {
+                        hitShore = true;
+                        bestContactWorldX = wx; bestContactWorldY = wy;
+                        const dL = wx - shore.x, dR = (shore.x + shore.w) - wx;
+                        const dT = wy - shore.y, dB = (shore.y + shore.h) - wy;
+                        const minD = Math.min(dL, dR, dT, dB);
+                        if (minD === dL) overlapX = -dL;
+                        else if (minD === dR) overlapX = dR;
+                        else if (minD === dT) overlapY = -dT;
+                        else overlapY = dB;
+                        break;
+                    }
+                }
+
+                // Fenders
+                const hullHalfWidth = boat.width / 2;
+                for (const side of [-1, 1]) {
+                    const fy = side * hullHalfWidth;
+                    for (const fx of Constants.FENDER_POSITIONS) {
+                        const wx = boat.x + fx * cosH - fy * sinH;
+                        const wy = boat.y + fx * sinH + fy * cosH;
+                        const cx2 = Math.max(shore.x, Math.min(wx, shore.x + shore.w));
+                        const cy2 = Math.max(shore.y, Math.min(wy, shore.y + shore.h));
+                        const dx = wx - cx2, dy = wy - cy2;
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq < Constants.FENDER_RADIUS * Constants.FENDER_RADIUS) {
+                            const dist = Math.sqrt(distSq);
+                            const pen = Constants.FENDER_RADIUS - dist;
+                            let nx = 1, ny = 0;
+                            if (dist > 0.001) { nx = dx / dist; ny = dy / dist; }
+                            if (!hitShore || pen > Math.hypot(overlapX, overlapY)) {
+                                hitShore = true;
+                                overlapX = nx * pen; overlapY = ny * pen;
+                                bestContactWorldX = wx; bestContactWorldY = wy;
+                            }
+                        }
+                    }
+                }
+
+                if (hitShore) {
+                    const overlapMag = Math.hypot(overlapX, overlapY);
+                    if (overlapMag > 1e-4) {
+                        const nx = overlapX / overlapMag, ny = overlapY / overlapMag;
+                        const contactWorldX = bestContactWorldX - boat.x;
+                        const contactWorldY = bestContactWorldY - boat.y;
+                        const vContactX = boat.vx - boat.omega * contactWorldY;
+                        const vContactY = boat.vy + boat.omega * contactWorldX;
+                        const vRel = vContactX * nx + vContactY * ny;
+                        if (vRel < 0) {
+                            const rCrossN = contactWorldX * ny - contactWorldY * nx;
+                            const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
+                            const impulseMag = -vRel * effectiveMass;
+                            boat.vx += impulseMag * nx / mass;
+                            boat.vy += impulseMag * ny / mass;
+                            boat.omega += (rCrossN * impulseMag) / inertia;
+                            boat.x += overlapX * 0.02;
+                            boat.y += overlapY * 0.02;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. NPC COLLISION (circle-based — radius proportional to scale)
+        if (gameState.harbor.npcs) {
+            for (const npc of gameState.harbor.npcs) {
+                const npcRadius = 30 * (npc.scale ?? 1);
+                const npcL = 28 * (npc.scale ?? 1); // half-length for broad phase
+
+                if (Math.hypot(boat.x - npc.x, boat.y - npc.y) > L + npcL + npcRadius) continue;
+
+                // Check fenders against NPC circle
+                const hullHalfWidth = boat.width / 2;
+                for (const side of [-1, 1]) {
+                    const fy = side * hullHalfWidth;
+                    for (const fx of Constants.FENDER_POSITIONS) {
+                        const wx = boat.x + fx * cosH - fy * sinH;
+                        const wy = boat.y + fx * sinH + fy * cosH;
+                        const dist = Math.hypot(wx - npc.x, wy - npc.y);
+                        if (dist < Constants.FENDER_RADIUS + npcRadius && dist > 0.001) {
+                            const pen = (Constants.FENDER_RADIUS + npcRadius) - dist;
+                            const nx = (wx - npc.x) / dist;
+                            const ny = (wy - npc.y) / dist;
+                            const contactWorldX = wx - boat.x;
+                            const contactWorldY = wy - boat.y;
+                            const vContactX = boat.vx - boat.omega * contactWorldY;
+                            const vContactY = boat.vy + boat.omega * contactWorldX;
+                            const vRel = vContactX * nx + vContactY * ny;
+                            if (vRel < 0) {
+                                const rCrossN = contactWorldX * ny - contactWorldY * nx;
+                                const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
+                                const impulseMag = -vRel * effectiveMass;
+                                boat.vx += impulseMag * nx / mass;
+                                boat.vy += impulseMag * ny / mass;
+                                boat.omega += (rCrossN * impulseMag) / inertia;
+                                boat.x += nx * pen * 0.03;
+                                boat.y += ny * pen * 0.03;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+
