@@ -17,7 +17,7 @@ export class HarborEditor {
 
     // Sub-tool settings
     shoreType: 'rock' | 'reed' | 'concrete' = 'rock';
-    npcType: 'small' | 'motorboat' | 'sailboat' | 'large' = 'motorboat';
+    npcType: 'small' | 'motorboat' | 'sailboat' | 'large' = 'small';
 
     // Interaction State
     isDragging: boolean = false;
@@ -1030,19 +1030,33 @@ export class HarborEditor {
         const nameInput = document.getElementById('cloudHarborName') as HTMLInputElement;
         const name = nameInput.value.trim() || 'Naamloze Haven';
 
-        // Haven-editor slaat ALLEEN haven-structuur op (geen wind/spots/coins)
-        const harborData = {
-            id: gameState.harbor.id || `custom_${Date.now()}`,
-            name: name,
-            version: "1.0",
-            boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
-            jetties: gameState.harbor.jetties,
-            piles: gameState.harbor.piles
-        };
-
         try {
-            // Save via API
-            await ApiClient.saveHarbor(harborData, false);
+            // Check for existing harbors with same name
+            const existingHarbors = await ApiClient.getMyHarbors();
+            const existingMatch = existingHarbors.find((h: any) => h.json_data?.name === name);
+
+            // Haven-editor slaat ALLEEN haven-structuur op (geen wind/spots/coins)
+            const harborData = {
+                id: existingMatch ? existingMatch.json_data.id : (gameState.harbor.id || `custom_${Date.now()}`),
+                name: name,
+                version: "1.0",
+                boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
+                jetties: gameState.harbor.jetties,
+                piles: gameState.harbor.piles,
+                npcs: gameState.harbor.npcs,
+                shores: gameState.harbor.shores
+            };
+
+            if (existingMatch) {
+                if (confirm(`Je hebt al een haven met de naam "${name}". Wil je deze overschrijven?`)) {
+                    await ApiClient.updateHarbor(existingMatch.id, harborData, false);
+                } else {
+                    return; // abort
+                }
+            } else {
+                await ApiClient.saveHarbor(harborData, false);
+            }
+
             alert('Haven succesvol opgeslagen! ✅');
             document.getElementById('cloudModal')!.style.display = 'none';
             gameState.harbor.name = name;
@@ -1052,7 +1066,7 @@ export class HarborEditor {
             }
         } catch (e: any) {
             console.error(e);
-            alert('Fout bij opslaan: ' + e.message || e);
+            alert('Fout bij opslaan: ' + (e.message || e));
         }
     }
 
