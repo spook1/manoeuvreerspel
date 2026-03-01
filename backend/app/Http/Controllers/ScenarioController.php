@@ -7,59 +7,74 @@ use Illuminate\Http\Request;
 
 class ScenarioController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        // Return only scenarios created by the user
+        $scenarios = Scenario::where('user_id', $request->user()->id)->get();
+        return response()->json($scenarios);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'harbor_id' => 'required|exists:harbors,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'points' => 'integer',
+            'time_limit' => 'nullable|integer',
+            'json_data' => 'nullable|array'
+        ]);
+
+        $scenario = new Scenario($validated);
+        $scenario->user_id = $request->user()->id;
+        $scenario->save();
+
+        return response()->json(['message' => 'Scenario created', 'scenario' => $scenario], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Scenario $scenario)
+    public function show(Request $request, $id)
     {
-        //
+        $scenario = Scenario::findOrFail($id);
+        
+        // Ensure the user owns this scenario
+        if ($scenario->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json($scenario);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Scenario $scenario)
+    public function update(Request $request, $id)
     {
-        //
+        $scenario = Scenario::findOrFail($id);
+
+        if ($scenario->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'harbor_id' => 'exists:harbors,id',
+            'name' => 'string|max:255',
+            'description' => 'nullable|string',
+            'points' => 'integer',
+            'time_limit' => 'nullable|integer',
+            'json_data' => 'nullable|array'
+        ]);
+
+        $scenario->update($validated);
+
+        return response()->json(['message' => 'Scenario updated', 'scenario' => $scenario]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Scenario $scenario)
+    public function destroy(Request $request, $id)
     {
-        //
-    }
+        $scenario = Scenario::findOrFail($id);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Scenario $scenario)
-    {
-        //
+        if ($scenario->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $scenario->delete();
+        return response()->json(['message' => 'Scenario deleted']);
     }
 }
