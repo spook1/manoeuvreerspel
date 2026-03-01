@@ -26,17 +26,39 @@ export class GameManager {
 
     private loadLocalData() {
         try {
-            const savedScenarios = localStorage.getItem('customScenarios');
-            if (savedScenarios) {
-                this.customScenarios = JSON.parse(savedScenarios);
-            }
-
             const savedHarbors = localStorage.getItem('customHarbors');
             if (savedHarbors) {
                 this.customHarbors = JSON.parse(savedHarbors);
             }
         } catch (e) {
-            console.error('Kon lokale data niet laden', e);
+            console.error('Kon lokale havens niet laden', e);
+        }
+
+        // Fetch cloud scenarios async
+        this.fetchCloudScenarios();
+    }
+
+    public async fetchCloudScenarios() {
+        if (!ApiClient.isLoggedIn) return;
+        try {
+            const scenarios = await ApiClient.getMyScenarios();
+            this.customScenarios = scenarios.map((s: any) => ({
+                id: s.id.toString(),
+                name: s.name,
+                description: s.description,
+                harborId: s.harbor_id.toString(),
+                // API gives json_data back as object (assuming Laravel casts it to array/object)
+                wind: s.json_data?.wind || { direction: 0, force: 0 },
+                mooringSpots: s.json_data?.mooringSpots || [],
+                coins: s.json_data?.coins || [],
+                boatStart: s.json_data?.boatStart,
+                physics: s.json_data?.physics,
+                coinSettings: s.json_data?.coinSettings,
+                objectPenalties: s.json_data?.objectPenalties
+            }));
+            this.populateScenarioSelector();
+        } catch (e) {
+            console.error('Fout bij ophalen scenarios uit cloud:', e);
         }
     }
 
@@ -134,6 +156,14 @@ export class GameManager {
             nameInput.value = gameState.scenario ? gameState.scenario.name : '';
             nameInput.onchange = () => {
                 if (gameState.scenario) gameState.scenario.name = nameInput.value;
+            };
+        }
+
+        const descInput = document.getElementById('scenarioDescInput') as HTMLTextAreaElement | null;
+        if (descInput) {
+            descInput.value = (gameState.scenario?.description) || '';
+            descInput.onchange = () => {
+                if (gameState.scenario) gameState.scenario.description = descInput.value;
             };
         }
 
@@ -623,15 +653,46 @@ export class GameManager {
         }
     }
 
-    saveScenario(scenario: ScenarioData) {
-        const idx = this.customScenarios.findIndex(s => s.id === scenario.id);
-        if (idx !== -1) {
-            this.customScenarios[idx] = JSON.parse(JSON.stringify(scenario));
-        } else {
-            this.customScenarios.push(JSON.parse(JSON.stringify(scenario)));
+    async saveScenario(scenario: ScenarioData) {
+        if (!ApiClient.isLoggedIn) {
+            alert("Je moet ingelogd zijn om scenario's te kunnen opslaan.");
+            return;
         }
-        localStorage.setItem('customScenarios', JSON.stringify(this.customScenarios));
-        this.populateScenarioSelector();
+
+        try {
+            const payload = {
+                harbor_id: scenario.harborId,
+                name: scenario.name,
+                description: scenario.description,
+                points: 100,
+                time_limit: scenario.coinSettings?.timeLimit || 120,
+                json_data: {
+                    wind: scenario.wind,
+                    mooringSpots: scenario.mooringSpots,
+                    coins: scenario.coins,
+                    boatStart: scenario.boatStart,
+                    physics: scenario.physics,
+                    coinSettings: scenario.coinSettings,
+                    objectPenalties: scenario.objectPenalties
+                }
+            };
+
+            let returnedId = scenario.id;
+            if (scenario.id.startsWith('new_')) {
+                const res = await ApiClient.saveScenario(payload);
+                returnedId = res.scenario.id.toString();
+                scenario.id = returnedId;
+                this.customScenarios.push(scenario);
+            } else {
+                await ApiClient.updateScenario(Number(scenario.id), payload);
+                const idx = this.customScenarios.findIndex(s => s.id === scenario.id);
+                if (idx !== -1) this.customScenarios[idx] = scenario;
+            }
+            this.populateScenarioSelector();
+        } catch (e) {
+            console.error("Fout bij opslaan scenario in cloud:", e);
+            alert("Er is iets misgegaan bij het opslaan.");
+        }
     }
 
     // ── WIND DISPLAY ─────────────────────────────────────────────────────────

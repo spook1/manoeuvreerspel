@@ -434,7 +434,10 @@ export function wireScenarioEditorUI() {
         saveBtn.onclick = async () => {
             const scenario = getOrMakeScenario();
             const nameInput = g<HTMLInputElement>('scenarioNameInput');
+            const descInput = g<HTMLTextAreaElement>('scenarioDescInput');
+
             if (nameInput?.value) scenario.name = nameInput.value;
+            if (descInput) scenario.description = descInput.value;
 
             console.log('Saving scenario local/cloud:', JSON.parse(JSON.stringify(scenario)));
             saveBtn.textContent = '⏱️ Bezig...';

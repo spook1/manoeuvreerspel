@@ -107,6 +107,50 @@ export class ApiClient {
         return this.request(`/harbors/${id}`, 'DELETE');
     }
 
+    // --- Scenario Management ---
+
+    static async getMyScenarios(): Promise<any[]> {
+        return this.request('/scenarios');
+    }
+
+    static async getScenario(id: number): Promise<any> {
+        return this.request(`/scenarios/${id}`);
+    }
+
+    static async saveScenario(scenarioData: any): Promise<any> {
+        return this.request('/scenarios', 'POST', scenarioData);
+    }
+
+    static async updateScenario(id: number, scenarioData: any): Promise<any> {
+        return this.request(`/scenarios/${id}`, 'PUT', scenarioData);
+    }
+
+    static async deleteScenario(id: number): Promise<void> {
+        return this.request(`/scenarios/${id}`, 'DELETE');
+    }
+
+    // --- Game Management ---
+
+    static async getMyGames(): Promise<any[]> {
+        return this.request('/games');
+    }
+
+    static async getGame(id: number): Promise<any> {
+        return this.request(`/games/${id}`);
+    }
+
+    static async saveGame(gameData: any): Promise<any> {
+        return this.request('/games', 'POST', gameData);
+    }
+
+    static async updateGame(id: number, gameData: any): Promise<any> {
+        return this.request(`/games/${id}`, 'PUT', gameData);
+    }
+
+    static async deleteGame(id: number): Promise<void> {
+        return this.request(`/games/${id}`, 'DELETE');
+    }
+
     // --- Admin Features ---
 
     static async getUsers(): Promise<User[]> {
