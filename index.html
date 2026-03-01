@@ -207,7 +207,7 @@
         body.mode-edit #harborPickerBar,
         body.mode-harbor-edit #harborPickerBar,
         body.mode-scenario-edit #harborPickerBar {
-            display: flex;
+            display: none;
         }
 
         body.mode-edit .game-only,
@@ -510,6 +510,7 @@
                         style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
                         <option value="" disabled selected>Kies scenario...</option>
                         <optgroup label="Standaard" id="scenarioDefaultGroup"></optgroup>
+                        <optgroup label="Mijn Scenario's" id="scenarioCustomGroup"></optgroup>
                     </select>
                 </div>
 
@@ -1027,12 +1028,7 @@
                     Lokaal</button>
                 <button id="saveCloudBtn"
                     style="flex:1; background:#22c55e; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;"
-                    title="Opslaan in Cloud">☁️
-                    Save</button>
-                <button id="loadCloudBtn"
-                    style="flex:1; background:#3b82f6; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;"
-                    title="Laden uit Cloud">📂
-                    Load</button>
+                    title="Opslaan in Cloud">☁️ Cloud Opslaan</button>
             </div>
         </div>
 
@@ -1044,40 +1040,7 @@
     </div>
 
 
-    <!-- CLOUD SAVE/LOAD MODAL -->
-    <div id="cloudModal"
-        style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.8); z-index:3000; align-items:center; justify-content:center;">
-        <div
-            style="background:#1e293b; border:1px solid #3b82f6; width:400px; padding:20px; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5); color:#f8fafc; display:flex; flex-direction:column; gap:12px;">
-            <h3 id="cloudModalTitle"
-                style="margin:0; color:#60a5fa; border-bottom:1px solid #334155; padding-bottom:8px;">☁️ Cloud Opslag
-            </h3>
 
-            <!-- Content for SAVE -->
-            <div id="cloudSaveContent" style="display:none; flex-direction:column; gap:8px;">
-                <label style="font-size:14px; color:#cbd5e1;">Naam van haven:</label>
-                <input type="text" id="cloudHarborName" placeholder="Mijn Haven 1"
-                    style="background:#0f172a; border:1px solid #475569; color:#fff; padding:8px; border-radius:4px;">
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button id="cloudConfirmSaveBtn"
-                        style="flex:1; background:#22c55e; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;">Opslaan</button>
-                    <button onclick="document.getElementById('cloudModal').style.display='none'"
-                        style="flex:1; background:#64748b; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;">Annuleer</button>
-                </div>
-            </div>
-
-            <!-- Content for LOAD -->
-            <div id="cloudLoadContent" style="display:none; flex-direction:column; gap:8px;">
-                <div id="cloudHarborList"
-                    style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; border:1px solid #334155; padding:4px; border-radius:4px; background:#0f172a;">
-                    <!-- Items injected here -->
-                    <div style="padding:8px; color:#64748b; font-style:italic;">Laden...</div>
-                </div>
-                <button onclick="document.getElementById('cloudModal').style.display='none'"
-                    style="background:#64748b; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; margin-top:8px;">Sluiten</button>
-            </div>
-        </div>
-    </div>
 
     <!-- SCENARIO EDITOR OVERLAY -->
     <div id="scenarioEditorOverlay"
@@ -1091,6 +1054,13 @@
                 <span>🎬 Scenario Editor</span>
                 <button id="seExitBtn"
                     style="background:#ef4444; border:none; color:white; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:11px;">✕</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:11px; color:#94a3b8;">Kies Haven voor Scenario:</label>
+                <select id="seHarborSelector"
+                    style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px; border-radius:6px; font-size:12px; width:100%;">
+                </select>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:4px;">
@@ -1126,6 +1096,24 @@
 
                     <label style="font-size:11px; color:#94a3b8;">Tijdslimiet (sec):</label>
                     <input id="seTimeLimit" type="number" value="120" min="0" max="999"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                </div>
+            </div>
+
+            <!-- Object Penalties -->
+            <div id="seObjectPenaltiesGroup"
+                style="display:none; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; flex-direction:column; gap:6px;">
+                <div style="font-size:11px; color:#ef4444; font-weight:600;">⚠️ Object Strafpunten</div>
+                <div style="font-size:10px; color:#94a3b8;">Voor geselecteerde steiger/oever/npc</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center;">
+                    <label style="font-size:11px; color:#cbd5e1;">Max Snelheid:</label>
+                    <input id="seMaxSpeedKnots" type="number" value="2" min="0" step="0.5"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                    <label style="font-size:11px; color:#cbd5e1;">Romp Straf:</label>
+                    <input id="seHullPenalty" type="number" value="5" min="0"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                    <label style="font-size:11px; color:#cbd5e1;">Fender Straf:</label>
+                    <input id="seFenderPenalty" type="number" value="1" min="0"
                         style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
                 </div>
             </div>

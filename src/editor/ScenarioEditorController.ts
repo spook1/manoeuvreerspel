@@ -20,6 +20,7 @@ let isDraggingSE = false;
 let dragStartX = 0, dragStartY = 0;
 let seDragMode: 'move' | 'resize' | 'resize-h' | null = null;
 let seOriginalGeom: { x: number, y: number, w?: number, h?: number } | null = null;
+let selectedHarborObjectId: string | null = null;
 
 // Bound handlers (zodat we ze kunnen verwijderen)
 let _seMouseDown: ((e: MouseEvent) => void) | null = null;
@@ -30,15 +31,18 @@ let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 // Callback naar GameManager voor mode-switches
 let _onExit: (() => void) | null = null;
 let _updateWindDisplay: (() => void) | null = null;
+let _onSave: ((scenario: any) => void) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function initScenarioEditor(callbacks: {
     onExit: () => void;
     updateWindDisplay: () => void;
+    onSave?: (scenario: any) => void;
 }) {
     _onExit = callbacks.onExit;
     _updateWindDisplay = callbacks.updateWindDisplay;
+    if (callbacks.onSave) _onSave = callbacks.onSave;
 }
 
 /** Activeer/herdraat alle scenario-editor UI bindings */
@@ -97,6 +101,49 @@ export function wireScenarioEditorUI() {
     if (sv) { sv.value = (gameState.scenario?.coinSettings?.value ?? 10).toString(); sv.addEventListener('input', syncSettings); }
     if (scnt) { scnt.value = (gameState.scenario?.coinSettings?.count ?? 5).toString(); scnt.addEventListener('input', syncSettings); }
     if (stl) { stl.value = (gameState.scenario?.coinSettings?.timeLimit ?? 120).toString(); stl.addEventListener('input', syncSettings); }
+
+    // ── PENALTY SETTINGS ───────────────────────────────────────────────────
+    const syncPen = () => {
+        if (!selectedHarborObjectId) return;
+        const sc = getOrMakeScenario();
+        if (!sc.objectPenalties) sc.objectPenalties = {};
+        if (!sc.objectPenalties[selectedHarborObjectId]) sc.objectPenalties[selectedHarborObjectId] = {};
+        const pen = sc.objectPenalties[selectedHarborObjectId];
+
+        const m = g<HTMLInputElement>('seMaxSpeedKnots');
+        const h = g<HTMLInputElement>('seHullPenalty');
+        const f = g<HTMLInputElement>('seFenderPenalty');
+        if (m) pen.maxSpeedKnots = parseFloat(m.value) || 0;
+        if (h) pen.hullPenalty = parseInt(h.value) || 0;
+        if (f) pen.fenderPenalty = parseInt(f.value) || 0;
+    };
+
+    g('seMaxSpeedKnots')?.addEventListener('input', syncPen);
+    g('seHullPenalty')?.addEventListener('input', syncPen);
+    g('seFenderPenalty')?.addEventListener('input', syncPen);
+
+    const updateSEPropertiesPanel = () => {
+        const dObjPen = g('seObjectPenaltiesGroup');
+        if (selectedHarborObjectId) {
+            if (dObjPen) dObjPen.style.display = 'flex';
+            const sc = getOrMakeScenario();
+            if (!sc.objectPenalties) sc.objectPenalties = {};
+            if (!sc.objectPenalties[selectedHarborObjectId]) {
+                sc.objectPenalties[selectedHarborObjectId] = { maxSpeedKnots: 2, hullPenalty: 5, fenderPenalty: 1 };
+            }
+            const pen = sc.objectPenalties[selectedHarborObjectId];
+
+            const m = g<HTMLInputElement>('seMaxSpeedKnots');
+            const h = g<HTMLInputElement>('seHullPenalty');
+            const f = g<HTMLInputElement>('seFenderPenalty');
+
+            if (m) m.value = (pen.maxSpeedKnots ?? 2).toString();
+            if (h) h.value = (pen.hullPenalty ?? 5).toString();
+            if (f) f.value = (pen.fenderPenalty ?? 1).toString();
+        } else {
+            if (dObjPen) dObjPen.style.display = 'none';
+        }
+    };
 
     // ── PHYSICS SLIDERS ────────────────────────────────────────────────────
     const bindPhySlider = (
@@ -236,6 +283,7 @@ export function wireScenarioEditorUI() {
                     seOriginalGeom = { x: coin.x, y: coin.y };
                     const valInput = g<HTMLInputElement>('seCoinValue');
                     if (valInput && coin.value !== undefined) valInput.value = coin.value.toString();
+                    updateSEPropertiesPanel();
                     return;
                 }
             }
@@ -249,9 +297,41 @@ export function wireScenarioEditorUI() {
                     seOriginalGeom = { x: spot.x, y: spot.y, w: spot.width };
                     const valInput = g<HTMLInputElement>('seCoinValue');
                     if (valInput && spot.points !== undefined) valInput.value = spot.points.toString();
+                    updateSEPropertiesPanel();
                     return;
                 }
             }
+
+            // If not found, check harbor objects for penalty assignment
+            selectedHarborObjectId = null;
+            for (const j of gameState.harbor.jetties || []) {
+                if (pos.x >= j.x && pos.x <= j.x + j.w && pos.y >= j.y && pos.y <= j.y + j.h) {
+                    selectedHarborObjectId = j.id ?? null; break;
+                }
+            }
+            if (!selectedHarborObjectId) {
+                for (const s of gameState.harbor.shores || []) {
+                    if (pos.x >= s.x && pos.x <= s.x + s.w && pos.y >= s.y && pos.y <= s.y + s.h) {
+                        selectedHarborObjectId = s.id ?? null; break;
+                    }
+                }
+            }
+            if (!selectedHarborObjectId) {
+                for (const n of gameState.harbor.npcs || []) {
+                    if (Math.hypot(n.x - pos.x, n.y - pos.y) < 25) {
+                        selectedHarborObjectId = n.id ?? null; break;
+                    }
+                }
+            }
+            if (!selectedHarborObjectId) {
+                for (const p of gameState.harbor.piles || []) {
+                    if (Math.hypot(p.x - pos.x, p.y - pos.y) < 15) {
+                        selectedHarborObjectId = p.id?.toString() ?? null; break;
+                    }
+                }
+            }
+
+            updateSEPropertiesPanel();
         }
     };
 
@@ -340,6 +420,8 @@ export function wireScenarioEditorUI() {
             const cvs = document.getElementById('simCanvas') as HTMLCanvasElement | null;
             if (cvs) unbindCanvasEvents(cvs);
             gameState.selectedSEObject = null;
+            selectedHarborObjectId = null;
+            updateSEPropertiesPanel();
             const overlay = g('scenarioEditorOverlay');
             if (overlay) overlay.style.display = 'none';
             _onExit?.();
@@ -354,11 +436,14 @@ export function wireScenarioEditorUI() {
             const nameInput = g<HTMLInputElement>('scenarioNameInput');
             if (nameInput?.value) scenario.name = nameInput.value;
 
-            console.log('Saving scenario to cloud:', JSON.parse(JSON.stringify(scenario)));
+            console.log('Saving scenario local/cloud:', JSON.parse(JSON.stringify(scenario)));
             saveBtn.textContent = '⏱️ Bezig...';
+
+            if (_onSave) _onSave(scenario);
+
             await new Promise(r => setTimeout(r, 600));
             saveBtn.textContent = '✅ Opgeslagen';
-            setTimeout(() => saveBtn.textContent = '💾 Opslaan (Cloud)', 2000);
+            setTimeout(() => saveBtn.textContent = '💾 Opslaan', 2000);
         };
     }
 }

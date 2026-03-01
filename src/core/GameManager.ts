@@ -21,6 +21,41 @@ export class GameManager {
 
     constructor() {
         this.setupModeButtons();
+        this.loadLocalData();
+    }
+
+    private loadLocalData() {
+        try {
+            const savedScenarios = localStorage.getItem('customScenarios');
+            if (savedScenarios) {
+                this.customScenarios = JSON.parse(savedScenarios);
+            }
+
+            const savedHarbors = localStorage.getItem('customHarbors');
+            if (savedHarbors) {
+                this.customHarbors = JSON.parse(savedHarbors);
+            }
+        } catch (e) {
+            console.error('Kon lokale data niet laden', e);
+        }
+    }
+
+    private loadHarborState(harbor: any) {
+        const hData = JSON.parse(JSON.stringify(harbor));
+
+        // Ensure all harbor objects have an ID for scenario referencing
+        hData.jetties?.forEach((j: any, i: number) => { if (!j.id) j.id = `jetty_${i}`; });
+        hData.piles?.forEach((p: any, i: number) => { if (!p.id) p.id = `pile_${i}`; });
+        hData.shores?.forEach((s: any, i: number) => { if (!s.id) s.id = `shore_${i}`; });
+        hData.npcs?.forEach((n: any, i: number) => { if (!n.id) n.id = `npc_${i}`; });
+
+        gameState.harbor = {
+            ...hData,
+            jetties: hData.jetties || [],
+            piles: hData.piles || [],
+            shores: hData.shores || [],
+            npcs: hData.npcs || []
+        };
     }
 
     // ── MODE ENTRY POINTS ────────────────────────────────────────────────────
@@ -82,7 +117,7 @@ export class GameManager {
 
         if (harborId) {
             const harbor = getHarborById(harborId) || this.customHarbors.find(h => h.id === harborId);
-            if (harbor) gameState.harbor = JSON.parse(JSON.stringify(harbor));
+            if (harbor) this.loadHarborState(harbor);
         }
 
         gameState.gameMode = 'scenario-edit';
@@ -165,7 +200,7 @@ export class GameManager {
         const harbor = getHarborById(scenario.harborId);
         if (!harbor) { console.error(`Haven '${scenario.harborId}' niet gevonden!`); return; }
 
-        gameState.harbor = JSON.parse(JSON.stringify(harbor));
+        this.loadHarborState(harbor);
         gameState.scenario = JSON.parse(JSON.stringify(scenario));
         gameState.score = 100;
         gameState.coins = [];
@@ -195,7 +230,7 @@ export class GameManager {
             this.startScenario(scenarioId);
         } else {
             const index = (level - 1) % DEFAULT_HARBORS.length;
-            gameState.harbor = JSON.parse(JSON.stringify(DEFAULT_HARBORS[index]));
+            this.loadHarborState(DEFAULT_HARBORS[index]);
             gameState.scenario = null;
             gameState.currentLevel = level;
             gameState.resetBoat();
@@ -283,7 +318,8 @@ export class GameManager {
         // Wire the scenario editor controller exit callback
         initScenarioEditor({
             onExit: () => this.startPracticeMode(),
-            updateWindDisplay: () => this.updateWindDisplay()
+            updateWindDisplay: () => this.updateWindDisplay(),
+            onSave: (scenario) => this.saveScenario(scenario)
         });
 
         (window as any).startGame = () => this.startGame();
@@ -361,7 +397,7 @@ export class GameManager {
                 } else {
                     const harbor = getHarborById(val) || this.customHarbors.find(h => h.id === val);
                     if (harbor) {
-                        gameState.harbor = JSON.parse(JSON.stringify(harbor));
+                        this.loadHarborState(harbor);
                         gameState.scenario = null;
                         gameState.resetBoat();
                         this.updateWindDisplay();
@@ -410,7 +446,7 @@ export class GameManager {
                     };
                 } else {
                     const harbor = getHarborById(heSelector.value) || this.customHarbors.find(h => h.id === heSelector.value);
-                    if (harbor) gameState.harbor = JSON.parse(JSON.stringify(harbor));
+                    if (harbor) this.loadHarborState(harbor);
                 }
                 const nameInput = document.getElementById('harborNameInput') as HTMLInputElement | null;
                 if (nameInput) nameInput.value = gameState.harbor.name;
@@ -421,18 +457,20 @@ export class GameManager {
         const heDeleteHarborBtn = document.getElementById('heDeleteHarborBtn');
         if (heDeleteHarborBtn) {
             heDeleteHarborBtn.addEventListener('click', async () => {
-                if (!heSelector || heSelector.value === 'nieuw') return;
-                const isCloud = this.customHarbors.some(h => h.id === heSelector.value);
-                if (!isCloud) { alert('Je kunt deze standaard haven niet verwijderen.'); return; }
+                if (!heSelector) return;
+                const selectedId = heSelector.value;
+                if (!selectedId || selectedId === 'nieuw') return;
+
+                const cloudHarbor = this.customHarbors.find(h => h.id === selectedId) as any;
+                if (!cloudHarbor || !cloudHarbor.db_id) {
+                    alert('Je kunt deze standaard haven niet verwijderen.');
+                    return;
+                }
 
                 if (confirm('Weet je zeker dat je deze haven definitief wilt verwijderen?')) {
                     try {
-                        const numericId = parseInt(heSelector.value.replace('custom_', ''), 10);
-                        if (!isNaN(numericId)) {
-                            await ApiClient.deleteHarbor(numericId);
-                        } else {
-                            await ApiClient.deleteHarbor(heSelector.value as any);
-                        }
+                        const numericId = cloudHarbor.db_id;
+                        await ApiClient.deleteHarbor(numericId);
                         alert('Haven verwijderd.');
                         await (window as any).refreshHarbors?.();
                         if (heSelector) { heSelector.value = 'nieuw'; heSelector.dispatchEvent(new Event('change')); }
@@ -443,7 +481,7 @@ export class GameManager {
             });
         }
 
-        // ── SCENARIO-EDITOR INTERN SELECTOR ────────────────────────────────
+        // ── SCENARIO-EDITOR INTERN SELECTORs ────────────────────────────────
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
         if (seSelector) {
             seSelector.addEventListener('change', () => {
@@ -453,6 +491,17 @@ export class GameManager {
                     this.startScenario(seSelector.value);
                 }
                 this.startScenarioEdit(gameState.harbor.id);
+            });
+        }
+        const seHarborSelector = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
+        if (seHarborSelector) {
+            seHarborSelector.addEventListener('change', () => {
+                const harbor = getHarborById(seHarborSelector.value) || this.customHarbors.find(h => h.id === seHarborSelector.value);
+                if (harbor) {
+                    this.loadHarborState(harbor);
+                    gameState.scenario = null; // Reset scenario mapping when checking out a new harbor
+                    this.startScenarioEdit(harbor.id);
+                }
             });
         }
 
@@ -495,22 +544,34 @@ export class GameManager {
         const customGroup = document.getElementById('customHarborGroup');
         const heDefaultGroup = document.getElementById('heDefaultHarborGroup');
         const heCustomGroup = document.getElementById('heCustomHarborGroup');
+        const seHarborSelector = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
 
         const stdHtml = DEFAULT_HARBORS.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
         if (defaultGroup) defaultGroup.innerHTML = stdHtml;
         if (heDefaultGroup) heDefaultGroup.innerHTML = stdHtml;
 
+        let cloudHarborsList: any[] = [];
         if (ApiClient.isLoggedIn) {
             try {
                 const cloudHarbors = await ApiClient.getMyHarbors();
-                this.customHarbors = cloudHarbors.map((h: any) => h.json_data).filter(Boolean);
+                cloudHarborsList = cloudHarbors.map((h: any) => {
+                    if (h.json_data) {
+                        (h.json_data as any).db_id = h.id;
+                        h.json_data.id = `custom_${h.id}`;
+                        return h.json_data;
+                    }
+                    return null;
+                }).filter(Boolean);
             } catch (e) {
                 console.error('Kon cloud havens niet laden:', e);
-                this.customHarbors = [];
             }
-        } else {
-            this.customHarbors = [];
         }
+
+        // Merge cloud and local custom harbors based on ID
+        const allCustomHarbors = new Map<string, HarborData>();
+        this.customHarbors.forEach(h => allCustomHarbors.set(h.id, h));
+        cloudHarborsList.forEach(h => allCustomHarbors.set(h.id, h));
+        this.customHarbors = Array.from(allCustomHarbors.values());
 
         const customHtml = this.customHarbors.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
         if (customGroup) customGroup.innerHTML = customHtml;
@@ -521,20 +582,56 @@ export class GameManager {
             heSelector.value = gameState.harbor.id;
         }
 
+        if (seHarborSelector) {
+            seHarborSelector.innerHTML = `
+                <optgroup label="Standaard">${stdHtml}</optgroup>
+                <optgroup label="Mijn/Lokale Havens">${customHtml}</optgroup>
+            `;
+            if (gameState.harbor && gameState.gameMode === 'scenario-edit') {
+                seHarborSelector.value = gameState.harbor.id;
+            }
+        }
+
         this.populateScenarioSelector();
     }
 
     populateScenarioSelector(filterHarborId?: string) {
         const scenarioGroup = document.getElementById('scenarioDefaultGroup');
+        const customGroup = document.getElementById('scenarioCustomGroup');
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
 
-        const scenarios = filterHarborId
+        const baseScenarios = filterHarborId
             ? DEFAULT_SCENARIOS.filter(s => s.harborId === filterHarborId)
             : DEFAULT_SCENARIOS;
 
-        const html = scenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        const customScenarios = filterHarborId
+            ? this.customScenarios.filter(s => s.harborId === filterHarborId)
+            : this.customScenarios;
+
+        const html = baseScenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
         if (scenarioGroup) scenarioGroup.innerHTML = html;
-        if (seSelector) seSelector.innerHTML = '<option value="nieuw">➕ Nieuw Scenario</option>' + html;
+
+        const customHtml = customScenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        if (customGroup) customGroup.innerHTML = customHtml;
+
+        if (seSelector) {
+            seSelector.innerHTML = `
+                <option value="nieuw">➕ Nieuw Scenario</option>
+                <optgroup label="Standaard">${html}</optgroup>
+                <optgroup label="Mijn Scenario's">${customHtml}</optgroup>
+            `;
+        }
+    }
+
+    saveScenario(scenario: ScenarioData) {
+        const idx = this.customScenarios.findIndex(s => s.id === scenario.id);
+        if (idx !== -1) {
+            this.customScenarios[idx] = JSON.parse(JSON.stringify(scenario));
+        } else {
+            this.customScenarios.push(JSON.parse(JSON.stringify(scenario)));
+        }
+        localStorage.setItem('customScenarios', JSON.stringify(this.customScenarios));
+        this.populateScenarioSelector();
     }
 
     // ── WIND DISPLAY ─────────────────────────────────────────────────────────

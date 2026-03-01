@@ -16,5 +16,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Havens opslaan & ophalen
     Route::post('/harbors', [HarborController::class, 'store']);
     Route::get('/harbors', [HarborController::class, 'index']);
+    Route::get('/harbors/{id}', [HarborController::class, 'show']);
+    Route::put('/harbors/{id}', [HarborController::class, 'update']);
+    Route::delete('/harbors/{id}', [HarborController::class, 'destroy']);
 });
-

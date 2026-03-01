@@ -1,9 +1,16 @@
+export interface PenaltySettings {
+    maxSpeedKnots?: number;
+    hullPenalty?: number;
+    fenderPenalty?: number;
+}
+
 export interface HarborJetty {
     x: number;
     y: number;
     w: number;
     h: number;
     angle: number;
+    id?: string;
 }
 
 export interface HarborPile {
@@ -11,7 +18,7 @@ export interface HarborPile {
     y: number;
     type: 'cleat' | 'pile';
     angle?: number;
-    id?: number;
+    id?: string | number;
 }
 
 export interface HarborMooringSpot {
@@ -62,8 +69,7 @@ export interface HarborShore {
     h: number;
     angle: number;
     type: 'rock' | 'reed' | 'concrete';
-    /** (toekomstig) botspenalty in punten per m/s */
-    collisionPenalty?: number;
+    id?: string;
 }
 
 /** Een decoratief/stationair NPC-bootje — werkt als obstakel */
@@ -74,8 +80,7 @@ export interface HarborNPC {
     type: 'small' | 'motorboat' | 'sailboat' | 'large';
     scale?: number;     // 0.5 – 2.0, default 1
     name?: string;
-    /** (toekomstig) botspenalty in punten per m/s */
-    collisionPenalty?: number;
+    id?: string;
 }
 
 /** Physics properties that a scenario can override */
@@ -138,6 +143,7 @@ export interface ScenarioData {
         count: number;
         timeLimit: number;
     };
+    objectPenalties?: Record<string, PenaltySettings>; // Penalties mapped by harbor object ID
 }
 
 export const DEFAULT_HARBORS: HarborData[] = [

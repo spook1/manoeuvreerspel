@@ -79,6 +79,15 @@ export class Input {
     }
 
     private onKeyDown(e: KeyboardEvent) {
+        if (!e.key) return;
+
+        if (e.target instanceof HTMLElement) {
+            const tag = e.target.tagName.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                return;
+            }
+        }
+
         const key = e.key.toLowerCase();
         if (e.repeat) return; // Prevent key repeat for step-based controls
 
@@ -122,6 +131,15 @@ export class Input {
     }
 
     private onKeyUp(e: KeyboardEvent) {
+        if (!e.key) return;
+
+        if (e.target instanceof HTMLElement) {
+            const tag = e.target.tagName.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                return;
+            }
+        }
+
         const key = e.key.toLowerCase();
         this.keys[key] = false;
 

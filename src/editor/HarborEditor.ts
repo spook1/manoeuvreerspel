@@ -1151,8 +1151,10 @@ export class HarborEditor {
             name: gameState.harbor.name || "Custom Harbor",
             version: "1.0",
             boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
-            jetties: gameState.harbor.jetties,
-            piles: gameState.harbor.piles
+            jetties: gameState.harbor.jetties || [],
+            piles: gameState.harbor.piles || [],
+            shores: gameState.harbor.shores || [],
+            npcs: gameState.harbor.npcs || []
         };
 
         const json = JSON.stringify(data, null, 2);
@@ -1160,9 +1162,31 @@ export class HarborEditor {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'harbor.hbr';
+
+        let safeName = (gameState.harbor.name || 'custom_harbor').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.download = `${safeName}.hbr`;
+
         a.click();
         URL.revokeObjectURL(url);
+
+        // OOK Lokaal opslaan in localStorage voor de Editor Dropdowns!
+        try {
+            const saved = localStorage.getItem('customHarbors');
+            const hList = saved ? JSON.parse(saved) : [];
+            const idx = hList.findIndex((h: any) => h.id === data.id);
+            if (idx !== -1) {
+                hList[idx] = data;
+            } else {
+                hList.push(data);
+            }
+            localStorage.setItem('customHarbors', JSON.stringify(hList));
+            if (typeof (window as any).refreshHarbors === 'function') {
+                (window as any).refreshHarbors();
+            }
+            alert('Haven tijdelijk opgeslagen in je browser (dropdowns) en gedownload (.hbr)! ✅');
+        } catch (e) {
+            console.error("Localstorage niet beschikbaar: ", e);
+        }
     }
 
     loadHarbor(data: any) {
@@ -1172,8 +1196,10 @@ export class HarborEditor {
         }
         gameState.harbor.id = data.id || `custom_${Date.now()}`;
         gameState.harbor.name = data.name || "Custom";
-        gameState.harbor.jetties = data.jetties;
-        gameState.harbor.piles = data.piles;
+        gameState.harbor.jetties = data.jetties || [];
+        gameState.harbor.piles = data.piles || [];
+        gameState.harbor.shores = data.shores || [];
+        gameState.harbor.npcs = data.npcs || [];
         if (data.boatStart) gameState.harbor.boatStart = data.boatStart;
         // Ignore scenario-data (wind/mooringSpots/coins) — die horen in ScenarioEditor
         this.selectedObjects = [];
