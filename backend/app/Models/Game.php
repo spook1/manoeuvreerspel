@@ -10,19 +10,23 @@ class Game extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title',
+        'name',
+        'description',
         'user_id',
-        'level_order', // JSON array van harbor_ids [1, 5, 12]
         'is_public',
     ];
 
     protected $casts = [
-        'level_order' => 'array',
         'is_public' => 'boolean',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function scenarios()
+    {
+        return $this->belongsToMany(Scenario::class, 'game_scenario')->withPivot('order')->orderBy('game_scenario.order');
     }
 }

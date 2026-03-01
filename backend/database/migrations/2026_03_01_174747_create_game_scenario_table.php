@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('games', function (Blueprint $table) {
+        Schema::create('game_scenario', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->json('level_order'); // Lijst met harbor IDs
-            $table->boolean('is_public')->default(false);
+            $table->foreignId('game_id')->constrained()->onDelete('cascade');
+            $table->foreignId('scenario_id')->constrained()->onDelete('cascade');
+            $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('games');
+        Schema::dropIfExists('game_scenario');
     }
 };

@@ -12,9 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Voeg rol toe: user (default), pro, admin. En harbour count.
-            $table->enum('role', ['user', 'pro', 'admin'])->default('user')->after('email');
-            $table->integer('shared_harbors_count')->default(0)->after('role');
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->enum('role', ['user', 'pro', 'admin'])->default('user')->after('email');
+            }
+            if (!Schema::hasColumn('users', 'shared_harbors_count')) {
+                $table->integer('shared_harbors_count')->default(0)->after('email');
+            }
         });
     }
 
