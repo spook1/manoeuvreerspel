@@ -30,18 +30,16 @@ let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
 // Callback naar GameManager voor mode-switches
 let _onExit: (() => void) | null = null;
-let _updateWindDisplay: (() => void) | null = null;
+
 let _onSave: ((scenario: any) => void) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function initScenarioEditor(callbacks: {
     onExit: () => void;
-    updateWindDisplay: () => void;
     onSave?: (scenario: any) => void;
 }) {
     _onExit = callbacks.onExit;
-    _updateWindDisplay = callbacks.updateWindDisplay;
     if (callbacks.onSave) _onSave = callbacks.onSave;
 }
 
@@ -61,21 +59,7 @@ export function wireScenarioEditorUI() {
         return gameState.scenario!;
     };
 
-    // ── WIND ───────────────────────────────────────────────────────────────
-    const wf = g<HTMLInputElement>('seWindForce');
-    const wfv = g<HTMLSpanElement>('seWindForceVal');
-    const wd = g<HTMLInputElement>('seWindDir');
-    const wdv = g<HTMLSpanElement>('seWindDirVal');
 
-    const syncWind = () => {
-        const sc = getOrMakeScenario();
-        if (wf) { sc.wind.force = parseFloat(wf.value); if (wfv) wfv.textContent = wf.value + ' kn'; }
-        if (wd) { sc.wind.direction = parseFloat(wd.value); if (wdv) wdv.textContent = wd.value + '°'; }
-        _updateWindDisplay?.();
-    };
-
-    if (wf) { wf.value = (gameState.scenario?.wind.force ?? 0).toString(); wf.addEventListener('input', syncWind); }
-    if (wd) { wd.value = (gameState.scenario?.wind.direction ?? 0).toString(); wd.addEventListener('input', syncWind); }
 
     // ── COIN / SPOT SETTINGS ───────────────────────────────────────────────
     const sv = g<HTMLInputElement>('seCoinValue');
@@ -145,70 +129,7 @@ export function wireScenarioEditorUI() {
         }
     };
 
-    // ── PHYSICS SLIDERS ────────────────────────────────────────────────────
-    const bindPhySlider = (
-        sliderId: string, valId: string,
-        getDefault: () => number,
-        setter: (sc: NonNullable<typeof gameState.scenario>, v: number) => void,
-        liveUpdate: (v: number) => void
-    ) => {
-        const el = g<HTMLInputElement>(sliderId);
-        const vel = g<HTMLSpanElement>(valId);
-        if (!el) return;
 
-        const existing = gameState.scenario?.physics;
-        el.value = (existing ? (Object.values(existing)[0] ?? getDefault()) : getDefault()).toString();
-        if (vel) vel.textContent = parseFloat(el.value).toString();
-
-        el.addEventListener('input', () => {
-            const sc = getOrMakeScenario();
-            if (!sc.physics) sc.physics = {};
-            const v = parseFloat(el.value);
-            setter(sc, v);
-            liveUpdate(v);
-            if (vel) vel.textContent = v.toFixed(2).replace(/\.?0+$/, '');
-        });
-    };
-
-    bindPhySlider('sePhyThrust', 'sePhyThrustVal', () => Constants.THRUST_GAIN,
-        (sc, v) => { sc.physics!.thrustGain = v; }, (v) => { Constants.THRUST_GAIN = v; });
-    bindPhySlider('sePhyWash', 'sePhyWashVal', () => Constants.RUDDER_WASH_GAIN,
-        (sc, v) => { sc.physics!.rudderWashGain = v; }, (v) => { Constants.RUDDER_WASH_GAIN = v; });
-    bindPhySlider('sePhyHydro', 'sePhyHydroVal', () => Constants.RUDDER_HYDRO_GAIN,
-        (sc, v) => { sc.physics!.rudderHydroGain = v; }, (v) => { Constants.RUDDER_HYDRO_GAIN = v; });
-    bindPhySlider('sePhyMass', 'sePhyMassVal', () => Constants.MASS,
-        (sc, v) => { sc.physics!.mass = v; }, (v) => { Constants.MASS = v; });
-    bindPhySlider('sePhyDrag', 'sePhyDragVal', () => Constants.DRAG_COEFF,
-        (sc, v) => { sc.physics!.dragCoeff = v; }, (v) => { Constants.DRAG_COEFF = v; });
-    bindPhySlider('sePhyLat', 'sePhyLatVal', () => Constants.LATERAL_DRAG_COEFF,
-        (sc, v) => { sc.physics!.lateralDragCoeff = v; }, (v) => { Constants.LATERAL_DRAG_COEFF = v; });
-    bindPhySlider('sePhyLines', 'sePhyLinesVal', () => Constants.LINE_STRENGTH,
-        (sc, v) => { sc.physics!.lineStrength = v; }, (v) => { Constants.LINE_STRENGTH = v; });
-
-    const propDir = g<HTMLSelectElement>('sePhyPropDir');
-    if (propDir) {
-        propDir.value = gameState.boat.propDirection ?? '';
-        propDir.addEventListener('change', () => {
-            const sc = getOrMakeScenario();
-            if (!sc.physics) sc.physics = {};
-            sc.physics.propDirection = propDir.value as 'rechts' | 'links' | undefined;
-            if (propDir.value) gameState.boat.propDirection = propDir.value as 'rechts' | 'links';
-        });
-    }
-
-    const phyReset = g<HTMLButtonElement>('sePhyResetBtn');
-    if (phyReset) {
-        phyReset.onclick = () => {
-            const sc = getOrMakeScenario();
-            sc.physics = undefined;
-            Constants.reset();
-            ['sePhyThrust', 'sePhyWash', 'sePhyHydro', 'sePhyMass', 'sePhyDrag', 'sePhyLat', 'sePhyLines'].forEach(id => {
-                const el = g<HTMLInputElement>(id);
-                if (el) el.dispatchEvent(new Event('input'));
-            });
-            if (propDir) propDir.value = '';
-        };
-    }
 
     // ── CANVAS TOOLS ───────────────────────────────────────────────────────
     const toolHints: Record<string, string> = {

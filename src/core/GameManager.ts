@@ -21,23 +21,8 @@ export class GameManager {
 
     constructor() {
         this.setupModeButtons();
-        this.loadLocalData();
-    }
-
-    private loadLocalData() {
-        try {
-            const savedHarbors = localStorage.getItem('customHarbors');
-            if (savedHarbors) {
-                this.customHarbors = JSON.parse(savedHarbors);
-            }
-        } catch (e) {
-            console.error('Kon lokale havens niet laden', e);
-        }
-
-        // Fetch cloud scenarios async
         this.fetchCloudScenarios();
     }
-
     public async fetchCloudScenarios() {
         if (!ApiClient.isLoggedIn) return;
         try {
@@ -46,7 +31,7 @@ export class GameManager {
                 id: s.id.toString(),
                 name: s.name,
                 description: s.description,
-                harborId: s.harbor_id.toString(),
+                harborId: `custom_${s.harbor_id}`,
                 // API gives json_data back as object (assuming Laravel casts it to array/object)
                 wind: s.json_data?.wind || { direction: 0, force: 0 },
                 mooringSpots: s.json_data?.mooringSpots || [],
@@ -147,6 +132,9 @@ export class GameManager {
 
         const scenarioOverlay = document.getElementById('scenarioEditorOverlay');
         if (scenarioOverlay) scenarioOverlay.style.display = 'flex';
+
+        // Filter scenarios for the current harbor
+        this.populateScenarioSelector(gameState.harbor.id);
 
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
         if (seSelector) seSelector.value = gameState.scenario ? gameState.scenario.id : 'nieuw';
@@ -348,7 +336,6 @@ export class GameManager {
         // Wire the scenario editor controller exit callback
         initScenarioEditor({
             onExit: () => this.startPracticeMode(),
-            updateWindDisplay: () => this.updateWindDisplay(),
             onSave: (scenario) => this.saveScenario(scenario)
         });
 
@@ -414,16 +401,12 @@ export class GameManager {
 
         // ── HAVEN SELECTOR (oefenmodus) ─────────────────────────────────────
         const harborSelector = document.getElementById('harborSelector') as HTMLSelectElement | null;
-        const fileInput = document.getElementById('hbrFileInput') as HTMLInputElement | null;
 
         if (harborSelector) {
             harborSelector.addEventListener('change', () => {
                 const val = harborSelector.value;
                 if (val === 'create') {
                     this.startHarborEdit(); harborSelector.value = '';
-                } else if (val === 'import') {
-                    if (fileInput) fileInput.click();
-                    harborSelector.value = gameState.harbor.id ?? '';
                 } else {
                     const harbor = getHarborById(val) || this.customHarbors.find(h => h.id === val);
                     if (harbor) {
@@ -432,26 +415,6 @@ export class GameManager {
                         gameState.resetBoat();
                         this.updateWindDisplay();
                     }
-                }
-            });
-        }
-
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const files = (e.target as HTMLInputElement).files;
-                if (files && files.length > 0) {
-                    const reader = new FileReader();
-                    reader.onload = (evt) => {
-                        try {
-                            const data = JSON.parse(evt.target?.result as string);
-                            editor.loadHarbor(data);
-                            if (gameState.gameMode !== 'harbor-edit') this.startHarborEdit();
-                        } catch (err) {
-                            console.error('Failed to parse harbor file', err);
-                            alert('Ongeldig haven bestand! (JSON Error)');
-                        }
-                    };
-                    reader.readAsText(files[0]);
                 }
             });
         }
@@ -597,11 +560,7 @@ export class GameManager {
             }
         }
 
-        // Merge cloud and local custom harbors based on ID
-        const allCustomHarbors = new Map<string, HarborData>();
-        this.customHarbors.forEach(h => allCustomHarbors.set(h.id, h));
-        cloudHarborsList.forEach(h => allCustomHarbors.set(h.id, h));
-        this.customHarbors = Array.from(allCustomHarbors.values());
+        this.customHarbors = cloudHarborsList;
 
         const customHtml = this.customHarbors.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
         if (customGroup) customGroup.innerHTML = customHtml;
@@ -614,11 +573,13 @@ export class GameManager {
 
         if (seHarborSelector) {
             seHarborSelector.innerHTML = `
-                <optgroup label="Standaard">${stdHtml}</optgroup>
-                <optgroup label="Mijn/Lokale Havens">${customHtml}</optgroup>
+                <optgroup label="Mijn Cloud Havens">${customHtml}</optgroup>
             `;
             if (gameState.harbor && gameState.gameMode === 'scenario-edit') {
                 seHarborSelector.value = gameState.harbor.id;
+            }
+            if (!seHarborSelector.value && this.customHarbors.length > 0) {
+                seHarborSelector.value = this.customHarbors[0].id;
             }
         }
 
@@ -659,9 +620,21 @@ export class GameManager {
             return;
         }
 
+        // Copy current global settings into the scenario right before saving
+        scenario.wind = { ...gameState.activeWind };
+        scenario.physics = {
+            thrustGain: Constants.THRUST_GAIN,
+            rudderWashGain: Constants.RUDDER_WASH_GAIN,
+            rudderHydroGain: Constants.RUDDER_HYDRO_GAIN,
+            mass: Constants.MASS,
+            dragCoeff: Constants.DRAG_COEFF,
+            lateralDragCoeff: Constants.LATERAL_DRAG_COEFF,
+            lineStrength: Constants.LINE_STRENGTH
+        };
+
         try {
             const payload = {
-                harbor_id: scenario.harborId,
+                harbor_id: scenario.harborId.replace('custom_', ''),
                 name: scenario.name,
                 description: scenario.description,
                 points: 100,
@@ -688,7 +661,12 @@ export class GameManager {
                 const idx = this.customScenarios.findIndex(s => s.id === scenario.id);
                 if (idx !== -1) this.customScenarios[idx] = scenario;
             }
-            this.populateScenarioSelector();
+            // Re-populate the selector, filtering by the current harbor
+            this.populateScenarioSelector(scenario.harborId);
+
+            // Explicitly set the newly updated/created scenario as selected
+            const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
+            if (seSelector) seSelector.value = scenario.id;
         } catch (e) {
             console.error("Fout bij opslaan scenario in cloud:", e);
             alert("Er is iets misgegaan bij het opslaan.");

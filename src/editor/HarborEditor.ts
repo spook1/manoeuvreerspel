@@ -89,21 +89,12 @@ export class HarborEditor {
         const npcTypeSel = document.getElementById('heNpcType') as HTMLSelectElement | null;
         if (npcTypeSel) npcTypeSel.onchange = () => { this.npcType = npcTypeSel.value as any; };
 
-        // Local Save (Download)
-        const saveBtn = document.getElementById('saveHarborBtn');
-        if (saveBtn) saveBtn.addEventListener('click', () => this.saveHarborLocal());
 
         // Cloud Save
         const saveCloudBtn = document.getElementById('saveCloudBtn');
         if (saveCloudBtn) saveCloudBtn.addEventListener('click', () => this.promptCloudSave());
 
-        // Cloud Load
-        const loadCloudBtn = document.getElementById('loadCloudBtn');
-        if (loadCloudBtn) loadCloudBtn.addEventListener('click', () => this.promptCloudLoad());
 
-        // Cloud Confirm Save
-        const confirmSaveBtn = document.getElementById('cloudConfirmSaveBtn');
-        if (confirmSaveBtn) confirmSaveBtn.addEventListener('click', () => this.executeCloudSave());
 
         const exitBtn = document.getElementById('exitEditorBtn');
         if (exitBtn) exitBtn.addEventListener('click', () => this.stop());
@@ -1008,27 +999,17 @@ export class HarborEditor {
 
     // --- CLOUD FUNCTIONALITY ---
 
-    promptCloudSave() {
+    async promptCloudSave() {
         if (!ApiClient.isLoggedIn) {
             alert('Je moet ingelogd zijn om op te slaan in de cloud.');
             return;
         }
-        const modal = document.getElementById('cloudModal');
-        const saveContent = document.getElementById('cloudSaveContent');
-        const loadContent = document.getElementById('cloudLoadContent');
-        const nameInput = document.getElementById('cloudHarborName') as HTMLInputElement;
 
-        if (modal && saveContent && loadContent) {
-            modal.style.display = 'flex';
-            saveContent.style.display = 'flex';
-            loadContent.style.display = 'none';
-            nameInput.value = gameState.harbor.name || '';
-        }
-    }
+        const currentName = gameState.harbor.name || 'Nieuwe Haven';
+        const rawInput = window.prompt("Geef een naam voor je haven in de cloud:", currentName);
+        if (rawInput === null) return; // User cancelled
 
-    async executeCloudSave() {
-        const nameInput = document.getElementById('cloudHarborName') as HTMLInputElement;
-        const name = nameInput.value.trim() || 'Naamloze Haven';
+        const name = rawInput.trim() || 'Naamloze Haven';
 
         try {
             // Check for existing harbors with same name
@@ -1048,18 +1029,23 @@ export class HarborEditor {
             };
 
             if (existingMatch) {
-                if (confirm(`Je hebt al een haven met de naam "${name}". Wil je deze overschrijven?`)) {
+                if (window.confirm(`Je hebt al een haven met de naam "${name}". Wil je deze overschrijven?`)) {
                     await ApiClient.updateHarbor(existingMatch.id, harborData, false);
+                    gameState.harbor.id = `custom_${existingMatch.id}`;
                 } else {
                     return; // abort
                 }
             } else {
-                await ApiClient.saveHarbor(harborData, false);
+                const res = await ApiClient.saveHarbor(harborData, false);
+                gameState.harbor.id = `custom_${res.id}`;
             }
 
             alert('Haven succesvol opgeslagen! ✅');
-            document.getElementById('cloudModal')!.style.display = 'none';
             gameState.harbor.name = name;
+
+            // Update input label
+            const nameInput = document.getElementById('harborNameInput') as HTMLInputElement | null;
+            if (nameInput) nameInput.value = name;
 
             if (typeof (window as any).refreshHarbors === 'function') {
                 (window as any).refreshHarbors();
@@ -1070,140 +1056,7 @@ export class HarborEditor {
         }
     }
 
-    async promptCloudLoad() {
-        if (!ApiClient.isLoggedIn) {
-            alert('Je moet ingelogd zijn om te laden uit de cloud.');
-            return;
-        }
-        const modal = document.getElementById('cloudModal');
-        const saveContent = document.getElementById('cloudSaveContent');
-        const loadContent = document.getElementById('cloudLoadContent');
-        const listDiv = document.getElementById('cloudHarborList');
 
-        if (modal && saveContent && loadContent && listDiv) {
-            modal.style.display = 'flex';
-            saveContent.style.display = 'none';
-            loadContent.style.display = 'flex';
-
-            listDiv.innerHTML = '<div style="padding:10px; color:#94a3b8;">Laden...</div>';
-
-            try {
-                const harbors = await ApiClient.getMyHarbors();
-                listDiv.innerHTML = '';
-
-                if (harbors.length === 0) {
-                    listDiv.innerHTML = '<div style="padding:10px; color:#94a3b8;">Geen havens gevonden.</div>';
-                    return;
-                }
-
-                harbors.forEach((h: any) => {
-                    const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#1e293b; padding:8px; margin-bottom:4px; border-radius:4px; border:1px solid #334155;';
-
-                    const nameSpan = document.createElement('span');
-                    // Check structure of response: h.json_data.name ?
-                    const hName = h.json_data?.name || `Haven #${h.id}`;
-                    nameSpan.textContent = hName;
-                    nameSpan.style.fontWeight = 'bold';
-
-                    const actionDiv = document.createElement('div');
-                    actionDiv.style.display = 'flex';
-                    actionDiv.style.gap = '6px';
-
-                    const loadBtn = document.createElement('button');
-                    loadBtn.textContent = 'Laden';
-                    loadBtn.style.cssText = 'background:#3b82f6; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;';
-                    loadBtn.onclick = () => {
-                        this.loadHarbor(h.json_data);
-                        document.getElementById('cloudModal')!.style.display = 'none';
-                    };
-
-                    const delBtn = document.createElement('button');
-                    delBtn.textContent = '❌';
-                    delBtn.style.cssText = 'background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;';
-                    delBtn.onclick = async () => {
-                        if (confirm('Zeker weten verwijderen?')) {
-                            await ApiClient.deleteHarbor(h.id);
-                            this.promptCloudLoad(); // Refresh local list
-                            if (typeof (window as any).refreshHarbors === 'function') {
-                                (window as any).refreshHarbors(); // Update dropdowns
-                            }
-                        }
-                    };
-
-                    actionDiv.appendChild(loadBtn);
-                    actionDiv.appendChild(delBtn);
-                    row.appendChild(nameSpan);
-                    row.appendChild(actionDiv);
-                    listDiv.appendChild(row);
-                });
-
-            } catch (e: any) {
-                listDiv.innerHTML = `<div style="color:red; paading:10px;">Fout bij laden lijst: ${e.message || e}</div>`;
-            }
-        }
-    }
-
-    saveHarborLocal() {
-        // Haven-editor slaat ALLEEN haven-structuur op
-        const data = {
-            id: gameState.harbor.id || `custom_${Date.now()}`,
-            name: gameState.harbor.name || "Custom Harbor",
-            version: "1.0",
-            boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
-            jetties: gameState.harbor.jetties || [],
-            piles: gameState.harbor.piles || [],
-            shores: gameState.harbor.shores || [],
-            npcs: gameState.harbor.npcs || []
-        };
-
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-
-        let safeName = (gameState.harbor.name || 'custom_harbor').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        a.download = `${safeName}.hbr`;
-
-        a.click();
-        URL.revokeObjectURL(url);
-
-        // OOK Lokaal opslaan in localStorage voor de Editor Dropdowns!
-        try {
-            const saved = localStorage.getItem('customHarbors');
-            const hList = saved ? JSON.parse(saved) : [];
-            const idx = hList.findIndex((h: any) => h.id === data.id);
-            if (idx !== -1) {
-                hList[idx] = data;
-            } else {
-                hList.push(data);
-            }
-            localStorage.setItem('customHarbors', JSON.stringify(hList));
-            if (typeof (window as any).refreshHarbors === 'function') {
-                (window as any).refreshHarbors();
-            }
-            alert('Haven tijdelijk opgeslagen in je browser (dropdowns) en gedownload (.hbr)! ✅');
-        } catch (e) {
-            console.error("Localstorage niet beschikbaar: ", e);
-        }
-    }
-
-    loadHarbor(data: any) {
-        if (!data || !data.jetties || !data.piles) {
-            alert("Ongeldig haven bestand!");
-            return;
-        }
-        gameState.harbor.id = data.id || `custom_${Date.now()}`;
-        gameState.harbor.name = data.name || "Custom";
-        gameState.harbor.jetties = data.jetties || [];
-        gameState.harbor.piles = data.piles || [];
-        gameState.harbor.shores = data.shores || [];
-        gameState.harbor.npcs = data.npcs || [];
-        if (data.boatStart) gameState.harbor.boatStart = data.boatStart;
-        // Ignore scenario-data (wind/mooringSpots/coins) — die horen in ScenarioEditor
-        this.selectedObjects = [];
-    }
 
 
     updateProperties() {

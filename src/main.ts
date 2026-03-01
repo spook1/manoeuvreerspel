@@ -5,7 +5,9 @@ import { Boat } from './sim/Boat';
 import { Render } from './ui/Render';
 import { GameManager } from './core/GameManager';
 import { tutorial } from './core/Tutorial';
+import { UserBar } from './ui/UserBar';
 
+const userBar = new UserBar();
 const render = new Render('simCanvas');
 render.setGameState(gameState);
 const gameManager = new GameManager();
