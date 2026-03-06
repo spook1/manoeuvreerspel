@@ -1,5 +1,5 @@
 import { BoatState, Line, Particle, BrokenLineParticle, Coin } from '../types';
-import { HarborData, ScenarioData, DEFAULT_HARBORS } from '../data/harbors';
+import { HarborData, ScenarioData, EMPTY_HARBOR_TEMPLATE } from '../data/harbors';
 
 export class GameState {
     boat: BoatState;
@@ -50,7 +50,7 @@ export class GameState {
             rudder: 0,
             propDirection: 'rechts'
         };
-        this.harbor = DEFAULT_HARBORS[0];
+        this.harbor = JSON.parse(JSON.stringify(EMPTY_HARBOR_TEMPLATE));
     }
 
     // ---- GETTERS die gebruik maken van scenario of haven als fallback ----
