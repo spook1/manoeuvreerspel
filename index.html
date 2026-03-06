@@ -1027,6 +1027,38 @@
                 <div style="font-style:italic; opacity:0.7;">Selecteer een tool...</div>
             </div>
 
+            <!-- Alignment toolbar for multi-select -->
+            <div id="alignmentToolbar"
+                style="display:none; flex-direction:column; gap:4px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;">
+                <label style="font-size:11px; color:#94a3b8;">Uitlijnen / Verdelen:</label>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:4px;">
+                    <button id="alignLeftBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Lijn Links Uit">⇦ L</button>
+                    <button id="alignCenterHBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Horizontaal Midden">⚖️ H</button>
+                    <button id="alignRightBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Lijn Rechts Uit">⇨ R</button>
+                    <button id="alignTopBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Lijn Boven Uit">⇧ T</button>
+                    <button id="alignCenterVBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Verticaal Midden">⚖️ V</button>
+                    <button id="alignBottomBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer;"
+                        title="Lijn Onder Uit">⇩ B</button>
+                    <button id="distributeHBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer; grid-column:span 3;"
+                        title="Gelijkmatig Horizontaal">📏 Verdeel H</button>
+                    <button id="distributeVBtn"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; cursor:pointer; grid-column:span 3;"
+                        title="Gelijkmatig Verticaal">📏 Verdeel V</button>
+                </div>
+            </div>
+
             <!-- Grid snapping row -->
             <div
                 style="display:flex; align-items:center; gap:8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">

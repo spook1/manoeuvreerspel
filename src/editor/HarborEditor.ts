@@ -21,6 +21,7 @@ export class HarborEditor {
 
     // Interaction State
     isDragging: boolean = false;
+    isMarqueeSelecting: boolean = false;
     dragStart: { x: number, y: number } | null = null;
     mousePos: { x: number, y: number } = { x: 0, y: 0 };
 
@@ -98,6 +99,21 @@ export class HarborEditor {
 
         const exitBtn = document.getElementById('exitEditorBtn');
         if (exitBtn) exitBtn.addEventListener('click', () => this.stop());
+
+        // Alignment Tools
+        const bindAlign = (id: string, action: () => void) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.addEventListener('click', () => { action(); this.updateProperties(); });
+        };
+
+        bindAlign('alignLeftBtn', () => this.alignSelected('left'));
+        bindAlign('alignCenterHBtn', () => this.alignSelected('centerH'));
+        bindAlign('alignRightBtn', () => this.alignSelected('right'));
+        bindAlign('alignTopBtn', () => this.alignSelected('top'));
+        bindAlign('alignCenterVBtn', () => this.alignSelected('centerV'));
+        bindAlign('alignBottomBtn', () => this.alignSelected('bottom'));
+        bindAlign('distributeHBtn', () => this.distributeSelected('horizontal'));
+        bindAlign('distributeVBtn', () => this.distributeSelected('vertical'));
     }
 
     setupKeyboard() {
@@ -606,6 +622,17 @@ export class HarborEditor {
 
             ctx.setLineDash([]);
         }
+
+        // Draw Marquee Selection Box
+        if (this.activeTool === 'select' && this.isMarqueeSelecting && this.dragStart) {
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 1;
+            const mw = this.mousePos.x - this.dragStart.x;
+            const mh = this.mousePos.y - this.dragStart.y;
+            ctx.fillRect(this.dragStart.x, this.dragStart.y, mw, mh);
+            ctx.strokeRect(this.dragStart.x, this.dragStart.y, mw, mh);
+        }
     }
 
     /** Snap a value to the current grid */
@@ -670,6 +697,8 @@ export class HarborEditor {
             } else {
                 if (!e.shiftKey && !e.ctrlKey) this.selectedObjects = [];
                 this.updateProperties();
+                this.isDragging = true;
+                this.isMarqueeSelecting = true;
             }
         }
         else if (this.activeTool === 'pile') {
@@ -748,7 +777,10 @@ export class HarborEditor {
         }
 
         if (this.isDragging && this.dragStart) {
-            if (this.activeTool === 'select') {
+            if (this.isMarqueeSelecting) {
+                // Visual update of rect happens in draw()
+            }
+            else if (this.activeTool === 'select') {
                 this.selectedObjects.forEach((obj, i) => {
                     const offset = this.dragOffsets[i];
                     obj.x = this.snap(this.mousePos.x - offset.dx);
@@ -781,7 +813,7 @@ export class HarborEditor {
         }
     };
 
-    private handleMouseUp = () => {
+    private handleMouseUp = (e?: MouseEvent) => {
         if (!this.dragStart) return;
 
         // Finish Resize
@@ -792,7 +824,39 @@ export class HarborEditor {
             this.resizeStartGeometry = null;
         }
 
-        if (this.isDragging && this.activeTool === 'select' && this.selectedObjects.length > 0 && !this.resizeHandle) {
+        if (this.isDragging && this.activeTool === 'select' && this.isMarqueeSelecting && this.dragStart) {
+            const rx = Math.min(this.dragStart.x, this.mousePos.x);
+            const ry = Math.min(this.dragStart.y, this.mousePos.y);
+            const rw = Math.max(this.dragStart.x, this.mousePos.x) - rx;
+            const rh = Math.max(this.dragStart.y, this.mousePos.y) - ry;
+
+            const getObjsInRect = () => {
+                const hits: any[] = [];
+                const inP = (ox: number, oy: number) => ox >= rx && ox <= rx + rw && oy >= ry && oy <= ry + rh;
+
+                gameState.harbor.jetties.forEach(j => { if (inP(j.x + j.w / 2, j.y + j.h / 2)) hits.push(j); });
+                gameState.harbor.piles.forEach(p => { if (inP(p.x, p.y)) hits.push(p); });
+                if (gameState.harbor.coins) gameState.harbor.coins.forEach(c => { if (inP(c.x, c.y)) hits.push(c); });
+                if (gameState.harbor.mooringSpots) gameState.harbor.mooringSpots.forEach(s => { if (inP(s.x + s.width / 2, s.y + (s.height ?? 40) / 2)) hits.push(s); });
+                if (gameState.harbor.shores) gameState.harbor.shores.forEach(s => { if (inP(s.x + s.w / 2, s.y + s.h / 2)) hits.push(s); });
+                if (gameState.harbor.npcs) gameState.harbor.npcs.forEach(n => { if (inP(n.x, n.y)) hits.push(n); });
+                return hits;
+            };
+
+            const rectHits = getObjsInRect();
+            const isAdd = e?.shiftKey || e?.ctrlKey;
+
+            if (isAdd) {
+                rectHits.forEach(h => {
+                    if (!this.selectedObjects.includes(h)) this.selectedObjects.push(h);
+                });
+            } else {
+                this.selectedObjects = rectHits;
+            }
+            this.updateProperties();
+            this.isMarqueeSelecting = false;
+        }
+        else if (this.isDragging && this.activeTool === 'select' && this.selectedObjects.length > 0 && !this.resizeHandle) {
             // Check if moved
             const currentStates = this.selectedObjects.map(o => ({ x: o.x, y: o.y, angle: o.angle }));
             const hasMoved = currentStates.some((s, i) => s.x !== this.dragStartStates[i]?.x || s.y !== this.dragStartStates[i]?.y);
@@ -858,6 +922,7 @@ export class HarborEditor {
         }
 
         this.isDragging = false;
+        this.isMarqueeSelecting = false;
         this.dragStart = null;
     };
 
@@ -1096,6 +1161,9 @@ export class HarborEditor {
     updateProperties() {
         if (!this.propertiesPanel) return;
 
+        const alignToolbar = document.getElementById('alignmentToolbar');
+        if (alignToolbar) alignToolbar.style.display = 'none';
+
         if (this.selectedObjects.length === 0) {
             this.propertiesPanel.innerHTML = '<div style="color:#94a3b8; font-style:italic;">Geen selectie</div>';
             return;
@@ -1103,6 +1171,7 @@ export class HarborEditor {
 
         if (this.selectedObjects.length > 1) {
             this.propertiesPanel.innerHTML = `<div style="color:#fff;">${this.selectedObjects.length} objecten geselecteerd</div>`;
+            if (alignToolbar) alignToolbar.style.display = 'flex';
             return;
         }
 
@@ -1180,6 +1249,74 @@ export class HarborEditor {
             // Pile / Cleat
             createInput('Hoek', obj.angle || 0, 'number', (v) => { obj.angle = parseFloat(v) || 0; });
         }
+    }
+
+    alignSelected(axis: 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom') {
+        if (this.selectedObjects.length < 2) return;
+
+        const prevForUndo = this.selectedObjects.map(o => ({ x: o.x, y: o.y }));
+        let targetVal = 0;
+
+        if (axis === 'left') {
+            targetVal = Math.min(...this.selectedObjects.map(o => o.x));
+            this.selectedObjects.forEach(o => o.x = targetVal);
+        } else if (axis === 'right') {
+            targetVal = Math.max(...this.selectedObjects.map(o => o.x + (o.w || o.width || 0)));
+            this.selectedObjects.forEach(o => o.x = targetVal - (o.w || o.width || 0));
+        } else if (axis === 'centerH') {
+            const minX = Math.min(...this.selectedObjects.map(o => o.x));
+            const maxX = Math.max(...this.selectedObjects.map(o => o.x + (o.w || o.width || 0)));
+            targetVal = (minX + maxX) / 2;
+            this.selectedObjects.forEach(o => o.x = targetVal - (o.w || o.width || 0) / 2);
+        } else if (axis === 'top') {
+            targetVal = Math.min(...this.selectedObjects.map(o => o.y));
+            this.selectedObjects.forEach(o => o.y = targetVal);
+        } else if (axis === 'bottom') {
+            targetVal = Math.max(...this.selectedObjects.map(o => o.y + (o.h || o.height || (o.points ? 40 : 0) || 0)));
+            this.selectedObjects.forEach(o => o.y = targetVal - (o.h || o.height || (o.points ? 40 : 0) || 0));
+        } else if (axis === 'centerV') {
+            const minY = Math.min(...this.selectedObjects.map(o => o.y));
+            const maxY = Math.max(...this.selectedObjects.map(o => o.y + (o.h || o.height || (o.points ? 40 : 0) || 0)));
+            targetVal = (minY + maxY) / 2;
+            this.selectedObjects.forEach(o => o.y = targetVal - (o.h || o.height || (o.points ? 40 : 0) || 0) / 2);
+        }
+
+        const newForUndo = this.selectedObjects.map(o => ({ x: o.x, y: o.y }));
+        this.pushAction({
+            type: 'move',
+            objects: this.selectedObjects,
+            prevState: prevForUndo,
+            newState: newForUndo
+        });
+    }
+
+    distributeSelected(axis: 'horizontal' | 'vertical') {
+        if (this.selectedObjects.length < 3) return;
+
+        const prevForUndo = this.selectedObjects.map(o => ({ x: o.x, y: o.y }));
+
+        // Sort objects by their position along the axis
+        const sorted = [...this.selectedObjects].sort((a, b) => axis === 'horizontal' ? a.x - b.x : a.y - b.y);
+
+        if (axis === 'horizontal') {
+            const first = sorted[0].x;
+            const last = sorted[sorted.length - 1].x;
+            const step = (last - first) / (sorted.length - 1);
+            sorted.forEach((o, i) => o.x = first + (step * i));
+        } else {
+            const first = sorted[0].y;
+            const last = sorted[sorted.length - 1].y;
+            const step = (last - first) / (sorted.length - 1);
+            sorted.forEach((o, i) => o.y = first + (step * i));
+        }
+
+        const newForUndo = this.selectedObjects.map(o => ({ x: o.x, y: o.y }));
+        this.pushAction({
+            type: 'move',
+            objects: this.selectedObjects,
+            prevState: prevForUndo,
+            newState: newForUndo
+        });
     }
 
     // ── RENDERING: SHORES ───────────────────────────────────────────────────
