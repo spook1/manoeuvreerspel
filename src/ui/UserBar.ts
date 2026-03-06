@@ -30,6 +30,7 @@ export class UserBar {
         if (ApiClient.isLoggedIn) {
             try {
                 this.user = await ApiClient.getUser();
+                (window as any)._currentUser = this.user;
                 this.renderLoggedIn();
             } catch (e) {
                 console.error("Session expired", e);

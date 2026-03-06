@@ -85,6 +85,11 @@ export class ApiClient {
 
     // --- Harbor Management ---
 
+    /** Ophalen van officiële (standaard) havens — geen login vereist */
+    static async getOfficialHarbors(): Promise<any[]> {
+        return this.request('/harbors/official');
+    }
+
     static async getMyHarbors(): Promise<any[]> {
         return this.request('/harbors');
     }
@@ -96,11 +101,13 @@ export class ApiClient {
         });
     }
 
-    static async updateHarbor(id: number, harborData: HarborData, isPublic: boolean = false): Promise<any> {
-        return this.request(`/harbors/${id}`, 'PUT', {
+    static async updateHarbor(id: number, harborData: HarborData, isOfficial?: boolean): Promise<any> {
+        const body: any = {
             json_data: harborData,
-            is_public: isPublic
-        });
+            is_public: isOfficial ?? false,
+        };
+        if (isOfficial !== undefined) body.is_official = isOfficial;
+        return this.request(`/harbors/${id}`, 'PUT', body);
     }
 
     static async deleteHarbor(id: number): Promise<void> {

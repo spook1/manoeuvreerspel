@@ -13,10 +13,24 @@ class HarborController extends Controller
      */
     public function index()
     {
-        // Haal havens op van de ingelogde gebruiker
-        // Optioneel: Ook publieke havens of officiële havens?
-        // Voor nu: Alleen eigen havens.
-        $harbors = Harbor::where('user_id', Auth::id())
+        // Eigen havens + alle officiële havens
+        $userId = Auth::id();
+        $harbors = Harbor::where('user_id', $userId)
+                        ->orWhere('is_official', true)
+                        ->orderBy('is_official', 'desc')
+                        ->orderBy('updated_at', 'desc')
+                        ->get();
+
+        return response()->json($harbors);
+    }
+
+    /**
+     * Get all official harbors (public, no auth required).
+     */
+    public function official()
+    {
+        $harbors = Harbor::where('is_official', true)
+                        ->with('user:id,name')
                         ->orderBy('updated_at', 'desc')
                         ->get();
 
@@ -63,20 +77,34 @@ class HarborController extends Controller
     public function update(Request $request, string $id)
     {
         $harbor = Harbor::findOrFail($id);
+        $user = Auth::user();
 
-        if ($harbor->user_id !== Auth::id()) {
+        // Admin mag alle havens bewerken (inclusief official)
+        if ($harbor->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $validated = $request->validate([
             'json_data' => 'required|array',
             'is_public' => 'boolean',
+            'is_official' => 'boolean',
         ]);
 
-        $harbor->update([
+        $updateData = [
             'json_data' => $validated['json_data'],
             'is_public' => $validated['is_public'] ?? $harbor->is_public,
-        ]);
+        ];
+
+        // Alleen admin mag is_official wijzigen
+        if ($user->role === 'admin' && isset($validated['is_official'])) {
+            $updateData['is_official'] = $validated['is_official'];
+            // Officiële havens zijn altijd public
+            if ($validated['is_official']) {
+                $updateData['is_public'] = true;
+            }
+        }
+
+        $harbor->update($updateData);
 
         return response()->json($harbor);
     }

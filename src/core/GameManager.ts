@@ -4,6 +4,8 @@ import { tutorial } from './Tutorial';
 import { editor } from '../editor/HarborEditor';
 import {
     DEFAULT_HARBORS, DEFAULT_SCENARIOS,
+    EMPTY_HARBOR_TEMPLATE, officialHarbors,
+    setOfficialHarbors,
     getHarborById, getScenarioById,
     ScenarioData, HarborData
 } from '../data/harbors';
@@ -22,8 +24,30 @@ export class GameManager {
 
     constructor() {
         this.setupModeButtons();
+        this.fetchOfficialHarbors();
         this.fetchCloudScenarios();
         this.fetchCloudGames();
+    }
+
+    /** Laad officiële havens — publiek endpoint, ook zonder login */
+    public async fetchOfficialHarbors() {
+        try {
+            const harbors = await ApiClient.getOfficialHarbors();
+            const mapped: HarborData[] = harbors.map((h: any) => {
+                if (h.json_data) {
+                    const data = { ...h.json_data };
+                    data.id = `official_${h.id}`;
+                    (data as any).db_id = h.id;
+                    (data as any).is_official = true;
+                    return data;
+                }
+                return null;
+            }).filter(Boolean);
+            setOfficialHarbors(mapped);
+            this.populateHarborSelector();
+        } catch (e) {
+            console.warn('Kon officiële havens niet laden:', e);
+        }
     }
     public async fetchCloudScenarios() {
         if (!ApiClient.isLoggedIn) return;
@@ -483,10 +507,8 @@ export class GameManager {
         if (heSelector) {
             heSelector.addEventListener('change', () => {
                 if (heSelector.value === 'nieuw') {
-                    gameState.harbor = {
-                        id: `h_new_${Date.now()}`, name: 'Nieuwe Haven', version: '1.0',
-                        jetties: [], piles: [], boatStart: { x: 200, y: 500, heading: 0 }
-                    };
+                    gameState.harbor = JSON.parse(JSON.stringify(EMPTY_HARBOR_TEMPLATE));
+                    gameState.harbor.id = `h_new_${Date.now()}`;
                 } else {
                     const harbor = getHarborById(heSelector.value) || this.customHarbors.find(h => h.id === heSelector.value);
                     if (harbor) this.loadHarborState(harbor);
@@ -589,22 +611,25 @@ export class GameManager {
         const heCustomGroup = document.getElementById('heCustomHarborGroup');
         const seHarborSelector = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
 
-        const stdHtml = DEFAULT_HARBORS.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
-        if (defaultGroup) defaultGroup.innerHTML = stdHtml;
-        if (heDefaultGroup) heDefaultGroup.innerHTML = stdHtml;
+        // Officiële havens uit cloud (beschikbaar voor iedereen)
+        const officialHtml = officialHarbors.map(h => `<option value="${h.id}">⭐ ${h.name}</option>`).join('');
+        if (defaultGroup) defaultGroup.innerHTML = officialHtml;
+        if (heDefaultGroup) heDefaultGroup.innerHTML = officialHtml;
 
         let cloudHarborsList: any[] = [];
         if (ApiClient.isLoggedIn) {
             try {
                 const cloudHarbors = await ApiClient.getMyHarbors();
-                cloudHarborsList = cloudHarbors.map((h: any) => {
-                    if (h.json_data) {
-                        (h.json_data as any).db_id = h.id;
-                        h.json_data.id = `custom_${h.id}`;
-                        return h.json_data;
-                    }
-                    return null;
-                }).filter(Boolean);
+                cloudHarborsList = cloudHarbors
+                    .filter((h: any) => !h.is_official) // Officiële havens staan al in de 'Standaard' groep
+                    .map((h: any) => {
+                        if (h.json_data) {
+                            (h.json_data as any).db_id = h.id;
+                            h.json_data.id = `custom_${h.id}`;
+                            return h.json_data;
+                        }
+                        return null;
+                    }).filter(Boolean);
             } catch (e) {
                 console.error('Kon cloud havens niet laden:', e);
             }
@@ -623,12 +648,15 @@ export class GameManager {
 
         if (seHarborSelector) {
             seHarborSelector.innerHTML = `
+                <optgroup label="⭐ Standaard Havens">${officialHtml}</optgroup>
                 <optgroup label="Mijn Cloud Havens">${customHtml}</optgroup>
             `;
             if (gameState.harbor && gameState.gameMode === 'scenario-edit') {
                 seHarborSelector.value = gameState.harbor.id;
             }
-            if (!seHarborSelector.value && this.customHarbors.length > 0) {
+            if (!seHarborSelector.value && officialHarbors.length > 0) {
+                seHarborSelector.value = officialHarbors[0].id;
+            } else if (!seHarborSelector.value && this.customHarbors.length > 0) {
                 seHarborSelector.value = this.customHarbors[0].id;
             }
         }

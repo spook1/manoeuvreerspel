@@ -114,6 +114,53 @@ export class HarborEditor {
         bindAlign('alignBottomBtn', () => this.alignSelected('bottom'));
         bindAlign('distributeHBtn', () => this.distributeSelected('horizontal'));
         bindAlign('distributeVBtn', () => this.distributeSelected('vertical'));
+
+        // Admin: Toggle Official
+        const toggleOfficialBtn = document.getElementById('toggleOfficialBtn');
+        if (toggleOfficialBtn) {
+            toggleOfficialBtn.addEventListener('click', () => this.toggleOfficial());
+        }
+    }
+
+    /** Toon/verberg admin-only features */
+    private updateAdminUI() {
+        const adminRow = document.getElementById('adminOfficialRow');
+        const user = (window as any)._currentUser;
+        const isAdmin = user?.role === 'admin';
+
+        if (adminRow) adminRow.style.display = isAdmin ? 'flex' : 'none';
+
+        // Update button label
+        const btn = document.getElementById('toggleOfficialBtn');
+        if (btn && isAdmin) {
+            const isOfficial = (gameState.harbor as any).is_official === true;
+            btn.textContent = isOfficial ? '⭐ Standaard (actief)' : '☆ Markeer als Standaard';
+            btn.style.background = isOfficial ? '#16a34a' : '#a855f7';
+        }
+    }
+
+    /** Admin: markeer de huidige haven als officieel/standaard */
+    private async toggleOfficial() {
+        const dbId = (gameState.harbor as any).db_id;
+        if (!dbId) {
+            this.showEditorStatus('⚠️ Sla eerst op via "Cloud Opslaan" voordat je de haven als standaard markeert.', 'warn');
+            return;
+        }
+
+        const isCurrentlyOfficial = (gameState.harbor as any).is_official === true;
+        const newValue = !isCurrentlyOfficial;
+
+        try {
+            await ApiClient.updateHarbor(dbId, gameState.harbor as any, newValue);
+            (gameState.harbor as any).is_official = newValue;
+            this.showEditorStatus(newValue ? '⭐ Haven is nu een standaard haven!' : '☆ Haven is geen standaard meer.', 'ok');
+            this.updateAdminUI();
+            if (typeof (window as any).refreshHarbors === 'function') {
+                await (window as any).refreshHarbors();
+            }
+        } catch (e: any) {
+            this.showEditorStatus('❌ Fout: ' + (e.message || 'Kon status niet wijzigen'), 'error');
+        }
     }
 
     setupKeyboard() {
@@ -196,6 +243,7 @@ export class HarborEditor {
         }
 
         this.bindEvents();
+        this.updateAdminUI();
     }
 
     stop() {
@@ -1127,14 +1175,18 @@ export class HarborEditor {
 
             if (existingMatch) {
                 if (window.confirm(`Je hebt al een haven met de naam "${name}". Wil je deze overschrijven?`)) {
-                    await ApiClient.updateHarbor(existingMatch.id, harborData, false);
-                    gameState.harbor.id = `custom_${existingMatch.id}`;
+                    const wasOfficial = existingMatch.json_data?.is_official || existingMatch.is_official;
+                    await ApiClient.updateHarbor(existingMatch.id, harborData, wasOfficial ? true : undefined);
+                    gameState.harbor.id = wasOfficial ? `official_${existingMatch.id}` : `custom_${existingMatch.id}`;
+                    (gameState.harbor as any).db_id = existingMatch.id;
+                    (gameState.harbor as any).is_official = !!wasOfficial;
                 } else {
                     return; // abort
                 }
             } else {
                 const res = await ApiClient.saveHarbor(harborData, false);
                 gameState.harbor.id = `custom_${res.id}`;
+                (gameState.harbor as any).db_id = res.id;
             }
 
             this.showEditorStatus('✅ Haven opgeslagen!', 'ok');
@@ -1153,6 +1205,7 @@ export class HarborEditor {
             if (heSelector && gameState.harbor.id) {
                 heSelector.value = gameState.harbor.id;
             }
+            this.updateAdminUI();
         } catch (e: any) {
             console.error(e);
             this.showEditorStatus('❌ Fout: ' + (e.message || 'Verbindingsfout'), 'error');

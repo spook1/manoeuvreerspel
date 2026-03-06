@@ -10,6 +10,9 @@ use App\Http\Controllers\GameController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public: officiële havens zijn voor iedereen beschikbaar
+Route::get('/harbors/official', [HarborController::class, 'official']);
+
 // Protected routes (Alleen ingelogde users met token)
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

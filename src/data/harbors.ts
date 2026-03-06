@@ -147,82 +147,43 @@ export interface ScenarioData {
     objectPenalties?: Record<string, PenaltySettings>; // Penalties mapped by harbor object ID
 }
 
-export const DEFAULT_HARBORS: HarborData[] = [
-    {
-        id: 'h1',
-        name: 'Standaard Haven 1',
-        version: '1.0',
-        boatStart: { x: 200, y: 500, heading: 0 },
-        wind: { direction: 0, force: 0 },
-        jetties: [],
-        piles: []
-    },
-    {
-        id: 'h2',
-        name: 'Standaard Haven 2',
-        version: '1.0',
-        boatStart: { x: 200, y: 500, heading: 0 },
-        wind: { direction: 0, force: 0 },
-        jetties: [],
-        piles: []
-    },
-    {
-        id: 'h3',
-        name: 'Standaard Haven 3',
-        version: '1.0',
-        boatStart: { x: 200, y: 500, heading: 0 },
-        wind: { direction: 0, force: 0 },
-        jetties: [],
-        piles: []
-    },
-    {
-        id: 'h4',
-        name: 'Standaard Haven 4',
-        version: '1.0',
-        boatStart: { x: 200, y: 500, heading: 0 },
-        wind: { direction: 0, force: 0 },
-        jetties: [],
-        piles: []
-    }
-];
+// ============================================================
+// LEGE TEMPLATE — startpunt voor nieuwe haven
+// ============================================================
+export const EMPTY_HARBOR_TEMPLATE: HarborData = {
+    id: 'new_template',
+    name: 'Nieuwe Haven',
+    version: '1.0',
+    boatStart: { x: 200, y: 500, heading: 0 },
+    wind: { direction: 0, force: 0 },
+    jetties: [],
+    piles: []
+};
+
+/** Officiële (standaard) havens — dynamisch geladen via API */
+export let officialHarbors: HarborData[] = [];
+export let officialScenarios: ScenarioData[] = [];
+export let officialGames: GameData[] = [];
+export function setOfficialHarbors(harbors: HarborData[]) { officialHarbors = harbors; }
+export function setOfficialScenarios(scenarios: ScenarioData[]) { officialScenarios = scenarios; }
+export function setOfficialGames(games: GameData[]) { officialGames = games; }
+
+// Backwards compat: lege array (niet meer hardcoded, wordt dynamisch gevuld)
+export const DEFAULT_HARBORS: HarborData[] = [];
+export const DEFAULT_SCENARIOS: ScenarioData[] = [];
+export const DEFAULT_GAMES: GameData[] = [];
 
 // ============================================================
-// DEFAULT SCENARIOS
-// ============================================================
-export const DEFAULT_SCENARIOS: ScenarioData[] = [
-    {
-        id: 's1', name: 'Standaard Scenario 1', harborId: 'h1',
-        wind: { direction: 0, force: 0 },
-        mooringSpots: [], coins: []
-    },
-    {
-        id: 's2', name: 'Standaard Scenario 2', harborId: 'h2',
-        wind: { direction: 0, force: 0 },
-        mooringSpots: [], coins: []
-    },
-    {
-        id: 's3', name: 'Standaard Scenario 3', harborId: 'h3',
-        wind: { direction: 0, force: 0 },
-        mooringSpots: [], coins: []
-    },
-    {
-        id: 's4', name: 'Standaard Scenario 4', harborId: 'h4',
-        wind: { direction: 0, force: 0 },
-        mooringSpots: [], coins: []
-    }
-];
-
-// ============================================================
-// HELPER FUNCTIES
+// HELPER FUNCTIES — zoeken in officialHarbors (gevuld via API)
 // ============================================================
 export function getHarborById(id: string): HarborData | undefined {
-    return DEFAULT_HARBORS.find(h => h.id === id);
+    return officialHarbors.find(h => h.id === id);
 }
 export function getScenariosForHarbor(harborId: string): ScenarioData[] {
-    return DEFAULT_SCENARIOS.filter(s => s.harborId === harborId);
+    return officialScenarios.filter(s => s.harborId === harborId);
 }
 export function getScenarioById(id: string): ScenarioData | undefined {
-    return DEFAULT_SCENARIOS.find(s => s.id === id);
+    return officialScenarios.find(s => s.id === id);
 }
 /** Oefenmodus: gebruik haven-eigen wind/spots als "scenario" */
 export function harborToLegacyScenario(harbor: HarborData): ScenarioData {
@@ -236,31 +197,3 @@ export function harborToLegacyScenario(harbor: HarborData): ScenarioData {
     };
 }
 
-// ============================================================
-// DEFAULT GAMES — klaar om te spelen, ook voor anonieme spelers
-// ============================================================
-export const DEFAULT_GAMES: GameData[] = [
-    {
-        id: 'game1',
-        name: 'Leer Aanleggen',
-        description: 'De basis van veilig aanleggen. Drie havens, oplopende wind.',
-        isPublished: true,
-        scenarios: [
-            {
-                scenarioId: 's1',
-                introText: 'Welkom! Dit is haven 1.\n\nLeg de boot aan op de groene vlakken in de juiste volgorde. Een spot gloeit als hij aan de beurt is.\n\nSnel en netjes aanleggen geeft meer punten!',
-                unlockAfterPrevious: false
-            },
-            {
-                scenarioId: 's2',
-                introText: 'Nu waait het harder — 15 knopen wind van voren.\n\nLetop winddruk bij het aanleggen. Compenseer met motor en roer.',
-                unlockAfterPrevious: true
-            },
-            {
-                scenarioId: 's3',
-                introText: 'Zijwind! 20 knopen dwars.\n\nAnder haven, andere opstelling. Gebruik boeglijn als ankerpunt.',
-                unlockAfterPrevious: true
-            }
-        ]
-    }
-];
