@@ -13,6 +13,7 @@ import {
     initScenarioEditor,
     wireScenarioEditorUI
 } from '../editor/ScenarioEditorController';
+import { GameBuilderController } from '../editor/GameBuilderController';
 
 
 export class GameManager {
@@ -22,6 +23,7 @@ export class GameManager {
     constructor() {
         this.setupModeButtons();
         this.fetchCloudScenarios();
+        this.fetchCloudGames();
     }
     public async fetchCloudScenarios() {
         if (!ApiClient.isLoggedIn) return;
@@ -44,6 +46,19 @@ export class GameManager {
             this.populateScenarioSelector();
         } catch (e) {
             console.error('Fout bij ophalen scenarios uit cloud:', e);
+        }
+    }
+
+    public async fetchCloudGames() {
+        if (!ApiClient.isLoggedIn) return;
+        try {
+            const games = await ApiClient.getMyGames();
+            const group = document.getElementById('customGamesGroup');
+            if (group) {
+                group.innerHTML = games.map((g: any) => `<option value="g_${g.id}">${g.name}</option>`).join('');
+            }
+        } catch (e) {
+            console.error('Fout bij ophalen havens/games uit cloud:', e);
         }
     }
 
@@ -374,6 +389,7 @@ export class GameManager {
         (window as any).startScenario = (id: string) => this.startScenario(id);
         (window as any).updateUI = () => this.updateUI();
         (window as any).refreshHarbors = () => this.populateHarborSelector();
+        (window as any).refreshGames = () => this.fetchCloudGames();
         (window as any).startLevel = (n: number) => this.startLevel(n);
 
         // Physics constants binding
@@ -453,10 +469,8 @@ export class GameManager {
                 } else if (val === 'startgame') {
                     this.startGame();
                 } else if (val === 'create') {
-                    // Start game builder here... let's mock it or just alert for now
-                    // this.startGameBuilder();
-                    alert("Game Builder komt eraan!");
                     gameSelector.value = '';
+                    GameBuilderController.show();
                 } else {
                     // Start an actual custom game (to be implemented)
                     alert("Custom game: " + val);
