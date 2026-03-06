@@ -139,6 +139,10 @@
 
         /* GAME MODE */
         body.mode-game #scenarioPickerBar {
+            display: none;
+        }
+
+        body.mode-game #gamePickerBar {
             display: flex;
         }
 
@@ -503,14 +507,31 @@
                         Editor</button>
                 </div>
 
-                <!-- Scenario Picker (Game mode only) -->
-                <div id="scenarioPickerBar" style="align-items:center; gap:6px;">
+                <!-- Scenario Picker (Game mode only, deprecated/hidden in game mode directly) -->
+                <div id="scenarioPickerBar" style="align-items:center; gap:6px; display:none;">
                     <span style="font-size:11px; color:#94a3b8; white-space:nowrap;">Scenario:</span>
                     <select id="scenarioSelector"
                         style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
                         <option value="" disabled selected>Kies scenario...</option>
                         <optgroup label="Standaard" id="scenarioDefaultGroup"></optgroup>
                         <optgroup label="Mijn Cloud Scenario's" id="scenarioCustomGroup"></optgroup>
+                    </select>
+                </div>
+
+                <!-- Game Picker (Game mode only) -->
+                <div id="gamePickerBar" style="align-items:center; gap:6px; display:none;">
+                    <span style="font-size:11px; color:#94a3b8; white-space:nowrap;">Game:</span>
+                    <select id="gameSelector"
+                        style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
+                        <option value="" disabled selected>Kies game...</option>
+                        <optgroup label="Acties">
+                            <option value="create">➕ Nieuwe Game Bouwen...</option>
+                        </optgroup>
+                        <optgroup label="Standaard">
+                            <option value="tutorial">🎓 Tutorial</option>
+                            <option value="startgame">🚀 Startgame (Alle havens)</option>
+                        </optgroup>
+                        <optgroup label="Mijn Games" id="customGamesGroup"></optgroup>
                     </select>
                 </div>
 

@@ -113,18 +113,21 @@ export class GameManager {
         const settings = document.getElementById('settingsPanel');
         if (settings) settings.style.display = 'none';
 
-        // Guard: er moet een haven geselecteerd zijn
-        const effectiveHarborId = harborId ?? gameState.harbor?.id;
-        const isValidHarbor = effectiveHarborId
-            && effectiveHarborId !== ''
-            && effectiveHarborId !== 'nieuw';
+        // Guard: blokkeer als er geen haven geselecteerd is óf als de haven in 'nieuw ontwerp' staat
+        const harborPickerEl = document.getElementById('harborSelector') as HTMLSelectElement | null;
+        const pickerValue = harborPickerEl?.value ?? '';
 
-        if (!isValidHarbor) {
+        if (pickerValue === '' || gameState.harbor.id === 'nieuw' || pickerValue === 'create') {
             const title = document.getElementById('msgModalTitle');
             const text = document.getElementById('msgModalText');
             const msgModal = document.getElementById('messageModal');
-            if (title) title.textContent = '⚠️ Geen haven geselecteerd';
-            if (text) text.textContent = 'Selecteer eerst een haven via de "Haven:" selector of maak een nieuwe haven aan in de Haven Editor.';
+            if (pickerValue === '') {
+                if (title) title.textContent = '⚠️ Geen haven geselecteerd';
+                if (text) text.textContent = 'Kies eerst een haven ("Harbour 1") uit de lijst, of maak er eentje in de Haven Editor.';
+            } else {
+                if (title) title.textContent = '⚠️ Sla je haven eerst op';
+                if (text) text.textContent = 'Sla je nieuwe havenontwerp op via "☁️ Cloud Opslaan" in de Haven Editor voordat je er een scenario voor maakt.';
+            }
             if (msgModal) msgModal.style.display = 'flex';
             return;
         }
@@ -222,7 +225,10 @@ export class GameManager {
         if (scenarioOverlay) scenarioOverlay.style.display = 'none';
 
         const modal = document.getElementById('introModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) modal.style.display = 'none'; // Verberg introModal (nieuw gedrag)
+
+        gameState.gameMode = 'game';
+        this.applyBodyMode('game');
     }
 
     startScenario(scenarioId: string) {
@@ -435,12 +441,26 @@ export class GameManager {
             });
         }
 
-        // ── SCENARIO SELECTOR (gamemodus) ───────────────────────────────────
-        const scenarioSelector = document.getElementById('scenarioSelector') as HTMLSelectElement | null;
-        if (scenarioSelector) {
-            scenarioSelector.addEventListener('change', () => {
-                const val = scenarioSelector.value;
-                if (val) this.startScenario(val);
+        // ── GAME SELECTOR (gamemodus) ───────────────────────────────────
+        const gameSelector = document.getElementById('gameSelector') as HTMLSelectElement | null;
+        if (gameSelector) {
+            gameSelector.addEventListener('change', () => {
+                const val = gameSelector.value;
+                if (!val) return;
+
+                if (val === 'tutorial') {
+                    this.startTutorial();
+                } else if (val === 'startgame') {
+                    this.startGame();
+                } else if (val === 'create') {
+                    // Start game builder here... let's mock it or just alert for now
+                    // this.startGameBuilder();
+                    alert("Game Builder komt eraan!");
+                    gameSelector.value = '';
+                } else {
+                    // Start an actual custom game (to be implemented)
+                    alert("Custom game: " + val);
+                }
             });
         }
 
