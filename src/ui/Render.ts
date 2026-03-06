@@ -299,7 +299,13 @@ export class Render {
         ctx.lineTo(canvasW, Constants.QUAY_Y - 3);
         ctx.stroke();
 
-        // === JETTIES (wood planks, no shadows) ===
+        // === SHORES (drawn first, so they appear beneath jetties) ===
+        this.drawShores(ctx, gameState);
+
+        // === NPCs (drawn before jetties/piles so structures are on top) ===
+        this.drawNPCBoats(ctx, gameState);
+
+        // === JETTIES (wood planks, on top of shores and NPCs) ===
         for (const j of gameState.harbor.jetties) {
             // Skip the quay body itself (full-width, y=0 jetties)
             if (j.y === 0 && j.w > 100) continue;
@@ -348,12 +354,6 @@ export class Render {
 
             ctx.restore();
         }
-
-        // === SHORES (drawn before piles/cleats so they appear beneath) ===
-        this.drawShores(ctx, gameState);
-
-        // === NPCs (drawn before piles/cleats so kikkers are always on top) ===
-        this.drawNPCBoats(ctx, gameState);
 
         // === PILES & CLEATS (always on top) ===
         for (const p of gameState.harbor.piles) {

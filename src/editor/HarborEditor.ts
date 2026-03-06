@@ -1145,7 +1145,13 @@ export class HarborEditor {
             if (nameInput) nameInput.value = name;
 
             if (typeof (window as any).refreshHarbors === 'function') {
-                (window as any).refreshHarbors();
+                await (window as any).refreshHarbors();
+            }
+
+            // Auto-select the saved harbor in the editor dropdown
+            const heSelector = document.getElementById('heHarborSelector') as HTMLSelectElement | null;
+            if (heSelector && gameState.harbor.id) {
+                heSelector.value = gameState.harbor.id;
             }
         } catch (e: any) {
             console.error(e);
