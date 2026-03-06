@@ -113,6 +113,22 @@ export class GameManager {
         const settings = document.getElementById('settingsPanel');
         if (settings) settings.style.display = 'none';
 
+        // Guard: er moet een haven geselecteerd zijn
+        const effectiveHarborId = harborId ?? gameState.harbor?.id;
+        const isValidHarbor = effectiveHarborId
+            && effectiveHarborId !== ''
+            && effectiveHarborId !== 'nieuw';
+
+        if (!isValidHarbor) {
+            const title = document.getElementById('msgModalTitle');
+            const text = document.getElementById('msgModalText');
+            const msgModal = document.getElementById('messageModal');
+            if (title) title.textContent = '⚠️ Geen haven geselecteerd';
+            if (text) text.textContent = 'Selecteer eerst een haven via de "Haven:" selector of maak een nieuwe haven aan in de Haven Editor.';
+            if (msgModal) msgModal.style.display = 'flex';
+            return;
+        }
+
         if (gameState.gameMode === 'harbor-edit') {
             editor.stop();
         }

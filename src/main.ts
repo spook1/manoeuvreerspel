@@ -7,7 +7,7 @@ import { GameManager } from './core/GameManager';
 import { tutorial } from './core/Tutorial';
 import { UserBar } from './ui/UserBar';
 
-const userBar = new UserBar();
+new UserBar(); // instantiated for DOM side-effects
 const render = new Render('simCanvas');
 render.setGameState(gameState);
 const gameManager = new GameManager();
@@ -17,7 +17,9 @@ gameManager.setupGlobalbindings();
 (window as any)._tutorial = tutorial;
 
 function loop() {
-    const isEdit = gameState.gameMode === 'edit';
+    const isEdit = gameState.gameMode === 'edit'
+        || gameState.gameMode === 'harbor-edit'
+        || gameState.gameMode === 'scenario-edit';
 
     // Always consume to keep buffer clear
     const keyDowns = input.consumeKeyDowns();

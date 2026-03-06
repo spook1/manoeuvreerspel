@@ -1,7 +1,7 @@
 ﻿import { GameState, gameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
 import { ApiClient } from '../core/ApiClient';
-import { drawNPCDetail, NPC_SPECS } from '../ui/DrawNPC';
+import { drawShores, drawNPCBoats } from '../ui/DrawHarborEnvironment';
 
 interface EditorAction {
     type: 'add' | 'delete' | 'move' | 'rotate';
@@ -91,7 +91,7 @@ export class HarborEditor {
 
 
         // Cloud Save
-        const saveCloudBtn = document.getElementById('saveCloudBtn');
+        const saveCloudBtn = document.getElementById('cloudSaveBtn');
         if (saveCloudBtn) saveCloudBtn.addEventListener('click', () => this.promptCloudSave());
 
 
@@ -999,9 +999,37 @@ export class HarborEditor {
 
     // --- CLOUD FUNCTIONALITY ---
 
+    // Toon een status-bericht in de editor sidebar (tijdelijk, 4 sec)
+    private showEditorStatus(msg: string, type: 'ok' | 'warn' | 'error' = 'ok') {
+        let statusEl = document.getElementById('heStatusMsg');
+        if (!statusEl) {
+            statusEl = document.createElement('div');
+            statusEl.id = 'heStatusMsg';
+            statusEl.style.cssText = 'padding:8px 10px; border-radius:6px; font-size:12px; margin-top:6px; font-weight:600; transition:opacity 0.5s;';
+            const saveBtn = document.querySelector('#editorOverlay .cloud-save-btn') as HTMLElement | null;
+            if (saveBtn?.parentElement) {
+                saveBtn.parentElement.insertAdjacentElement('afterend', statusEl);
+            } else {
+                // Fallback: add to editorOverlay first child panel
+                const panel = document.querySelector('#editorOverlay > div') as HTMLElement | null;
+                if (panel) panel.appendChild(statusEl);
+            }
+        }
+        const colors = {
+            ok: 'background:#14532d; color:#86efac; border:1px solid #16a34a;',
+            warn: 'background:#713f12; color:#fde68a; border:1px solid #d97706;',
+            error: 'background:#4c0519; color:#fca5a5; border:1px solid #dc2626;',
+        };
+        statusEl.style.cssText = `padding:8px 10px; border-radius:6px; font-size:12px; margin-top:6px; font-weight:600; ${colors[type]}`;
+        statusEl.textContent = msg;
+        statusEl.style.opacity = '1';
+        clearTimeout((statusEl as any)._hideTimer);
+        (statusEl as any)._hideTimer = setTimeout(() => { statusEl!.style.opacity = '0'; }, 4000);
+    }
+
     async promptCloudSave() {
         if (!ApiClient.isLoggedIn) {
-            alert('Je moet ingelogd zijn om op te slaan in de cloud.');
+            this.showEditorStatus('⚠️ Je moet ingelogd zijn om op te slaan.', 'warn');
             return;
         }
 
@@ -1010,6 +1038,10 @@ export class HarborEditor {
         if (rawInput === null) return; // User cancelled
 
         const name = rawInput.trim() || 'Naamloze Haven';
+
+        // Disable button during save
+        const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Opslaan...'; }
 
         try {
             // Check for existing harbors with same name
@@ -1040,7 +1072,7 @@ export class HarborEditor {
                 gameState.harbor.id = `custom_${res.id}`;
             }
 
-            alert('Haven succesvol opgeslagen! ✅');
+            this.showEditorStatus('✅ Haven opgeslagen!', 'ok');
             gameState.harbor.name = name;
 
             // Update input label
@@ -1052,7 +1084,9 @@ export class HarborEditor {
             }
         } catch (e: any) {
             console.error(e);
-            alert('Fout bij opslaan: ' + (e.message || e));
+            this.showEditorStatus('❌ Fout: ' + (e.message || 'Verbindingsfout'), 'error');
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '☁️ Cloud Opslaan'; }
         }
     }
 
@@ -1151,110 +1185,13 @@ export class HarborEditor {
     // ── RENDERING: SHORES ───────────────────────────────────────────────────
 
     drawShores(ctx: CanvasRenderingContext2D) {
-        const shores = gameState.harbor.shores;
-        if (!shores || shores.length === 0) return;
-
-        for (const s of shores) {
-            ctx.save();
-            const cx = s.x + s.w / 2;
-            const cy = s.y + s.h / 2;
-            ctx.translate(cx, cy);
-            ctx.rotate((s.angle ?? 0) * Math.PI / 180);
-
-            if (s.type === 'rock') {
-                // Grijze achtergrond
-                ctx.fillStyle = '#6b6b6b';
-                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
-                // Steen-textuur: paar onregelmatige ovalen
-                ctx.fillStyle = '#888';
-                const rng = (seed: number) => ((seed * 9301 + 49297) % 233280) / 233280;
-                for (let i = 0; i < Math.floor(s.w * s.h / 600); i++) {
-                    const rx = (rng(i * 3 + 1) - 0.5) * s.w * 0.7;
-                    const ry = (rng(i * 3 + 2) - 0.5) * s.h * 0.7;
-                    const rr = 4 + rng(i * 3 + 3) * 8;
-                    ctx.beginPath();
-                    ctx.ellipse(rx, ry, rr * 1.3, rr * 0.8, rng(i) * Math.PI, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.strokeStyle = '#4a4a4a';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
-            } else if (s.type === 'reed') {
-                // Groen basis
-                ctx.fillStyle = '#2d6a1e';
-                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
-                // Rietjes als kleine vertikale lijntjes
-                ctx.strokeStyle = '#4caf50';
-                ctx.lineWidth = 1.5;
-                const cols = Math.max(3, Math.floor(s.w / 6));
-                const rows = Math.max(2, Math.floor(s.h / 8));
-                for (let ci = 0; ci < cols; ci++) {
-                    for (let ri = 0; ri < rows; ri++) {
-                        const px = -s.w / 2 + (ci + 0.5) * (s.w / cols) + (ri % 2 === 0 ? 2 : -2);
-                        const py = -s.h / 2 + (ri + 0.3) * (s.h / rows);
-                        const ph = s.h / rows * 0.6;
-                        ctx.beginPath(); ctx.moveTo(px, py + ph); ctx.lineTo(px, py);
-                        ctx.moveTo(px, py); ctx.lineTo(px - 3, py - 3);
-                        ctx.moveTo(px, py); ctx.lineTo(px + 3, py - 3);
-                        ctx.stroke();
-                    }
-                }
-                ctx.strokeStyle = '#1b4d12';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
-            } else {
-                // Concrete: lichtgrijs met voeglijnen
-                ctx.fillStyle = '#a0a0a0';
-                ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
-                ctx.strokeStyle = '#888';
-                ctx.lineWidth = 0.8;
-                const brickH = 12;
-                for (let by = -s.h / 2; by < s.h / 2; by += brickH) {
-                    const offset = Math.floor((by / brickH) % 2) * 18;
-                    ctx.beginPath(); ctx.moveTo(-s.w / 2, by); ctx.lineTo(s.w / 2, by); ctx.stroke();
-                    for (let bx = -s.w / 2 + offset; bx < s.w / 2; bx += 36) {
-                        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, Math.min(by + brickH, s.h / 2)); ctx.stroke();
-                    }
-                }
-                ctx.strokeStyle = '#777';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(-s.w / 2, -s.h / 2, s.w, s.h);
-            }
-
-            ctx.restore();
-        }
+        drawShores(ctx, gameState.harbor.shores);
     }
 
     // -- RENDERING: NPC BOATS -----------------------------------------------
 
     drawNPCs(ctx: CanvasRenderingContext2D) {
-        const npcs = gameState.harbor.npcs;
-        if (!npcs || npcs.length === 0) return;
-
-        for (const n of npcs) {
-            ctx.save();
-            ctx.translate(n.x, n.y);
-            ctx.rotate((n.heading ?? 0) * Math.PI / 180);
-
-            const sc = n.scale ?? 1;
-            drawNPCDetail(ctx, n.type, sc);
-
-            if (n.name) {
-                ctx.save();
-                ctx.rotate(-(n.heading ?? 0) * Math.PI / 180);
-                ctx.font = `bold ${Math.round(10 * sc)}px system-ui`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                ctx.shadowColor = 'rgba(0,0,0,0.7)';
-                ctx.shadowBlur = 3;
-                ctx.fillStyle = '#fff';
-                const labelOffset = (NPC_SPECS[n.type]?.W ?? 14) * sc + 8;
-                ctx.fillText(n.name, 0, labelOffset);
-                ctx.restore();
-            }
-
-            ctx.restore();
-        }
+        drawNPCBoats(ctx, gameState.harbor.npcs);
     }
 }
 
