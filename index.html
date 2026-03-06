@@ -110,7 +110,8 @@
 
         /* Show/hide elements per mode using body class */
         /* Default (practice mode) */
-        #scenarioPickerBar {
+        #scenarioPickerBar,
+        #gamePickerBar {
             display: none;
         }
 
@@ -246,6 +247,8 @@
         }
 
         /* Settings hidden in both editor modes */
+        body.mode-harbor-edit #settingsToggle,
+        body.mode-scenario-edit #settingsToggle,
         body.mode-harbor-edit .settings-only,
         body.mode-scenario-edit .settings-only {
             display: none;
@@ -519,7 +522,7 @@
                 </div>
 
                 <!-- Game Picker (Game mode only) -->
-                <div id="gamePickerBar" style="align-items:center; gap:6px; display:none;">
+                <div id="gamePickerBar" style="align-items:center; gap:6px;">
                     <span style="font-size:11px; color:#94a3b8; white-space:nowrap;">Game:</span>
                     <select id="gameSelector"
                         style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
