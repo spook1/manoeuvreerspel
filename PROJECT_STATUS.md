@@ -81,16 +81,20 @@
   - `HarborController::update()` — admin mag alle havens bewerken + `is_official` toggelen
   - Route: `GET /api/harbors/official` (publiek, geen auth)
 
-#### 5.4 Game Builder Basis (eerder in deze sprint)
-- [x] **Game Builder Overlay** UI in `index.html`
-- [x] **GameBuilderController.ts** — basis logica
-- [x] **Game Selector** in game-modus (keuze: New Game Builder, Tutorial, Start Game)
-- [x] **Backend**: Game model, migration, controller, API routes (CRUD)
+#### 5.4 Live Server Deployment & Tests
+- [x] Backend database leeggehaald en vers opgebouwd op VPS.
+- [x] Admin account veilig gegenereerd in live database.
+- [x] Frontend via Vite config correct gekoppeld aan live/lokale API endpoints.
+- [x] De haven opslaan en markeren als standaard werkt succesvol.
 
 ---
 
-## Sprint 6: Game Builder & Game Loop 🎮 (TODO)
-*Doel: Speelbare games samenstellen uit scenario's en de volledige game loop implementeren.*
+## Sprint 6: Game Builder, Game Loop & Bugfixes 🎮 (TODO)
+*Doel: De "Standaardhavens" weergave fixen, en speelbare games samenstellen uit scenario's.*
+
+### 🛠️ Eerste Prioriteit Start Volgende Sessie:
+- [ ] **Bugfix:** De paarse "Markeer als Standaard" knop werkt in de Backend (database), maar de haven verschijnt lokaal/live nog niet direct goed in de "Standaardhavens" dropdown lijst.
+  *Workflow-regel:* Volgende sessie eerst lokaal debuggen, testen, en pas na succes naar de VPS deployen!
 
 ### TODO
 1.  **UC-601: Game Builder Frontend** 🔲
