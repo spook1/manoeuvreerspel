@@ -7,6 +7,12 @@ export default defineConfig({
         outDir: 'dist',
         assetsDir: 'assets',
         emptyOutDir: true,
+        rollupOptions: {
+            input: {
+                main: 'index.html',
+                login: 'login.html'
+            }
+        }
     },
     server: {
         open: true, // Open browser on start
