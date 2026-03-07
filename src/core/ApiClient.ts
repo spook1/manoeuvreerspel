@@ -1,7 +1,8 @@
 import { HarborData } from "../data/harbors";
 import type { User } from "../types";
 
-const API_Base_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_Base_URL = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8080/api' : 'https://manoeuvreerspel.netwerkspel.nl/api');
 
 /**
  * Handle API communication for Authentication and Harbor Management.
