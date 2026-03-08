@@ -13,13 +13,15 @@ class Scenario extends Model
         'description',
         'points',
         'time_limit',
-        'json_data'
+        'json_data',
+        'is_official'
     ];
 
     protected $casts = [
         'json_data' => 'array',
         'points' => 'integer',
-        'time_limit' => 'integer'
+        'time_limit' => 'integer',
+        'is_official' => 'boolean'
     ];
 
     public function user()

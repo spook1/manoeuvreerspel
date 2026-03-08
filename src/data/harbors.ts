@@ -31,6 +31,8 @@ export interface HarborMooringSpot {
     id?: string;
     order?: number;      // Volgorde (1-gebaseerd). Zelfde nr = tegelijk actief
     timeLimit?: number;  // Seconden dat dit object actief/zichtbaar is nadat het unlocked is (default 60)
+    linesRequired?: number;       // Aantal lijnen nodig voor succes (default 3)
+    mooringTimeRequired?: number; // Tijd in sec dat de boot goed in de spot moet liggen (default 30)
 }
 
 export interface HarborCoin {

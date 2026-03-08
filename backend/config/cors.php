@@ -4,7 +4,6 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
 
-    // Explicit origins avoid credential/CORS edge-cases in browsers.
     'allowed_origins' => array_filter([
         env('FRONTEND_URL', 'http://localhost:5173'),
         'https://manoeuvreerspel.netwerkspel.nl',

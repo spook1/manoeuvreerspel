@@ -5,13 +5,16 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HarborController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\AdminController;
 
 // Public routes (Iedereen mag dit)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Public: officiële havens zijn voor iedereen beschikbaar
+// Public: officiële havens en scnario's zijn voor iedereen beschikbaar
 Route::get('/harbors/official', [HarborController::class, 'official']);
+Route::get('/scenarios/official', [ScenarioController::class, 'official']);
 
 // Protected routes (Alleen ingelogde users met token)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -38,4 +41,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/games/{id}', [GameController::class, 'show']);
     Route::put('/games/{id}', [GameController::class, 'update']);
     Route::delete('/games/{id}', [GameController::class, 'destroy']);
+
+    // Admin routes
+    Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
+    Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);
 });

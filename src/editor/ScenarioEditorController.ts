@@ -9,6 +9,7 @@
 
 import { gameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
+import { ApiClient } from '../core/ApiClient';
 
 // Helper
 const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
@@ -127,7 +128,56 @@ export function wireScenarioEditorUI() {
         } else {
             if (dObjPen) dObjPen.style.display = 'none';
         }
+
+        const dObjSet = g('seObjectSettingsGroup');
+        if (gameState.selectedSEObject) {
+            const obj = gameState.selectedSEObject;
+            const isSpot = obj.width !== undefined;
+            if (dObjSet) dObjSet.style.display = 'flex';
+
+            document.querySelectorAll('.se-spot-only').forEach(el => {
+                (el as HTMLElement).style.display = isSpot ? 'inline-block' : 'none';
+            });
+
+            const oOrder = g<HTMLInputElement>('seObjOrder');
+            const oTime = g<HTMLInputElement>('seObjTimeLimit');
+            const oLines = g<HTMLInputElement>('seObjLines');
+            const oMooring = g<HTMLInputElement>('seObjMooringTime');
+
+            if (oOrder) oOrder.value = (obj.order ?? 1).toString();
+            if (oTime) oTime.value = (obj.timeLimit ?? 120).toString();
+            if (isSpot) {
+                if (oLines) oLines.value = (obj.linesRequired ?? 3).toString();
+                if (oMooring) oMooring.value = (obj.mooringTimeRequired ?? 30).toString();
+            }
+        } else {
+            if (dObjSet) dObjSet.style.display = 'none';
+        }
     };
+
+    // Listeners for per-object settings
+    const syncObjSettings = () => {
+        const obj = gameState.selectedSEObject;
+        if (!obj) return;
+
+        const oOrder = g<HTMLInputElement>('seObjOrder');
+        const oTime = g<HTMLInputElement>('seObjTimeLimit');
+
+        if (oOrder) obj.order = parseInt(oOrder.value, 10) || 1;
+        if (oTime) obj.timeLimit = parseInt(oTime.value, 10) || 0;
+
+        if (obj.width !== undefined) {
+            const oLines = g<HTMLInputElement>('seObjLines');
+            const oMooring = g<HTMLInputElement>('seObjMooringTime');
+            if (oLines) obj.linesRequired = parseInt(oLines.value, 10) || 3;
+            if (oMooring) obj.mooringTimeRequired = parseInt(oMooring.value, 10) || 30;
+        }
+    };
+
+    g('seObjOrder')?.addEventListener('input', syncObjSettings);
+    g('seObjTimeLimit')?.addEventListener('input', syncObjSettings);
+    g('seObjLines')?.addEventListener('input', syncObjSettings);
+    g('seObjMooringTime')?.addEventListener('input', syncObjSettings);
 
 
 
@@ -367,7 +417,57 @@ export function wireScenarioEditorUI() {
 
             await new Promise(r => setTimeout(r, 600));
             saveBtn.textContent = '✅ Opgeslagen';
-            setTimeout(() => saveBtn.textContent = '💾 Opslaan', 2000);
+            setTimeout(() => {
+                saveBtn.textContent = '💾 Opslaan';
+                updateAdminUI(); // Update admin state after save
+            }, 2000);
+        };
+    }
+
+    // ── ADMIN TOGGLE ────────────────────────────────────────────────────────
+    function updateAdminUI() {
+        const toggleBtn = g<HTMLButtonElement>('seToggleOfficialBtn');
+        const user = (window as any)._currentUser;
+        const isAdmin = user?.role === 'admin';
+
+        if (toggleBtn) {
+            if (isAdmin && !gameState.scenario?.id?.startsWith('new_')) {
+                toggleBtn.style.display = 'block';
+                const isOfficial = (gameState.scenario as any)?.is_official === true;
+                toggleBtn.textContent = isOfficial ? '⭐ Standaard (actief)' : '☆ Markeer als Standaard';
+                toggleBtn.style.background = isOfficial ? '#16a34a' : '#a855f7';
+            } else {
+                toggleBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Initial check on mount
+    updateAdminUI();
+
+    const toggleBtn = g<HTMLButtonElement>('seToggleOfficialBtn');
+    if (toggleBtn) {
+        toggleBtn.onclick = async () => {
+            const scenId = parseInt((gameState.scenario?.id || '').replace('custom_', '').replace('official_', ''), 10);
+            if (isNaN(scenId) || scenId <= 0) {
+                alert("Scenario is nog niet opgeslagen! Sla eerst lokaal op.");
+                return;
+            }
+            try {
+                toggleBtn.textContent = '⏱️...';
+                const res = await ApiClient.toggleOfficialScenario(scenId);
+                if (gameState.scenario) {
+                    (gameState.scenario as any).is_official = res.scenario.is_official;
+                }
+                updateAdminUI();
+                if ((window as any).refreshScenarios) {
+                    await (window as any).refreshScenarios();
+                }
+            } catch (e) {
+                console.error("Fout bij toggle official scenario:", e);
+                alert("Fout bij aanpassen standaard-status.");
+                updateAdminUI();
+            }
         };
     }
 }

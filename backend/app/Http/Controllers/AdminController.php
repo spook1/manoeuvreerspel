@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Harbor;
+use App\Models\Scenario;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -40,6 +41,16 @@ class AdminController extends Controller
         $harbor->save();
 
         return response()->json(['message' => 'Harbor official status updated', 'harbor' => $harbor]);
+    }
+
+    // Toggle 'Official' status van een scenario
+    public function toggleOfficialScenario($id)
+    {
+        $scenario = Scenario::findOrFail($id);
+        $scenario->is_official = !$scenario->is_official;
+        $scenario->save();
+
+        return response()->json(['message' => 'Scenario official status updated', 'scenario' => $scenario]);
     }
 
     // Haal alle officiële havens op (publiek endpoint, maar beheerd door admin)

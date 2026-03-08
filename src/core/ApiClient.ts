@@ -117,6 +117,10 @@ export class ApiClient {
 
     // --- Scenario Management ---
 
+    static async getOfficialScenarios(): Promise<any[]> {
+        return this.request('/scenarios/official');
+    }
+
     static async getMyScenarios(): Promise<any[]> {
         return this.request('/scenarios');
     }
@@ -171,5 +175,9 @@ export class ApiClient {
 
     static async toggleOfficial(harborId: number): Promise<any> {
         return this.request(`/admin/harbors/${harborId}/toggle-official`, 'POST');
+    }
+
+    static async toggleOfficialScenario(scenarioId: number): Promise<any> {
+        return this.request(`/admin/scenarios/${scenarioId}/toggle-official`, 'POST');
     }
 }

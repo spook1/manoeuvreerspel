@@ -10,7 +10,13 @@ class ScenarioController extends Controller
     public function index(Request $request)
     {
         // Return only scenarios created by the user
-        $scenarios = Scenario::where('user_id', $request->user()->id)->get();
+        $scenarios = Scenario::where('user_id', $request->user()->id)->with('harbor:id,is_official')->get();
+        return response()->json($scenarios);
+    }
+
+    public function official()
+    {
+        $scenarios = Scenario::where('is_official', true)->with(['user:id,name', 'harbor:id,is_official'])->get();
         return response()->json($scenarios);
     }
 

@@ -31,6 +31,8 @@ export type ScenarioRunnerState = 'idle' | 'running' | 'complete' | 'failed';
 
 const DEFAULT_SPOT_TIMELIMIT = 90;  // seconden
 const DEFAULT_COIN_TIMELIMIT = 30;  // seconden
+const DEFAULT_LINES_REQUIRED = 3;
+const DEFAULT_MOORING_TIME = 30;
 
 export class ScenarioRunner {
     spots: RuntimeSpot[] = [];
@@ -120,8 +122,11 @@ export class ScenarioRunner {
         // ── Check timers on active batch ─────────────────────────────────────
         for (const s of this.spots) {
             if (!this.isSpotActive(s) || s.completed) continue;
-            const limit = (s.data.timeLimit ?? DEFAULT_SPOT_TIMELIMIT) * 1000;
-            if (s.activatedAt && now - s.activatedAt > limit) {
+            let limitSec = s.data.timeLimit ?? DEFAULT_SPOT_TIMELIMIT;
+            if (limitSec === 0) limitSec = Infinity; // 0 = no time limit
+            const limitMs = limitSec * 1000;
+
+            if (s.activatedAt && limitMs !== Infinity && now - s.activatedAt > limitMs) {
                 this.state = 'failed';
                 console.warn(`[ScenarioRunner] Spot tijd voorbij → reset`);
                 this.onFail?.();
@@ -131,8 +136,11 @@ export class ScenarioRunner {
 
         for (const c of this.coins) {
             if (!this.isCoinActive(c) || c.completed) continue;
-            const limit = (c.data.timeLimit ?? DEFAULT_COIN_TIMELIMIT) * 1000;
-            if (c.activatedAt && now - c.activatedAt > limit) {
+            let limitSec = c.data.timeLimit ?? DEFAULT_COIN_TIMELIMIT;
+            if (limitSec === 0) limitSec = Infinity; // 0 = no time limit
+            const limitMs = limitSec * 1000;
+
+            if (c.activatedAt && limitMs !== Infinity && now - c.activatedAt > limitMs) {
                 this.state = 'failed';
                 console.warn(`[ScenarioRunner] Coin tijd voorbij → reset`);
                 this.onFail?.();
@@ -161,11 +169,14 @@ export class ScenarioRunner {
                 rs.mooredAt = null;
             }
 
-            const mooredDuration = rs.mooredAt ? (now - rs.mooredAt) / 1000 : 0;
-            const linesOk = rs.linesCount >= 3;
-            const timeOk = mooredDuration >= 30;
+            const reqLines = s.linesRequired ?? DEFAULT_LINES_REQUIRED;
+            const reqTime = s.mooringTimeRequired ?? DEFAULT_MOORING_TIME;
 
-            if (inSpot && (linesOk || timeOk)) {
+            const mooredDuration = rs.mooredAt ? (now - rs.mooredAt) / 1000 : 0;
+            const linesOk = rs.linesCount >= reqLines;
+            const timeOk = mooredDuration >= reqTime;
+
+            if (inSpot && linesOk && timeOk) {
                 rs.completed = true;
                 gs.score += s.points;
                 console.log(`[ScenarioRunner] Spot voltooid! +${s.points} punten`);
@@ -207,14 +218,18 @@ export class ScenarioRunner {
     /** Geef resterende seconds voor actieve spots/coins als percentage (0..1) */
     getSpotTimeRemaining(s: RuntimeSpot): number {
         if (!s.activatedAt) return 1;
-        const limit = (s.data.timeLimit ?? DEFAULT_SPOT_TIMELIMIT) * 1000;
-        return Math.max(0, 1 - (Date.now() - s.activatedAt) / limit);
+        const limitSec = s.data.timeLimit ?? DEFAULT_SPOT_TIMELIMIT;
+        if (limitSec === 0) return 1; // infinite
+        const limitMs = limitSec * 1000;
+        return Math.max(0, 1 - (Date.now() - s.activatedAt) / limitMs);
     }
 
     getCoinTimeRemaining(c: RuntimeCoin): number {
         if (!c.activatedAt) return 1;
-        const limit = (c.data.timeLimit ?? DEFAULT_COIN_TIMELIMIT) * 1000;
-        return Math.max(0, 1 - (Date.now() - c.activatedAt) / limit);
+        const limitSec = c.data.timeLimit ?? DEFAULT_COIN_TIMELIMIT;
+        if (limitSec === 0) return 1; // infinite
+        const limitMs = limitSec * 1000;
+        return Math.max(0, 1 - (Date.now() - c.activatedAt) / limitMs);
     }
 
     /** Tekst voor HUD */

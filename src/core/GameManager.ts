@@ -20,11 +20,13 @@ import { GameBuilderController } from '../editor/GameBuilderController';
 
 export class GameManager {
     private customScenarios: ScenarioData[] = [];
+    private officialScenarios: ScenarioData[] = [];
     private customHarbors: HarborData[] = [];
 
     constructor() {
         this.setupModeButtons();
         this.fetchOfficialHarbors();
+        this.fetchOfficialScenarios();
         this.fetchCloudScenarios();
         this.fetchCloudGames();
     }
@@ -49,6 +51,29 @@ export class GameManager {
             console.warn('Kon officiële havens niet laden:', e);
         }
     }
+
+    public async fetchOfficialScenarios() {
+        try {
+            const scenarios = await ApiClient.getOfficialScenarios();
+            this.officialScenarios = scenarios.map((s: any) => ({
+                id: s.id.toString(),
+                name: s.name,
+                description: s.description,
+                harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
+                is_official: true,
+                wind: s.json_data?.wind || { direction: 0, force: 0 },
+                mooringSpots: s.json_data?.mooringSpots || [],
+                coins: s.json_data?.coins || [],
+                boatStart: s.json_data?.boatStart,
+                physics: s.json_data?.physics,
+                coinSettings: s.json_data?.coinSettings,
+                objectPenalties: s.json_data?.objectPenalties
+            }));
+            this.populateScenarioSelector();
+        } catch (e) {
+            console.warn('Kon officiële scenario\'s niet laden:', e);
+        }
+    }
     public async fetchCloudScenarios() {
         if (!ApiClient.isLoggedIn) return;
         try {
@@ -57,7 +82,7 @@ export class GameManager {
                 id: s.id.toString(),
                 name: s.name,
                 description: s.description,
-                harborId: `custom_${s.harbor_id}`,
+                harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
                 // API gives json_data back as object (assuming Laravel casts it to array/object)
                 wind: s.json_data?.wind || { direction: 0, force: 0 },
                 mooringSpots: s.json_data?.mooringSpots || [],
@@ -152,24 +177,6 @@ export class GameManager {
         const settings = document.getElementById('settingsPanel');
         if (settings) settings.style.display = 'none';
 
-        // Guard: blokkeer als er geen haven geselecteerd is óf als de haven in 'nieuw ontwerp' staat
-        const harborPickerEl = document.getElementById('harborSelector') as HTMLSelectElement | null;
-        const pickerValue = harborPickerEl?.value ?? '';
-
-        if (pickerValue === '' || gameState.harbor.id === 'nieuw' || pickerValue === 'create') {
-            const title = document.getElementById('msgModalTitle');
-            const text = document.getElementById('msgModalText');
-            const msgModal = document.getElementById('messageModal');
-            if (pickerValue === '') {
-                if (title) title.textContent = '⚠️ Geen haven geselecteerd';
-                if (text) text.textContent = 'Kies eerst een haven ("Harbour 1") uit de lijst, of maak er eentje in de Haven Editor.';
-            } else {
-                if (title) title.textContent = '⚠️ Sla je haven eerst op';
-                if (text) text.textContent = 'Sla je nieuwe havenontwerp op via "☁️ Cloud Opslaan" in de Haven Editor voordat je er een scenario voor maakt.';
-            }
-            if (msgModal) msgModal.style.display = 'flex';
-            return;
-        }
 
         if (gameState.gameMode === 'harbor-edit') {
             editor.stop();
@@ -192,7 +199,7 @@ export class GameManager {
         if (scenarioOverlay) scenarioOverlay.style.display = 'flex';
 
         // Filter scenarios for the current harbor
-        this.populateScenarioSelector(gameState.harbor.id);
+        this.populateScenarioSelector();
 
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
         if (seSelector) seSelector.value = gameState.scenario ? gameState.scenario.id : 'nieuw';
@@ -412,7 +419,11 @@ export class GameManager {
         (window as any).startGameMode = () => this.startGameMode();
         (window as any).startScenario = (id: string) => this.startScenario(id);
         (window as any).updateUI = () => this.updateUI();
-        (window as any).refreshHarbors = () => this.populateHarborSelector();
+        (window as any).refreshHarbors = () => this.fetchOfficialHarbors();
+        (window as any).refreshScenarios = async () => {
+            await this.fetchOfficialScenarios();
+            await this.fetchCloudScenarios();
+        };
         (window as any).refreshGames = () => this.fetchCloudGames();
         (window as any).startLevel = (n: number) => this.startLevel(n);
 
@@ -604,12 +615,20 @@ export class GameManager {
 
     // ── HARBOR/SCENARIO SELECTORS ─────────────────────────────────────────────
 
+    private getHarborName(harborId: string): string {
+        const oh = officialHarbors.find(h => h.id === harborId);
+        if (oh) return oh.name;
+        const ch = this.customHarbors.find(h => h.id === harborId);
+        if (ch) return ch.name;
+        return 'Onbekende Haven';
+    }
+
     async populateHarborSelector() {
         const defaultGroup = document.getElementById('defaultHarborGroup');
         const customGroup = document.getElementById('customHarborGroup');
         const heDefaultGroup = document.getElementById('heDefaultHarborGroup');
         const heCustomGroup = document.getElementById('heCustomHarborGroup');
-        const seHarborSelector = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
+
 
         // Officiële havens uit cloud (beschikbaar voor iedereen)
         const officialHtml = officialHarbors.map(h => `<option value="${h.id}">⭐ ${h.name}</option>`).join('');
@@ -646,41 +665,58 @@ export class GameManager {
             heSelector.value = gameState.harbor.id;
         }
 
-        if (seHarborSelector) {
-            seHarborSelector.innerHTML = `
-                <optgroup label="⭐ Standaard Havens">${officialHtml}</optgroup>
-                <optgroup label="Mijn Cloud Havens">${customHtml}</optgroup>
+        // Vul ook de Haven-kolom in de Scenario Editor
+        const seHarborSel = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
+        if (seHarborSel) {
+            seHarborSel.innerHTML = `
+                <optgroup label="⭐ Standaard">${officialHtml}</optgroup>
+                <optgroup label="Mijn Havens">${customHtml}</optgroup>
             `;
-            if (gameState.harbor && gameState.gameMode === 'scenario-edit') {
-                seHarborSelector.value = gameState.harbor.id;
-            }
-            if (!seHarborSelector.value && officialHarbors.length > 0) {
-                seHarborSelector.value = officialHarbors[0].id;
-            } else if (!seHarborSelector.value && this.customHarbors.length > 0) {
-                seHarborSelector.value = this.customHarbors[0].id;
-            }
+            if (gameState.harbor?.id) seHarborSel.value = gameState.harbor.id;
         }
 
         this.populateScenarioSelector();
     }
 
-    populateScenarioSelector(filterHarborId?: string) {
+    populateScenarioSelector() {
         const scenarioGroup = document.getElementById('scenarioDefaultGroup');
         const customGroup = document.getElementById('scenarioCustomGroup');
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
 
-        const baseScenarios = filterHarborId
-            ? DEFAULT_SCENARIOS.filter(s => s.harborId === filterHarborId)
-            : DEFAULT_SCENARIOS;
+        const combinedBaseScenarios = [...DEFAULT_SCENARIOS, ...this.officialScenarios];
+        const baseScenarios = combinedBaseScenarios;
+        const customScenarios = this.customScenarios;
 
-        const customScenarios = filterHarborId
-            ? this.customScenarios.filter(s => s.harborId === filterHarborId)
-            : this.customScenarios;
+        const sortScenarios = (a: ScenarioData, b: ScenarioData) => {
+            const ha = this.getHarborName(a.harborId);
+            const hb = this.getHarborName(b.harborId);
+            if (ha !== hb) return ha.localeCompare(hb);
+            return a.name.localeCompare(b.name);
+        };
 
-        const html = baseScenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        baseScenarios.sort(sortScenarios);
+        customScenarios.sort(sortScenarios);
+
+        // Vind de maximale scenario-naamslengte voor uitlijning
+        const allScenarios = [...baseScenarios, ...customScenarios];
+        const maxLen = allScenarios.reduce((m, s) => Math.max(m, s.name.length), 0);
+
+        // Standaard scenario's krijgen ⭐, eigen scenario's niet
+        const makeBaseHtml = (s: ScenarioData) => {
+            const pad = '\u00a0'.repeat(Math.max(0, maxLen - s.name.length + 1));
+            const harbor = this.getHarborName(s.harborId);
+            return `<option value="${s.id}" data-harbor="${s.harborId}">\u2b50 ${s.name}${pad}│ ${harbor}</option>`;
+        };
+        const makeCustomHtml = (s: ScenarioData) => {
+            const pad = '\u00a0'.repeat(Math.max(0, maxLen - s.name.length + 3));
+            const harbor = this.getHarborName(s.harborId);
+            return `<option value="${s.id}" data-harbor="${s.harborId}">${s.name}${pad}│ ${harbor}</option>`;
+        };
+
+        const html = baseScenarios.map(makeBaseHtml).join('');
         if (scenarioGroup) scenarioGroup.innerHTML = html;
 
-        const customHtml = customScenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        const customHtml = customScenarios.map(makeCustomHtml).join('');
         if (customGroup) customGroup.innerHTML = customHtml;
 
         if (seSelector) {
@@ -689,6 +725,21 @@ export class GameManager {
                 <optgroup label="Standaard">${html}</optgroup>
                 <optgroup label="Mijn Scenario's">${customHtml}</optgroup>
             `;
+
+            // Sync haven-kolom als scenario verandert
+            seSelector.onchange = () => this.syncSeHarborFromScenario();
+        }
+    }
+
+    private syncSeHarborFromScenario() {
+        const seScenSel = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
+        const seHarbSel = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
+        if (!seScenSel || !seHarbSel) return;
+
+        const selectedOpt = seScenSel.options[seScenSel.selectedIndex];
+        const harborId = selectedOpt?.dataset?.harbor;
+        if (harborId) {
+            seHarbSel.value = harborId;
         }
     }
 
@@ -711,8 +762,10 @@ export class GameManager {
         };
 
         try {
+            const dbHarborId = parseInt(scenario.harborId.replace('custom_', '').replace('official_', ''), 10);
+
             const payload = {
-                harbor_id: scenario.harborId.replace('custom_', ''),
+                harbor_id: dbHarborId,
                 name: scenario.name,
                 description: scenario.description,
                 points: 100,
@@ -740,7 +793,7 @@ export class GameManager {
                 if (idx !== -1) this.customScenarios[idx] = scenario;
             }
             // Re-populate the selector, filtering by the current harbor
-            this.populateScenarioSelector(scenario.harborId);
+            this.populateScenarioSelector();
 
             // Explicitly set the newly updated/created scenario as selected
             const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
