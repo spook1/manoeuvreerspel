@@ -530,10 +530,11 @@
                         <optgroup label="Acties">
                             <option value="create">➕ Nieuwe Game Bouwen...</option>
                         </optgroup>
-                        <optgroup label="Standaard">
+                        <optgroup label="Ingebouwd">
                             <option value="tutorial">🎓 Tutorial</option>
                             <option value="startgame">🚀 Startgame (Alle havens)</option>
                         </optgroup>
+                        <optgroup label="Standaard Games" id="officialGamesGroup"></optgroup>
                         <optgroup label="Mijn Games" id="customGamesGroup"></optgroup>
                     </select>
                 </div>
@@ -1159,7 +1160,8 @@
             <!-- Individual Object Settings -->
             <div id="seObjectSettingsGroup"
                 style="display:none; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; flex-direction:column; gap:6px;">
-                <div style="font-size:11px; color:#f59e0b; font-weight:600;">⚙️ Geselecteerd Object Instellingen</div>
+                <div id="seObjectSettingsTitle" style="font-size:11px; color:#f59e0b; font-weight:600;">⚙️ Geselecteerd
+                    Object Instellingen</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center;">
                     <label style="font-size:11px; color:#cbd5e1;">Volgorde (1=eerst):</label>
                     <input id="seObjOrder" type="number" value="1" min="1"
@@ -1180,16 +1182,26 @@
             <div id="seObjectPenaltiesGroup"
                 style="display:none; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; flex-direction:column; gap:6px;">
                 <div style="font-size:11px; color:#ef4444; font-weight:600;">⚠️ Object Strafpunten</div>
-                <div style="font-size:10px; color:#94a3b8;">Voor geselecteerde steiger/oever/npc</div>
+                <div id="seObjectPenaltiesSubtitle" style="font-size:10px; color:#94a3b8;">Voor geselecteerde
+                    steiger/oever/npc</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center;">
-                    <label style="font-size:11px; color:#cbd5e1;">Max Snelheid:</label>
-                    <input id="seMaxSpeedKnots" type="number" value="2" min="0" step="0.5"
+                    <label style="font-size:11px; color:#cbd5e1;">Zacht bots. > (kn):</label>
+                    <input id="seSpeedSoftKnots" type="number" value="1" min="0" step="0.5"
                         style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
-                    <label style="font-size:11px; color:#cbd5e1;">Romp Straf:</label>
-                    <input id="seHullPenalty" type="number" value="5" min="0"
+                    <label style="font-size:11px; color:#cbd5e1;">Hard bots. > (kn):</label>
+                    <input id="seSpeedHardKnots" type="number" value="2" min="0" step="0.5"
                         style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
-                    <label style="font-size:11px; color:#cbd5e1;">Fender Straf:</label>
-                    <input id="seFenderPenalty" type="number" value="1" min="0"
+                    <label style="font-size:11px; color:#cbd5e1;">Zacht: Fender pt:</label>
+                    <input id="seFenderPenaltySoft" type="number" value="1" min="0"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                    <label style="font-size:11px; color:#cbd5e1;">Zacht: Romp pt:</label>
+                    <input id="seHullPenaltySoft" type="number" value="2" min="0"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                    <label style="font-size:11px; color:#cbd5e1;">Hard: Fender pt:</label>
+                    <input id="seFenderPenaltyHard" type="number" value="3" min="0"
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+                    <label style="font-size:11px; color:#cbd5e1;">Hard: Romp pt:</label>
+                    <input id="seHullPenaltyHard" type="number" value="40" min="0"
                         style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
                 </div>
             </div>
@@ -1263,8 +1275,14 @@
                     style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:16px; width:300px;">
             </div>
             <div style="display:flex; gap:10px;">
+                <button id="gbDeleteBtn"
+                    style="display:none; background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑️
+                    Verwijder</button>
+                <button id="gbToggleOfficialBtn" class="admin-only"
+                    style="display:none; background:#a855f7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">⭐
+                    Markeer als Standaard</button>
                 <button id="gbExitBtn"
-                    style="background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕
+                    style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕
                     Sluiten</button>
                 <button id="gbSaveBtn"
                     style="background:#22c55e; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">💾

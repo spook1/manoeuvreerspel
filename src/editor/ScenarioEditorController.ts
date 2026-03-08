@@ -21,7 +21,6 @@ let isDraggingSE = false;
 let dragStartX = 0, dragStartY = 0;
 let seDragMode: 'move' | 'resize' | 'resize-h' | null = null;
 let seOriginalGeom: { x: number, y: number, w?: number, h?: number } | null = null;
-let selectedHarborObjectId: string | null = null;
 
 // Bound handlers (zodat we ze kunnen verwijderen)
 let _seMouseDown: ((e: MouseEvent) => void) | null = null;
@@ -89,51 +88,77 @@ export function wireScenarioEditorUI() {
 
     // ── PENALTY SETTINGS ───────────────────────────────────────────────────
     const syncPen = () => {
-        if (!selectedHarborObjectId) return;
+        if (!gameState.selectedHarborObjectId) return;
         const sc = getOrMakeScenario();
         if (!sc.objectPenalties) sc.objectPenalties = {};
-        if (!sc.objectPenalties[selectedHarborObjectId]) sc.objectPenalties[selectedHarborObjectId] = {};
-        const pen = sc.objectPenalties[selectedHarborObjectId];
+        if (!sc.objectPenalties[gameState.selectedHarborObjectId]) sc.objectPenalties[gameState.selectedHarborObjectId] = {};
+        const pen = sc.objectPenalties[gameState.selectedHarborObjectId];
 
-        const m = g<HTMLInputElement>('seMaxSpeedKnots');
-        const h = g<HTMLInputElement>('seHullPenalty');
-        const f = g<HTMLInputElement>('seFenderPenalty');
-        if (m) pen.maxSpeedKnots = parseFloat(m.value) || 0;
-        if (h) pen.hullPenalty = parseInt(h.value) || 0;
-        if (f) pen.fenderPenalty = parseInt(f.value) || 0;
+        const sS = g<HTMLInputElement>('seSpeedSoftKnots');
+        const sH = g<HTMLInputElement>('seSpeedHardKnots');
+        const hS = g<HTMLInputElement>('seHullPenaltySoft');
+        const hH = g<HTMLInputElement>('seHullPenaltyHard');
+        const fS = g<HTMLInputElement>('seFenderPenaltySoft');
+        const fH = g<HTMLInputElement>('seFenderPenaltyHard');
+        if (sS) pen.speedThresholdSoft = parseFloat(sS.value) || 0;
+        if (sH) pen.speedThresholdHard = parseFloat(sH.value) || 0;
+        if (hS) pen.hullPenaltySoft = parseInt(hS.value) || 0;
+        if (hH) pen.hullPenaltyHard = parseInt(hH.value) || 0;
+        if (fS) pen.fenderPenaltySoft = parseInt(fS.value) || 0;
+        if (fH) pen.fenderPenaltyHard = parseInt(fH.value) || 0;
     };
 
-    g('seMaxSpeedKnots')?.addEventListener('input', syncPen);
-    g('seHullPenalty')?.addEventListener('input', syncPen);
-    g('seFenderPenalty')?.addEventListener('input', syncPen);
+    g('seSpeedSoftKnots')?.addEventListener('input', syncPen);
+    g('seSpeedHardKnots')?.addEventListener('input', syncPen);
+    g('seHullPenaltySoft')?.addEventListener('input', syncPen);
+    g('seHullPenaltyHard')?.addEventListener('input', syncPen);
+    g('seFenderPenaltySoft')?.addEventListener('input', syncPen);
+    g('seFenderPenaltyHard')?.addEventListener('input', syncPen);
 
     const updateSEPropertiesPanel = () => {
         const dObjPen = g('seObjectPenaltiesGroup');
-        if (selectedHarborObjectId) {
+        const dObjPenSub = g('seObjectPenaltiesSubtitle');
+        if (gameState.selectedHarborObjectId) {
             if (dObjPen) dObjPen.style.display = 'flex';
+            if (dObjPenSub) {
+                const typeMap: Record<string, string> = { jetty: 'Steiger', shore: 'Oever', npc: 'Boot', pile: 'Paal', cleat: 'Kikker' };
+                const t = gameState.selectedHarborObjectId.split('_')[0];
+                dObjPenSub.textContent = `Vast aan: ${typeMap[t] || 'Object'} (${gameState.selectedHarborObjectId})`;
+            }
+
             const sc = getOrMakeScenario();
             if (!sc.objectPenalties) sc.objectPenalties = {};
-            if (!sc.objectPenalties[selectedHarborObjectId]) {
-                sc.objectPenalties[selectedHarborObjectId] = { maxSpeedKnots: 2, hullPenalty: 5, fenderPenalty: 1 };
+            if (!sc.objectPenalties[gameState.selectedHarborObjectId]) {
+                sc.objectPenalties[gameState.selectedHarborObjectId] = { speedThresholdSoft: 1, speedThresholdHard: 2, hullPenaltySoft: 2, hullPenaltyHard: 40, fenderPenaltySoft: 1, fenderPenaltyHard: 3 };
             }
-            const pen = sc.objectPenalties[selectedHarborObjectId];
+            const pen = sc.objectPenalties[gameState.selectedHarborObjectId];
 
-            const m = g<HTMLInputElement>('seMaxSpeedKnots');
-            const h = g<HTMLInputElement>('seHullPenalty');
-            const f = g<HTMLInputElement>('seFenderPenalty');
+            const sS = g<HTMLInputElement>('seSpeedSoftKnots');
+            const sH = g<HTMLInputElement>('seSpeedHardKnots');
+            const hS = g<HTMLInputElement>('seHullPenaltySoft');
+            const hH = g<HTMLInputElement>('seHullPenaltyHard');
+            const fS = g<HTMLInputElement>('seFenderPenaltySoft');
+            const fH = g<HTMLInputElement>('seFenderPenaltyHard');
 
-            if (m) m.value = (pen.maxSpeedKnots ?? 2).toString();
-            if (h) h.value = (pen.hullPenalty ?? 5).toString();
-            if (f) f.value = (pen.fenderPenalty ?? 1).toString();
+            if (sS) sS.value = (pen.speedThresholdSoft ?? 1).toString();
+            if (sH) sH.value = (pen.speedThresholdHard ?? pen.maxSpeedKnots ?? 2).toString();
+            if (hS) hS.value = (pen.hullPenaltySoft ?? 2).toString();
+            if (hH) hH.value = (pen.hullPenaltyHard ?? 40).toString();
+            if (fS) fS.value = (pen.fenderPenaltySoft ?? 1).toString();
+            if (fH) fH.value = (pen.fenderPenaltyHard ?? 3).toString();
         } else {
             if (dObjPen) dObjPen.style.display = 'none';
         }
 
         const dObjSet = g('seObjectSettingsGroup');
+        const dObjSetTitle = g('seObjectSettingsTitle');
         if (gameState.selectedSEObject) {
             const obj = gameState.selectedSEObject;
             const isSpot = obj.width !== undefined;
             if (dObjSet) dObjSet.style.display = 'flex';
+            if (dObjSetTitle) {
+                dObjSetTitle.textContent = isSpot ? '⚙️ Aanlegplaats (Spot) Instellingen' : '⚙️ Munt Instellingen';
+            }
 
             document.querySelectorAll('.se-spot-only').forEach(el => {
                 (el as HTMLElement).style.display = isSpot ? 'inline-block' : 'none';
@@ -274,30 +299,30 @@ export function wireScenarioEditorUI() {
             }
 
             // If not found, check harbor objects for penalty assignment
-            selectedHarborObjectId = null;
+            gameState.selectedHarborObjectId = null;
             for (const j of gameState.harbor.jetties || []) {
                 if (pos.x >= j.x && pos.x <= j.x + j.w && pos.y >= j.y && pos.y <= j.y + j.h) {
-                    selectedHarborObjectId = j.id ?? null; break;
+                    gameState.selectedHarborObjectId = j.id ?? null; break;
                 }
             }
-            if (!selectedHarborObjectId) {
+            if (!gameState.selectedHarborObjectId) {
                 for (const s of gameState.harbor.shores || []) {
                     if (pos.x >= s.x && pos.x <= s.x + s.w && pos.y >= s.y && pos.y <= s.y + s.h) {
-                        selectedHarborObjectId = s.id ?? null; break;
+                        gameState.selectedHarborObjectId = s.id ?? null; break;
                     }
                 }
             }
-            if (!selectedHarborObjectId) {
+            if (!gameState.selectedHarborObjectId) {
                 for (const n of gameState.harbor.npcs || []) {
                     if (Math.hypot(n.x - pos.x, n.y - pos.y) < 25) {
-                        selectedHarborObjectId = n.id ?? null; break;
+                        gameState.selectedHarborObjectId = n.id ?? null; break;
                     }
                 }
             }
-            if (!selectedHarborObjectId) {
+            if (!gameState.selectedHarborObjectId) {
                 for (const p of gameState.harbor.piles || []) {
                     if (Math.hypot(p.x - pos.x, p.y - pos.y) < 15) {
-                        selectedHarborObjectId = p.id?.toString() ?? null; break;
+                        gameState.selectedHarborObjectId = p.id?.toString() ?? null; break;
                     }
                 }
             }
@@ -391,7 +416,7 @@ export function wireScenarioEditorUI() {
             const cvs = document.getElementById('simCanvas') as HTMLCanvasElement | null;
             if (cvs) unbindCanvasEvents(cvs);
             gameState.selectedSEObject = null;
-            selectedHarborObjectId = null;
+            gameState.selectedHarborObjectId = null;
             updateSEPropertiesPanel();
             const overlay = g('scenarioEditorOverlay');
             if (overlay) overlay.style.display = 'none';

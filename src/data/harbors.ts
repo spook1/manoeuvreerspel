@@ -1,7 +1,11 @@
 export interface PenaltySettings {
-    maxSpeedKnots?: number;
-    hullPenalty?: number;
-    fenderPenalty?: number;
+    maxSpeedKnots?: number; // legacy
+    speedThresholdSoft?: number;
+    speedThresholdHard?: number;
+    hullPenaltySoft?: number;
+    hullPenaltyHard?: number;
+    fenderPenaltySoft?: number;
+    fenderPenaltyHard?: number;
 }
 
 export interface HarborJetty {

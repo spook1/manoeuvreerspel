@@ -774,44 +774,106 @@ export class Render {
         }
     }
     private drawSEObjectHighlight(gameState: GameState) {
-        if (gameState.gameMode !== 'scenario-edit' || !gameState.selectedSEObject) return;
+        if (gameState.gameMode !== 'scenario-edit') return;
         const ctx = this.ctx;
-        const obj = gameState.selectedSEObject;
 
-        ctx.save();
-        ctx.strokeStyle = '#facc15'; // Yellow highlight
-        ctx.lineWidth = 3;
-        ctx.setLineDash([6, 4]);
+        const drawOutlineWithText = (x: number, y: number, w: number, h: number, angle: number, id: string) => {
+            ctx.save();
+            ctx.strokeStyle = '#ef4444'; // Red outline for harbor objects
+            ctx.lineWidth = 3;
+            ctx.setLineDash([4, 4]);
 
-        if (obj.width !== undefined) {
-            // Het is een mooring spot
-            const w = obj.width;
-            const h = obj.height ?? 40;
-            const cx = obj.x + w / 2;
-            const cy = obj.y + h / 2;
-            ctx.translate(cx, cy);
-            ctx.rotate((obj.angle || 0) * Math.PI / 180);
-            ctx.strokeRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8);
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.rotate((angle || 0) * Math.PI / 180);
+            ctx.strokeRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4);
 
-            // Draw right resize handle (E)
-            const hd = 6;
-            ctx.fillStyle = '#fff';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([]);
-            ctx.strokeRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
-            ctx.fillRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
+            // Draw text
+            ctx.rotate(-(angle || 0) * Math.PI / 180); // Un-rotate text
+            const pen = gameState.scenario?.objectPenalties?.[id];
+            if (pen) {
+                ctx.fillStyle = '#facc15'; // Yellow text for readability
+                ctx.font = 'bold 12px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const tSoft = pen.speedThresholdSoft ?? 1;
+                const tHard = pen.speedThresholdHard ?? pen.maxSpeedKnots ?? 2;
+                const lines = [
+                    `Zacht > ${tSoft} / Hard > ${tHard} kn`,
+                    `Zacht (F/R): ${pen.fenderPenaltySoft || 0} / ${pen.hullPenaltySoft || 0}`,
+                    `Hard (F/R): ${pen.fenderPenaltyHard || 0} / ${pen.hullPenaltyHard || 0}`
+                ];
+                let ty = -14;
+                for (const txt of lines) {
+                    // text shadow for readability
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(txt, 0, ty);
+                    ctx.shadowBlur = 0;
+                    ty += 14;
+                }
+            }
+            ctx.restore();
+        };
 
-            // Draw bottom resize handle (S)
-            ctx.strokeRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
-            ctx.fillRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
-        } else if (obj.value !== undefined) {
-            // Het is een coin
-            ctx.beginPath();
-            ctx.arc(obj.x, obj.y, 22, 0, Math.PI * 2);
-            ctx.stroke();
+        if (gameState.selectedHarborObjectId) {
+            const sid = gameState.selectedHarborObjectId;
+            const h = gameState.harbor;
+            const target: any =
+                h.jetties?.find(j => j.id === sid) ||
+                h.shores?.find((s: any) => s.id === sid) ||
+                h.npcs?.find((n: any) => n.id === sid);
+
+            if (target) {
+                const w = target.w ?? target.width ?? 0;
+                const hh = target.h ?? target.length ?? 0;
+                const angle = target.angle ?? (target.heading ? target.heading * 180 / Math.PI : 0);
+                drawOutlineWithText(target.x, target.y, w, hh, angle, sid);
+            } else {
+                const pile = h.piles?.find(p => p.id?.toString() === sid);
+                if (pile) {
+                    drawOutlineWithText(pile.x - 10, pile.y - 10, 20, 20, 0, sid);
+                }
+            }
         }
 
-        ctx.restore();
+        if (gameState.selectedSEObject) {
+            const obj = gameState.selectedSEObject;
+
+            ctx.save();
+            ctx.strokeStyle = '#facc15'; // Yellow highlight
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+
+            if (obj.width !== undefined) {
+                // Het is een mooring spot
+                const w = obj.width;
+                const h = obj.height ?? 40;
+                const cx = obj.x + w / 2;
+                const cy = obj.y + h / 2;
+                ctx.translate(cx, cy);
+                ctx.rotate((obj.angle || 0) * Math.PI / 180);
+                ctx.strokeRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8);
+
+                // Draw right resize handle (E)
+                const hd = 6;
+                ctx.fillStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([]);
+                ctx.strokeRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
+                ctx.fillRect(w / 2 + 4 - hd / 2, -hd / 2, hd, hd);
+
+                // Draw bottom resize handle (S)
+                ctx.strokeRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
+                ctx.fillRect(-hd / 2, h / 2 + 4 - hd / 2, hd, hd);
+            } else if (obj.value !== undefined) {
+                // Het is een coin
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, 22, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
     }
 
     private drawDebugForces(gameState: GameState) {
