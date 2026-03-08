@@ -228,12 +228,27 @@ export class GameBuilderController {
             return;
         }
 
+        const name = nameInput.value.trim();
+
+        // Check voor unieke naam
+        try {
+            if (ApiClient.isLoggedIn) {
+                const myGames = await ApiClient.getMyGames();
+                const exists = myGames.some((g: any) => g.name.toLowerCase() === name.toLowerCase() && String(g.id) !== String(activeGame.id));
+                if (exists) {
+                    alert('Je hebt al een game met deze naam. Kies a.u.b. een unieke naam!');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error("Kon bestaande games niet verifiëren voor unieke naam", e);
+        }
+
         if (activeGame.scenarios.length === 0) {
             alert('Voeg ten minste één scenario toe!');
             return;
         }
 
-        const name = nameInput.value;
         const description = descInput.value;
         // The API expects numeric scenario IDs. For 'custom' ones, they are just integers. 's1' standard ones... wait. The database scenarios table only stores custom scenarios! 
         // We have to extract numeric DB IDs for custom scenarios, but how do we reference static built-in scenarios (e.g. 's1') in the database pivot table? 

@@ -1,7 +1,7 @@
 # Project Roadmap & Sprint Planning 🗺️
 
-> **Laatst bijgewerkt:** 6 Maart 2026 (Avond)
-> **Fase:** MVP — Level Builder + Cloud-gebaseerd Standaard Haven systeem
+> **Laatst bijgewerkt:** 8 Maart 2026
+> **Fase:** MVP — Scenario Editor voltooid, nu richting Game Builder
 
 ---
 
@@ -51,84 +51,92 @@
 ## Sprint 5: Level Builder & Standaard Haven Systeem ⭐ (✅ AFGEROND — 6 Maart 2026)
 *Doel: Geavanceerde editor tools + dynamisch standaardhaven-systeem via cloud.*
 
+### Voltooid
+- [x] Multi-Select & Alignment Tools (Haven Editor)
+- [x] Z-Order Fix (Oevers onder steigers)
+- [x] Cloud-gebaseerd Standaard Haven Systeem (`is_official` vlag)
+- [x] Admin "⭐ Markeer als Standaard" knop in de Haven Editor
+- [x] Backend uitbreidingen: `HarborController::official()`, admin routes
+- [x] Live VPS deployment & tests
+
+---
+
+## Sprint 6: Scenario Editor Afmaken ✏️ (✅ AFGEROND — 8 Maart 2026)
+*Doel: Scenario Editor volledig werkend krijgen voor intern gebruik.*
+
 ### Voltooid in deze sessie
 
-#### 5.1 Multi-Select & Alignment Tools (Haven Editor)
-- [x] **Marquee Selection** — sleep een vierkant over objecten om ze in bulk te selecteren
-- [x] **Shift+klik** — objecten toevoegen/verwijderen aan selectie
-- [x] **Alignment knoppen** (zichtbaar bij 2+ objecten geselecteerd):
-  - Links/Rechts/Boven/Onder uitlijnen
-  - Horizontaal/Verticaal centreren
-  - Gelijkmatig verdelen (horizontaal/verticaal, ≥3 objecten)
-- [x] **Undo support** — alle alignment-acties ondersteunen Ctrl+Z
+#### 6.1 Bugfixes
+- [x] **422-fout bij opslaan scenario** — `official_X` prefix werd letterlijk naar backend gestuurd; nu altijd numerieke DB-ID (`parseInt` na prefix strippen)
+- [x] **Verkeerde `harborId` na cloud-load** — `fetchCloudScenarios` gebruikte hard-coded `custom_` prefix; nu op basis van `harbor.is_official` uit de API response
 
-#### 5.2 Z-Order Fix
-- [x] **Render volgorde gecorrigeerd**: Water → Quay → **Oevers** → NPCs → **Steigers** → Palen/Kikkers
-  - Oevers verschijnen nu *onder* steigers
+#### 6.2 Scenario Editor UX Verbeteringen
+- [x] **"Geen haven geselecteerd" blokkade weggehaald** — Scenario Editor opent direct zonder verplichte havenselectie
+- [x] **Haven-selector terug IN de editor** — netjes als aparte rij ónder de scenario-selector
+- [x] **Scenario-dropdown toont haven in een 2e kolom** — via monospace padding en `│` scheidingsteken
+- [x] **⭐ prefix op standaard scenario's** — zelfde stijl als bij standaard havens
+- [x] **Sorteer op haven** — dropdown gesorteerd alfabetisch op havennaam, dan op scenario-naam
 
-#### 5.3 Cloud-gebaseerd Standaard Haven Systeem (Architectuur)
-- [x] **Alle hardcoded DEFAULT_HARBORS verwijderd** — geen data meer in TypeScript broncode
-- [x] **1 lege "Nieuwe Haven" template** als startpunt voor het tekenen van een nieuwe haven
-- [x] **Officiële (standaard) havens** zijn nu cloud-gebaseerd via `is_official` vlag in database
-- [x] **Publiek API endpoint** `GET /api/harbors/official` — iedereen kan standaardhavens zien, ook zonder login
-- [x] **Admin-only bewerking** — alleen admin kan officiële havens bewerken
-- [x] **"⭐ Markeer als Standaard" knop** in de haven editor (paars → groen na activering, alleen zichtbaar voor admin)
-- [x] **Officiële havens filteren** — verschijnen niet dubbel in "Mijn Havens"
-- [x] **User role** globaal beschikbaar via `window._currentUser`
-- [x] **Auto-select** na cloud save: dropdown springt automatisch naar de opgeslagen haven
-- [x] **Backend uitbreidingen**:
-  - `HarborController::official()` — publiek endpoint
-  - `HarborController::update()` — admin mag alle havens bewerken + `is_official` toggelen
-  - Route: `GET /api/harbors/official` (publiek, geen auth)
+#### 6.3 Officiële Scenario's — Admin Systeem
+- [x] **Database migratie**: `is_official` kolom toegevoegd aan `scenarios` tabel
+- [x] **Publiek API endpoint** `GET /api/scenarios/official` — standaard scenario's voor iedereen
+- [x] **Admin toggle**: `POST /api/admin/scenarios/{id}/toggle-official`
+- [x] **Admin-only "⭐ Markeer als Standaard" knop** in Scenario Editor (paars → groen na activering)
+- [x] **`ApiClient.ts`** uitgebreid met `getOfficialScenarios()` en `toggleOfficialScenario()`
+- [x] **`GameManager.ts`** haalt officiële scenario's op bij startup, toont in dropdown
 
-#### 5.4 Live Server Deployment & Tests
-- [x] Backend database leeggehaald en vers opgebouwd op VPS.
-- [x] Admin account veilig gegenereerd in live database.
-- [x] Frontend via Vite config correct gekoppeld aan live/lokale API endpoints.
-- [x] De haven opslaan en markeren als standaard werkt succesvol.
+#### 6.4 Per-Object Scenario Instellingen (Coins & Spots)
+- [x] **Volgorde (order)** — Munt/spot verschijnt pas als vorige gereed is
+- [x] **Tijdslimiet (timeLimit)** — Seconden dat object actief is nadat het verschijnt
+- [x] **Lijnen vereist (linesRequired)** — Minimum aanleglijnen voor spot-voltooiing
+- [x] **Aanlegtijd (mooringTimeRequired)** — Seconden stil moeten liggen bij spot
+
+#### 6.5 Deployment
+- [x] Commit & push naar GitHub (frontend auto-deploy via Actions)
+- [x] Backend bestanden geüpload via SCP
+- [x] Database migratie uitgevoerd op VPS (`php artisan migrate --force`)
+- [x] Cache gecleared op VPS (`php artisan optimize:clear`)
 
 ---
 
-## Sprint 6: Game Builder, Game Loop & Bugfixes 🎮 (TODO)
-*Doel: De "Standaardhavens" weergave fixen, en speelbare games samenstellen uit scenario's.*
+## Sprint 7: Game Builder & Game Loop 🎮 (BEZIG)
+*Doel: Games samenstellen uit scenario's en speelbaar maken als aaneengesloten flow.*
 
-### 🛠️ Eerste Prioriteit Start Volgende Sessie:
-- [ ] **Bugfix:** De paarse "Markeer als Standaard" knop werkt in de Backend (database), maar de haven verschijnt lokaal/live nog niet direct goed in de "Standaardhavens" dropdown lijst.
-  *Workflow-regel:* Volgende sessie eerst lokaal debuggen, testen, en pas na succes naar de VPS deployen!
+### ✔️ Voltooid in deze sessie (Sessie: Game Builder Polish)
+- [x] **Game Builder UI**: Volledig zwevend centraal paneel voor samenstellen van Scenario-reeksen
+- [x] **Data structuur & API**: `start_points` en `target_points` toegevoegd in API, Migrations, en Model
+- [x] **Unieke Namen & Deduplicatie**: Voorkomen dat eigen games/scenarios identiek zijn of dubbel getoond worden
+- [x] **Gecentreerde Editors**: Haven en Scenario editor ook omgebouwd naar een centraal zwevend paneel ("Modal") met behoud van canvas klik-mogelijkheid d.m.v. backdrop blur
+- [x] **Verwijderen Opties**: Trash-can button toegevoegd om games weg te gooien, direct naast de titel.
+- [x] **Officiële Games**: Standaard games kunnen door admin gemarkeerd worden en in aparte dropdown lijst belanden.
 
-### TODO
-1.  **UC-601: Game Builder Frontend** 🔲
-    - [ ] UI voor het selecteren en ordenen van scenario's binnen een game
-    - [ ] Drag & drop volgorde
-    - [ ] Introtext per scenario instellen
-    - [ ] Opslaan naar cloud (`POST /api/games`)
-    
-2.  **UC-602: Game Loop** 🔲
-    - [ ] Speelbare flow: Game selectie → Intro → Scenario 1 → Score → Scenario 2 → ... → Eindscherm
-    - [ ] Voortgang bijhouden (welk scenario is voltooid)
-    - [ ] Overgang animatie tussen scenario's
-    
-3.  **UC-603: Scenario Editor Verfijning** 🔲
-    - [ ] Delete-knop voor scenario's
-    - [ ] "Laden..." indicator bij ophalen cloud-data
-    - [ ] Wind/physics correct mee opslaan vanuit de globale instellingen
-    
-4.  **UC-604: Admin Scenario & Game Systeem** 🔲
-    - [ ] Admin kan scenario's markeren als officieel (vergelijkbaar met havens)
-    - [ ] Admin kan games markeren als officieel
-    - [ ] Publiek endpoint voor officiële scenario's en games
+### 🛠️ START HIER VOLGENDE KEER (De Game Loop):
+
+**Werkwijze:** De structuur van een Game is nu opslaanbaar en bewerkbaar. Nu moet de *speler* de flow kunnen ervaren.
+
+#### 7.2 Game Loop (UC-702)
+- [ ] Speelbare flow opzetten in `GameManager` (of nieuwe `GameRunner.ts`): Game selectie → Intro → Scenario 1 → ... → Eindscherm
+- [ ] Scenario-specifieke `start_points` overerven of aftrekken gedurende de runtime
+- [ ] Validatie tegen `target_points` (is doel gehaald bij einde scenario reeks?)
+- [ ] UI: Dashboard updaten om punten / voortgang te tonen tijdens de Game Mode
+- [ ] Overgangsanimatie of "Next Level" tussenscreen tussen scenarios in een reeks
+
+#### 7.4 Kleine Openstaande Verbeteringen
+- [ ] Delete-knop voor scenario's in Scenario Editor (via linker paneel indien nodig)
+- [ ] "Laden..." indicator bij ophalen cloud-data
+- [ ] Scenario Editor: havennaam in de editor header tonen zodra scenario geladen is
 
 ---
 
-## Sprint 7: Polish & Community 💰 (LATER)
+## Sprint 8: Polish & Community 💰 (LATER)
 *Doel: Community en lanceren klaar maken.*
 
 ### TODO
-1.  **UC-701: Delen & Spelen** — Linkjes delen van games
-2.  **UC-702: Advanced Gameplay** — Ankeren, ondiepten, stroming
-3.  **UC-703: Mobile Support** — Touch controls
-4.  **UC-704: Leaderboards** — Scores per game/scenario vergelijken
-5.  **UC-705: User Profiles** — Voortgang, badges, statistieken
+1.  **UC-801: Delen & Spelen** — Linkjes delen van games
+2.  **UC-802: Advanced Gameplay** — Ankeren, ondiepten, stroming
+3.  **UC-803: Mobile Support** — Touch controls
+4.  **UC-804: Leaderboards** — Scores per game/scenario vergelijken
+5.  **UC-805: User Profiles** — Voortgang, badges, statistieken
 
 ---
 
@@ -146,10 +154,15 @@
 | `/api/harbors/official` | GET | ❌ Publiek | Alle officiële havens |
 | `/api/harbors` | GET | ✅ Login | Eigen + officiële havens |
 | `/api/harbors` | POST | ✅ Login | Haven opslaan |
-| `/api/harbors/{id}` | PUT | ✅ Login/Admin | Haven bijwerken (admin: + is_official) |
+| `/api/harbors/{id}` | PUT | ✅ Login/Admin | Haven bijwerken |
 | `/api/harbors/{id}` | DELETE | ✅ Login | Haven verwijderen |
+| `/api/admin/harbors/{id}/toggle-official` | POST | ✅ Admin | Officieel toggle haven |
+| `/api/scenarios/official` | GET | ❌ Publiek | Alle officiële scenario's |
 | `/api/scenarios` | GET/POST | ✅ Login | Scenario CRUD |
+| `/api/scenarios/{id}` | PUT/DELETE | ✅ Login | Scenario bijwerken/verwijderen |
+| `/api/admin/scenarios/{id}/toggle-official` | POST | ✅ Admin | Officieel toggle scenario |
 | `/api/games` | GET/POST | ✅ Login | Game CRUD |
+| `/api/games/{id}` | PUT/DELETE | ✅ Login | Game bijwerken/verwijderen |
 | `/api/login` | POST | ❌ Publiek | Inloggen |
 | `/api/register` | POST | ❌ Publiek | Registreren |
 
@@ -158,10 +171,14 @@
 |---|---|
 | `src/data/harbors.ts` | Types, lege template, dynamische arrays, helper functies |
 | `src/core/GameState.ts` | Globale spel-staat (boot, haven, scenario, modus) |
-| `src/core/GameManager.ts` | Modus-wisseling, selectors, API integratie, physics |
+| `src/core/GameManager.ts` | Modus-wisseling, selectors, API integratie, game loop |
 | `src/core/ApiClient.ts` | Alle API communicatie |
-| `src/editor/HarborEditor.ts` | Haven editor (tekenen, selecteren, alignment, cloud save, admin toggle) |
-| `src/editor/ScenarioEditorController.ts` | Scenario editor |
-| `src/editor/GameBuilderController.ts` | Game builder (basis) |
+| `src/core/ScenarioRunner.ts` | Scenario gameplay logica (coins, spots, timer) |
+| `src/editor/HarborEditor.ts` | Haven editor (tekenen, alignment, cloud save, admin toggle) |
+| `src/editor/ScenarioEditorController.ts` | Scenario editor (coins, spots, opslaan, admin toggle) |
+| `src/editor/GameBuilderController.ts` | Game builder (basis aanwezig, nog verder te bouwen) |
 | `src/ui/Render.ts` | Canvas rendering (water, haven, boot, UI) |
-| `backend/app/Http/Controllers/HarborController.php` | Haven API (+ officieel endpoint) |
+| `backend/app/Http/Controllers/HarborController.php` | Haven API |
+| `backend/app/Http/Controllers/ScenarioController.php` | Scenario API (+ officieel endpoint) |
+| `backend/app/Http/Controllers/AdminController.php` | Admin: toggle official haven/scenario |
+| `backend/app/Http/Controllers/GameController.php` | Game API |
