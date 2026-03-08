@@ -6,6 +6,7 @@ import { Render } from './ui/Render';
 import { GameManager } from './core/GameManager';
 import { tutorial } from './core/Tutorial';
 import { UserBar } from './ui/UserBar';
+import { scenarioRunner } from './core/ScenarioRunner';
 
 new UserBar(); // instantiated for DOM side-effects
 const render = new Render('simCanvas');
@@ -38,22 +39,8 @@ function loop() {
         // Tutorial update (coin collection, step progression)
         tutorial.update(gameState);
 
-        // Game Coin Collection
         if (gameState.gameMode === 'game') {
-            for (const coin of gameState.coins) {
-                if (coin.collected) continue;
-                const dx = gameState.boat.x - coin.x;
-                const dy = gameState.boat.y - coin.y;
-                if (dx * dx + dy * dy < (coin.radius + 20) ** 2) {
-                    coin.collected = true;
-                    // console.log("Coin collected!");
-                }
-            }
-            // Check level completion
-            if (gameState.coins.length > 0 && gameState.coins.every(c => c.collected)) {
-                // Level Complete Logic?
-                // For now just stay here.
-            }
+            scenarioRunner.update(gameState, 16.666);
         }
     }
 

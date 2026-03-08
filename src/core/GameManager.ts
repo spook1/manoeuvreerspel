@@ -27,6 +27,7 @@ export class GameManager {
         this.setupModeButtons();
         this.fetchOfficialHarbors();
         this.fetchOfficialScenarios();
+        this.fetchOfficialGames();
         this.fetchCloudScenarios();
         this.fetchCloudGames();
     }
@@ -78,7 +79,8 @@ export class GameManager {
         if (!ApiClient.isLoggedIn) return;
         try {
             const scenarios = await ApiClient.getMyScenarios();
-            this.customScenarios = scenarios.map((s: any) => ({
+            const cloudOnly = scenarios.filter((s: any) => !s.is_official);
+            this.customScenarios = cloudOnly.map((s: any) => ({
                 id: s.id.toString(),
                 name: s.name,
                 description: s.description,
@@ -98,16 +100,29 @@ export class GameManager {
         }
     }
 
+    public async fetchOfficialGames() {
+        try {
+            const games = await ApiClient.getOfficialGames();
+            const group = document.getElementById('officialGamesGroup');
+            if (group) {
+                group.innerHTML = games.map((g: any) => `<option value="g_${g.id}">⭐ ${g.name}</option>`).join('');
+            }
+        } catch (e) {
+            console.error('Fout bij ophalen officiële games:', e);
+        }
+    }
+
     public async fetchCloudGames() {
         if (!ApiClient.isLoggedIn) return;
         try {
             const games = await ApiClient.getMyGames();
             const group = document.getElementById('customGamesGroup');
             if (group) {
-                group.innerHTML = games.map((g: any) => `<option value="g_${g.id}">${g.name}</option>`).join('');
+                const cloudOnly = games.filter((g: any) => !g.is_official);
+                group.innerHTML = cloudOnly.map((g: any) => `<option value="g_${g.id}">${g.name}</option>`).join('');
             }
         } catch (e) {
-            console.error('Fout bij ophalen havens/games uit cloud:', e);
+            console.error('Fout bij ophalen games uit cloud:', e);
         }
     }
 
@@ -299,6 +314,32 @@ export class GameManager {
 
         gameState.gameMode = 'game';
         this.applyBodyMode('game');
+
+        scenarioRunner.onComplete = () => {
+            const status = document.getElementById('status');
+            const box = document.getElementById('status-message-box');
+            if (status && box) {
+                status.textContent = `Scenario voltooid! Score: ${Math.floor(gameState.score)}`;
+                status.style.color = '#4ade80';
+                box.style.display = 'block';
+                setTimeout(() => box.style.display = 'none', 4000);
+            }
+        };
+
+        scenarioRunner.onFail = () => {
+            const status = document.getElementById('status');
+            const box = document.getElementById('status-message-box');
+            if (status && box) {
+                status.textContent = 'Scenario mislukt (tijd/score). Probeer opnieuw!';
+                status.style.color = '#ef4444';
+                box.style.display = 'block';
+                setTimeout(() => {
+                    box.style.display = 'none';
+                    this.resetCurrentLevel();
+                }, 3000);
+            }
+        };
+
         scenarioRunner.start(gameState);
 
         const modal = document.getElementById('introModal');
@@ -424,7 +465,10 @@ export class GameManager {
             await this.fetchOfficialScenarios();
             await this.fetchCloudScenarios();
         };
-        (window as any).refreshGames = () => this.fetchCloudGames();
+        (window as any).refreshGames = async () => {
+            await this.fetchOfficialGames();
+            await this.fetchCloudGames();
+        }
         (window as any).startLevel = (n: number) => this.startLevel(n);
 
         // Physics constants binding
@@ -505,10 +549,15 @@ export class GameManager {
                     this.startGame();
                 } else if (val === 'create') {
                     gameSelector.value = '';
-                    GameBuilderController.show();
+                    GameBuilderController.show('new');
+                } else if (val.startsWith('g_')) {
+                    // Start or Edit? Let's just open in GameBuilder for now 
+                    // since the player/runner logic is not yet built.
+                    const gameId = val.replace('g_', '');
+                    gameSelector.value = '';
+                    GameBuilderController.show(gameId);
                 } else {
-                    // Start an actual custom game (to be implemented)
-                    alert("Custom game: " + val);
+                    alert("Onbekende selectie: " + val);
                 }
             });
         }

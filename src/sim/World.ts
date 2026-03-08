@@ -3,6 +3,50 @@ import { Constants } from '../core/Constants';
 import { BoatState } from '../types';
 
 export class World {
+    private static lastCollisionTime: Record<string, number> = {};
+
+    private static applyPenalty(gameState: GameState, objectId: string | undefined, vRelSpeed: number, isFender: boolean) {
+        if (!objectId || gameState.gameMode !== 'game') return;
+
+        const now = Date.now();
+        if (this.lastCollisionTime[objectId] && now - this.lastCollisionTime[objectId] < 1000) {
+            return;
+        }
+
+        const pen = gameState.scenario?.objectPenalties?.[objectId];
+        if (!pen) return;
+
+        const vKnot = Math.abs(vRelSpeed) / Constants.PX_PER_KNOT;
+        const tSoft = pen.speedThresholdSoft ?? 1;
+        const tHard = pen.speedThresholdHard ?? pen.maxSpeedKnots ?? 2;
+
+        let penalty = 0;
+        let typeStr = "";
+
+        if (vKnot >= tHard) {
+            penalty = isFender ? (pen.fenderPenaltyHard ?? 3) : (pen.hullPenaltyHard ?? 40);
+            typeStr = "Harde botsing";
+        } else if (vKnot >= tSoft) {
+            penalty = isFender ? (pen.fenderPenaltySoft ?? 1) : (pen.hullPenaltySoft ?? 2);
+            typeStr = "Zachte botsing";
+        }
+
+        if (penalty > 0) {
+            this.lastCollisionTime[objectId] = now;
+            gameState.score -= penalty;
+            console.log(`[Penalty] ${typeStr} met ${objectId} (${vKnot.toFixed(1)} kn) → -${penalty} pt. Score: ${gameState.score}`);
+
+            const status = document.getElementById('status');
+            const box = document.getElementById('status-message-box');
+            if (status && box) {
+                status.textContent = `${typeStr}! -${penalty}pt`;
+                status.style.color = '#ef4444';
+                box.style.display = 'block';
+                setTimeout(() => box.style.display = 'none', 2000);
+            }
+        }
+    }
+
     static checkCollisions(boat: BoatState, gameState: GameState): void {
         const cosH = Math.cos(boat.heading);
         const sinH = Math.sin(boat.heading);
@@ -93,6 +137,7 @@ export class World {
             }
 
             let hitJetty = false;
+            let isFenderContact = false;
             let overlapX = 0;
             let overlapY = 0;
             let bestContactWorldX = boat.x;
@@ -105,6 +150,7 @@ export class World {
 
                 if (wx > j.x && wx < j.x + j.w && wy > j.y && wy < j.y + j.h) {
                     hitJetty = true;
+                    isFenderContact = false;
                     bestContactWorldX = wx;
                     bestContactWorldY = wy;
 
@@ -148,6 +194,7 @@ export class World {
                         // Note: Using max penetration logic
                         if (!hitJetty || pen > Math.hypot(overlapX, overlapY)) {
                             hitJetty = true;
+                            isFenderContact = true;
                             overlapX = nx * pen;
                             overlapY = ny * pen;
                             bestContactWorldX = wx;
@@ -170,6 +217,7 @@ export class World {
                     const vRel = vContactX * nx + vContactY * ny;
 
                     if (vRel < 0) {
+                        this.applyPenalty(gameState, j.id, vRel, isFenderContact);
                         const rCrossN = contactWorldX * ny - contactWorldY * nx;
                         const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
                         const impulseMag = -vRel * effectiveMass;
@@ -212,6 +260,7 @@ export class World {
                 }
 
                 let hitShore = false;
+                let isFenderContact = false;
                 let overlapX = 0, overlapY = 0;
                 let bestContactWorldX = boat.x, bestContactWorldY = boat.y;
 
@@ -220,6 +269,7 @@ export class World {
                     const wy = boat.y + c.x * sinH + c.y * cosH;
                     if (wx > shore.x && wx < shore.x + shore.w && wy > shore.y && wy < shore.y + shore.h) {
                         hitShore = true;
+                        isFenderContact = false;
                         bestContactWorldX = wx; bestContactWorldY = wy;
                         const dL = wx - shore.x, dR = (shore.x + shore.w) - wx;
                         const dT = wy - shore.y, dB = (shore.y + shore.h) - wy;
@@ -250,6 +300,7 @@ export class World {
                             if (dist > 0.001) { nx = dx / dist; ny = dy / dist; }
                             if (!hitShore || pen > Math.hypot(overlapX, overlapY)) {
                                 hitShore = true;
+                                isFenderContact = true;
                                 overlapX = nx * pen; overlapY = ny * pen;
                                 bestContactWorldX = wx; bestContactWorldY = wy;
                             }
@@ -267,6 +318,7 @@ export class World {
                         const vContactY = boat.vy + boat.omega * contactWorldX;
                         const vRel = vContactX * nx + vContactY * ny;
                         if (vRel < 0) {
+                            this.applyPenalty(gameState, shore.id, vRel, isFenderContact);
                             const rCrossN = contactWorldX * ny - contactWorldY * nx;
                             const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
                             const impulseMag = -vRel * effectiveMass;
@@ -307,6 +359,7 @@ export class World {
                             const vContactY = boat.vy + boat.omega * contactWorldX;
                             const vRel = vContactX * nx + vContactY * ny;
                             if (vRel < 0) {
+                                this.applyPenalty(gameState, npc.id, vRel, true);
                                 const rCrossN = contactWorldX * ny - contactWorldY * nx;
                                 const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
                                 const impulseMag = -vRel * effectiveMass;
