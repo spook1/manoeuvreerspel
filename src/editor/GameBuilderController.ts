@@ -27,12 +27,18 @@ export class GameBuilderController {
         try {
             if (ApiClient.isLoggedIn) {
                 myScenarios = await ApiClient.getMyScenarios();
+                const officialRecs = await ApiClient.getOfficialScenarios();
+                const offIds = new Set(officialRecs.map((o: any) => o.id));
+                myScenarios = myScenarios.filter((s: any) => !offIds.has(s.id));
             }
         } catch (e) {
             console.error(e);
         }
 
-        allScenarios = [...DEFAULT_SCENARIOS, ...myScenarios];
+        const map = new Map<string | number, any>();
+        [...DEFAULT_SCENARIOS, ...myScenarios].forEach(s => map.set(s.id, s));
+        allScenarios = Array.from(map.values());
+
         this.renderAvailableScenarios();
         this.renderSelectedScenarios();
 
@@ -141,7 +147,7 @@ export class GameBuilderController {
             el.innerHTML = `
                 <div>
                     <div style="font-size:13px; color:#e2e8f0; font-weight:bold;">${scen.name}</div>
-                    <div style="font-size:10px; color:#94a3b8;">${String(scen.id).startsWith('s') ? 'Standaard Scenario' : 'Mijn Scenario'}</div>
+                    <div style="font-size:10px; color:#94a3b8;">${String(scen.id).startsWith('s') || scen.is_official ? '⭐ Standaard Scenario' : 'Mijn Scenario'}</div>
                 </div>
                 <div style="font-size:16px;">➕</div>
             `;

@@ -587,8 +587,7 @@ export class GameManager {
                 } else if (val.startsWith('g_')) {
                     const gameId = val.replace('g_', '');
                     gameSelector.value = '';
-                    GameBuilderController.onExit = () => this.startPracticeMode();
-                    GameBuilderController.show(gameId);
+                    alert("Gameplay (het spelen van een heel spel) is in de maak.\n\nFunctie voor Game ID: " + gameId + " wordt hier binnenkort geladen!");
                 } else {
                     alert("Onbekende selectie: " + val);
                 }
@@ -766,8 +765,8 @@ export class GameManager {
         const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
 
         const combinedBaseScenarios = [...DEFAULT_SCENARIOS, ...this.officialScenarios];
-        const baseScenarios = combinedBaseScenarios;
-        const customScenarios = this.customScenarios;
+        const offIds = new Set(combinedBaseScenarios.map(s => s.id));
+        const customScenarios = this.customScenarios.filter(s => !offIds.has(s.id));
 
         const sortScenarios = (a: ScenarioData, b: ScenarioData) => {
             const ha = this.getHarborName(a.harborId);
@@ -776,11 +775,11 @@ export class GameManager {
             return a.name.localeCompare(b.name);
         };
 
-        baseScenarios.sort(sortScenarios);
+        combinedBaseScenarios.sort(sortScenarios);
         customScenarios.sort(sortScenarios);
 
         // Vind de maximale scenario-naamslengte voor uitlijning
-        const allScenarios = [...baseScenarios, ...customScenarios];
+        const allScenarios = [...combinedBaseScenarios, ...customScenarios];
         const maxLen = allScenarios.reduce((m, s) => Math.max(m, s.name.length), 0);
 
         // Standaard scenario's krijgen ⭐, eigen scenario's niet
@@ -795,7 +794,7 @@ export class GameManager {
             return `<option value="${s.id}" data-harbor="${s.harborId}">${s.name}${pad}│ ${harbor}</option>`;
         };
 
-        const html = baseScenarios.map(makeBaseHtml).join('');
+        const html = combinedBaseScenarios.map(makeBaseHtml).join('');
         if (scenarioGroup) scenarioGroup.innerHTML = html;
 
         const customHtml = customScenarios.map(makeCustomHtml).join('');
