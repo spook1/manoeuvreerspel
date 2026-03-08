@@ -8,13 +8,19 @@ export interface GameData {
     description: string;
     scenarios: any[];
     is_public: boolean;
+    is_official?: boolean;
+    startPoints?: number;
+    targetPoints?: number;
 }
 
-let activeGame: GameData = { id: 'new', name: '', description: '', scenarios: [], is_public: false };
+let activeGame: GameData = { id: 'new', name: '', description: '', scenarios: [], is_public: false, startPoints: 100, targetPoints: 80 };
 let myScenarios: any[] = [];
 let allScenarios: any[] = [];
+let isAdmin = false;
 
 export class GameBuilderController {
+
+    static onExit: (() => void) | null = null;
 
     static async mount() {
         // Fetch scenarios from API to show in available list
@@ -36,6 +42,14 @@ export class GameBuilderController {
             searchInput.addEventListener('input', () => this.renderAvailableScenarios(searchInput.value));
         }
 
+        // Fetch user context for admin rights
+        try {
+            if (ApiClient.isLoggedIn) {
+                const user = await ApiClient.getUser();
+                isAdmin = user.role === 'admin' || user.role === 'gamemaster';
+            }
+        } catch (e) { }
+
         // Bind Save
         const bSave = document.getElementById('gbSaveBtn');
         if (bSave) {
@@ -47,15 +61,59 @@ export class GameBuilderController {
         if (bExit) {
             bExit.onclick = () => this.hide();
         }
+
+        // Bind delete & mark official
+        const btnDelete = document.getElementById('gbDeleteBtn');
+        if (btnDelete) btnDelete.onclick = () => this.deleteGame();
+
+        const btnOfficial = document.getElementById('gbToggleOfficialBtn');
+        if (btnOfficial) btnOfficial.onclick = () => this.toggleOfficial();
     }
 
-    static show() {
+    static async show(gameId: string | number = 'new') {
         const overlay = document.getElementById('gameBuilderOverlay');
-        if (overlay) overlay.style.display = 'block';
+        if (overlay) overlay.style.display = 'flex';
 
-        activeGame = { id: 'new', name: '', description: '', scenarios: [], is_public: false };
-        (document.getElementById('gbGameNameInput') as HTMLInputElement).value = '';
-        (document.getElementById('gbGameDescInput') as HTMLTextAreaElement).value = '';
+        if (gameId === 'new') {
+            activeGame = { id: 'new', name: '', description: '', scenarios: [], is_public: false, startPoints: 100, targetPoints: 80 };
+        } else {
+            try {
+                const btn = document.getElementById('gbSaveBtn');
+                if (btn) btn.textContent = '⏳ Laden...';
+
+                const dbGame = await ApiClient.getGame(Number(gameId));
+                activeGame = {
+                    id: dbGame.id.toString(),
+                    name: dbGame.name,
+                    description: dbGame.description || '',
+                    scenarios: dbGame.scenarios || [],
+                    is_public: dbGame.is_public || false,
+                    is_official: dbGame.is_official || false,
+                    startPoints: dbGame.start_points !== undefined ? dbGame.start_points : 100,
+                    targetPoints: dbGame.target_points !== undefined ? dbGame.target_points : 80
+                };
+            } catch (e: any) {
+                alert("Game kon niet in de editor geladen worden.");
+                activeGame = { id: 'new', name: '', description: '', scenarios: [], is_public: false, startPoints: 100, targetPoints: 80 };
+            }
+        }
+
+        (document.getElementById('gbGameNameInput') as HTMLInputElement).value = activeGame.name;
+        (document.getElementById('gbGameDescInput') as HTMLTextAreaElement).value = activeGame.description;
+        (document.getElementById('gbStartPointsInput') as HTMLInputElement).value = activeGame.startPoints?.toString() || '100';
+        (document.getElementById('gbTargetPointsInput') as HTMLInputElement).value = activeGame.targetPoints?.toString() || '80';
+
+        const btnDelete = document.getElementById('gbDeleteBtn');
+        if (btnDelete) btnDelete.style.display = activeGame.id === 'new' ? 'none' : 'block';
+
+        const btnOfficial = document.getElementById('gbToggleOfficialBtn');
+        if (btnOfficial) {
+            btnOfficial.style.display = (isAdmin && activeGame.id !== 'new') ? 'block' : 'none';
+            btnOfficial.style.backgroundColor = activeGame.is_official ? '#22c55e' : '#a855f7';
+        }
+
+        const bSave = document.getElementById('gbSaveBtn');
+        if (bSave) bSave.textContent = '💾 Game Opslaan';
 
         this.mount();
     }
@@ -66,6 +124,8 @@ export class GameBuilderController {
 
         // Let GameManager refresh
         if ((window as any).refreshGames) (window as any).refreshGames();
+
+        if (this.onExit) this.onExit();
     }
 
     static renderAvailableScenarios(filter: string = '') {
@@ -81,7 +141,7 @@ export class GameBuilderController {
             el.innerHTML = `
                 <div>
                     <div style="font-size:13px; color:#e2e8f0; font-weight:bold;">${scen.name}</div>
-                    <div style="font-size:10px; color:#94a3b8;">${scen.id.startsWith('custom') ? 'Mijn Scenario' : 'Standaard Scenario'}</div>
+                    <div style="font-size:10px; color:#94a3b8;">${String(scen.id).startsWith('s') ? 'Standaard Scenario' : 'Mijn Scenario'}</div>
                 </div>
                 <div style="font-size:16px;">➕</div>
             `;
@@ -191,7 +251,9 @@ export class GameBuilderController {
             name: name,
             description: description,
             is_public: false,
-            scenario_ids: validIds
+            scenario_ids: validIds,
+            start_points: parseInt((document.getElementById('gbStartPointsInput') as HTMLInputElement).value) || 100,
+            target_points: parseInt((document.getElementById('gbTargetPointsInput') as HTMLInputElement).value) || 0
         };
 
         const btn = document.getElementById('gbSaveBtn');
@@ -211,6 +273,36 @@ export class GameBuilderController {
         } catch (e: any) {
             alert('Mislukt: ' + e.message);
             if (btn) btn.textContent = '💾 Game Opslaan';
+        }
+    }
+
+    static async deleteGame() {
+        if (activeGame.id === 'new') return;
+        if (!confirm("Weet je zeker dat je deze game wilt verwijderen?")) return;
+
+        try {
+            await ApiClient.deleteGame(Number(activeGame.id));
+            alert("Game verwijderd!");
+            this.hide();
+        } catch (e: any) {
+            alert("Verwijderen mislukt: " + e.message);
+        }
+    }
+
+    static async toggleOfficial() {
+        if (activeGame.id === 'new') return;
+
+        try {
+            const res = await ApiClient.toggleOfficialGame(Number(activeGame.id));
+            if (res.game) {
+                activeGame.is_official = res.game.is_official;
+                const btnOfficial = document.getElementById('gbToggleOfficialBtn');
+                if (btnOfficial) {
+                    btnOfficial.style.backgroundColor = activeGame.is_official ? '#22c55e' : '#a855f7';
+                }
+            }
+        } catch (e: any) {
+            alert("Status veranderen mislukt: " + e.message);
         }
     }
 }

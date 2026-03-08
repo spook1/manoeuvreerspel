@@ -243,6 +243,35 @@ export class GameManager {
     endTutorial() { tutorial.stop(); }
     nextTutorialStep() { tutorial.nextStep(gameState); }
 
+    // ── GAME EDITOR ──────────────────────────────────────────────────────────
+
+    startGameEdit() {
+        const modal = document.getElementById('introModal');
+        if (modal) modal.style.display = 'none';
+
+        const settings = document.getElementById('settingsPanel');
+        if (settings) settings.style.display = 'none';
+
+        if (gameState.gameMode === 'harbor-edit') {
+            editor.stop();
+        }
+
+        const editorOverlay = document.getElementById('editorOverlay');
+        if (editorOverlay) editorOverlay.style.display = 'none';
+
+        const scenarioOverlay = document.getElementById('scenarioEditorOverlay');
+        if (scenarioOverlay) scenarioOverlay.style.display = 'none';
+
+        const dash = document.getElementById('gameDashboard');
+        if (dash) dash.style.display = 'grid';
+
+        gameState.gameMode = 'game-edit';
+        this.applyBodyMode('game-edit');
+
+        GameBuilderController.onExit = () => this.startPracticeMode();
+        GameBuilderController.show('new');
+    }
+
     // ── GAME FLOW ────────────────────────────────────────────────────────────
 
     resetCurrentLevel() {
@@ -397,26 +426,29 @@ export class GameManager {
         }
     }
 
-    applyBodyMode(mode: 'game' | 'practice' | 'harbor-edit' | 'scenario-edit') {
+    applyBodyMode(mode: 'game' | 'practice' | 'harbor-edit' | 'scenario-edit' | 'game-edit') {
         document.body.classList.remove(
             'mode-game', 'mode-practice', 'mode-edit',
-            'mode-harbor-edit', 'mode-scenario-edit',
+            'mode-harbor-edit', 'mode-scenario-edit', 'mode-game-edit',
             'game-mode-active', 'editor-mode'
         );
         const cssMode = mode === 'harbor-edit' ? 'harbor-edit'
             : mode === 'scenario-edit' ? 'scenario-edit'
-                : mode;
+                : mode === 'game-edit' ? 'game-edit'
+                    : mode;
         document.body.classList.add(`mode-${cssMode}`);
 
         const btnGame = document.getElementById('btnModeGame');
         const btnPractice = document.getElementById('btnModePractice');
         const btnEdit = document.getElementById('btnModeEdit');
         const btnScenarioEdit = document.getElementById('btnModeScenarioEdit');
+        const btnGameEdit = document.getElementById('btnModeGameEdit');
 
         if (btnGame) btnGame.classList.toggle('active', mode === 'game');
         if (btnPractice) btnPractice.classList.toggle('active', mode === 'practice');
         if (btnEdit) btnEdit.classList.toggle('active', mode === 'harbor-edit');
         if (btnScenarioEdit) btnScenarioEdit.classList.toggle('active', mode === 'scenario-edit');
+        if (btnGameEdit) btnGameEdit.classList.toggle('active', mode === 'game-edit');
     }
 
     setupModeButtons() {
@@ -424,11 +456,13 @@ export class GameManager {
         const btnPractice = document.getElementById('btnModePractice');
         const btnEdit = document.getElementById('btnModeEdit');
         const btnScenarioEdit = document.getElementById('btnModeScenarioEdit');
+        const btnGameEdit = document.getElementById('btnModeGameEdit');
 
         if (btnGame) btnGame.onclick = () => this.startGameMode();
         if (btnPractice) btnPractice.onclick = () => this.startPracticeMode();
         if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
         if (btnScenarioEdit) btnScenarioEdit.onclick = () => this.startScenarioEdit();
+        if (btnGameEdit) btnGameEdit.onclick = () => this.startGameEdit();
     }
 
     setMode(mode: 'game' | 'practice') {
@@ -549,12 +583,11 @@ export class GameManager {
                     this.startGame();
                 } else if (val === 'create') {
                     gameSelector.value = '';
-                    GameBuilderController.show('new');
+                    this.startGameEdit();
                 } else if (val.startsWith('g_')) {
-                    // Start or Edit? Let's just open in GameBuilder for now 
-                    // since the player/runner logic is not yet built.
                     const gameId = val.replace('g_', '');
                     gameSelector.value = '';
+                    GameBuilderController.onExit = () => this.startPracticeMode();
                     GameBuilderController.show(gameId);
                 } else {
                     alert("Onbekende selectie: " + val);

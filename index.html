@@ -199,58 +199,82 @@
         /* EDITOR MODE (legacy) */
         body.mode-edit #scenarioPickerBar,
         body.mode-harbor-edit #scenarioPickerBar,
-        body.mode-scenario-edit #scenarioPickerBar {
+        body.mode-scenario-edit #scenarioPickerBar,
+        body.mode-game-edit #scenarioPickerBar {
+            display: none;
+        }
+
+        body.mode-edit #gamePickerBar,
+        body.mode-harbor-edit #gamePickerBar,
+        body.mode-scenario-edit #gamePickerBar,
+        body.mode-game-edit #gamePickerBar {
             display: none;
         }
 
         body.mode-edit #levelSelection,
         body.mode-harbor-edit #levelSelection,
-        body.mode-scenario-edit #levelSelection {
+        body.mode-scenario-edit #levelSelection,
+        body.mode-game-edit #levelSelection {
             display: none;
         }
 
         body.mode-edit #harborPickerBar,
         body.mode-harbor-edit #harborPickerBar,
-        body.mode-scenario-edit #harborPickerBar {
+        body.mode-scenario-edit #harborPickerBar,
+        body.mode-game-edit #harborPickerBar {
             display: none;
         }
 
         body.mode-edit .game-only,
         body.mode-harbor-edit .game-only,
-        body.mode-scenario-edit .game-only {
+        body.mode-scenario-edit .game-only,
+        body.mode-game-edit .game-only {
             display: none;
         }
 
         body.mode-edit .practice-only,
         body.mode-harbor-edit .practice-only,
-        body.mode-scenario-edit .practice-only {
+        body.mode-scenario-edit .practice-only,
+        body.mode-game-edit .practice-only {
             display: none;
         }
 
         body.mode-edit .edit-only,
         body.mode-harbor-edit .edit-only,
-        body.mode-scenario-edit .edit-only {
+        body.mode-scenario-edit .edit-only,
+        body.mode-game-edit .edit-only {
             display: flex;
         }
 
         /* Hide other navigation buttons while in editor */
         body.mode-harbor-edit #btnModeGame,
         body.mode-harbor-edit #btnModePractice,
-        body.mode-harbor-edit #btnModeScenarioEdit {
+        body.mode-harbor-edit #btnModeScenarioEdit,
+        body.mode-harbor-edit #btnModeGameEdit {
             display: none !important;
         }
 
         body.mode-scenario-edit #btnModeGame,
         body.mode-scenario-edit #btnModePractice,
-        body.mode-scenario-edit #btnModeEdit {
+        body.mode-scenario-edit #btnModeEdit,
+        body.mode-scenario-edit #btnModeGameEdit {
+            display: none !important;
+        }
+
+        body.mode-game-edit #btnModeGame,
+        body.mode-game-edit #btnModePractice,
+        body.mode-game-edit #btnModeEdit,
+        body.mode-game-edit #btnModeScenarioEdit {
             display: none !important;
         }
 
         /* Settings hidden in both editor modes */
         body.mode-harbor-edit #settingsToggle,
         body.mode-scenario-edit #settingsToggle,
+        body.mode-game-edit #settingsToggle,
         body.mode-harbor-edit .settings-only,
-        body.mode-scenario-edit .settings-only {
+        body.mode-scenario-edit .settings-only,
+        body.mode-game-edit .settings-only {
             display: none;
         }
 
@@ -508,6 +532,7 @@
                     <button id="btnModeEdit" class="mode-btn" style="background:#3b82f6;">⚓ Haven Editor</button>
                     <button id="btnModeScenarioEdit" class="mode-btn" style="background:#8b5cf6;">🎬 Scenario
                         Editor</button>
+                    <button id="btnModeGameEdit" class="mode-btn" style="background:#ec4899;">📦 Game Editor</button>
                 </div>
 
                 <!-- Scenario Picker (Game mode only, deprecated/hidden in game mode directly) -->
@@ -527,9 +552,7 @@
                     <select id="gameSelector"
                         style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;">
                         <option value="" disabled selected>Kies game...</option>
-                        <optgroup label="Acties">
-                            <option value="create">➕ Nieuwe Game Bouwen...</option>
-                        </optgroup>
+                        <optgroup label="Spelen (Iedereen)">
                         <optgroup label="Ingebouwd">
                             <option value="tutorial">🎓 Tutorial</option>
                             <option value="startgame">🚀 Startgame (Alle havens)</option>
@@ -1264,75 +1287,98 @@
 
     <!-- GAME BUILDER OVERLAY (Volledig Scherm Overlap) -->
     <div id="gameBuilderOverlay"
-        style="display:none; position:fixed; top:64px; left:0; width:100%; height:calc(100vh - 64px); background:rgba(15,23,42,0.95); z-index:1500; padding:20px; box-sizing:border-box;">
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:1500; align-items:center; justify-content:center; pointer-events:auto;">
 
-        <!-- Builder Header -->
         <div
-            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(148,163,253,0.2); padding-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <h2 style="margin:0; color:#e2e8f0;">🚀 Game Builder</h2>
-                <input id="gbGameNameInput" type="text" placeholder="Naam van je Game..."
-                    style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:16px; width:300px;">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button id="gbDeleteBtn"
-                    style="display:none; background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑️
-                    Verwijder</button>
-                <button id="gbToggleOfficialBtn" class="admin-only"
-                    style="display:none; background:#a855f7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">⭐
-                    Markeer als Standaard</button>
-                <button id="gbExitBtn"
-                    style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕
-                    Sluiten</button>
-                <button id="gbSaveBtn"
-                    style="background:#22c55e; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">💾
-                    Game Opslaan</button>
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:300px 1fr; gap:20px; height:calc(100% - 80px);">
-            <!-- Sidebar: Available Scenarios -->
+            style="background:rgba(15,23,42,0.95); border:1px solid rgba(148,163,253,0.2); border-radius:12px; width:1000px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); padding:20px; box-sizing:border-box;">
+            <!-- Builder Header -->
             <div
-                style="background:rgba(30,41,59,0.8); border:1px solid #475569; border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:10px;">
-                <h3 style="margin:0; color:#93c5fd; font-size:14px;">➕ Beschikbare Scenario's</h3>
-                <p style="margin:0; font-size:11px; color:#94a3b8;">Klik op een scenario om deze toe te voegen.</p>
-
-                <input id="gbSearchInput" type="text" placeholder="🔍 Zoeken..."
-                    style="background:#0f172a; border:1px solid #334155; color:#fff; padding:6px 10px; border-radius:4px; font-size:12px; width:100%; box-sizing:border-box;">
-
-                <div id="gbAvailableScenariosList"
-                    style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-top:8px;">
-                    <!-- Dynamisch -->
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(148,163,253,0.2); padding-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <h2 style="margin:0; color:#e2e8f0;">🚀 Game Builder</h2>
+                    <input id="gbGameNameInput" type="text" placeholder="Naam van je Game..."
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:16px; width:300px;">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button id="gbDeleteBtn"
+                        style="display:none; background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑️
+                        Verwijder</button>
+                    <button id="gbToggleOfficialBtn" class="admin-only"
+                        style="display:none; background:#a855f7; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">⭐
+                        Markeer als Standaard</button>
+                    <button id="gbExitBtn"
+                        style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕
+                        Sluiten</button>
+                    <button id="gbSaveBtn"
+                        style="background:#22c55e; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">💾
+                        Game Opslaan</button>
                 </div>
             </div>
 
-            <!-- Main Area: The Game Sequence -->
-            <div
-                style="background:rgba(30,41,59,0.5); border:1px dashed #475569; border-radius:8px; padding:20px; display:flex; flex-direction:column; overflow-y:auto;">
-                <h3 style="margin:0 0 16px 0; color:#cbd5e1; font-size:16px;">Jouw Scenario Reeks <span
-                        style="font-size:12px; color:#64748b; font-weight:normal;">(Wordt op volgorde gespeeld)</span>
-                </h3>
+            <div style="display:grid; grid-template-columns:300px 1fr; gap:20px; height:calc(100% - 80px);">
+                <!-- Sidebar: Available Scenarios -->
+                <div
+                    style="background:rgba(30,41,59,0.8); border:1px solid #475569; border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:10px;">
+                    <h3 style="margin:0; color:#93c5fd; font-size:14px;">➕ Beschikbare Scenario's</h3>
+                    <p style="margin:0; font-size:11px; color:#94a3b8;">Klik op een scenario om deze toe te voegen.</p>
 
-                <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
-                    <label style="font-size:12px; color:#94a3b8; margin-bottom:-10px;">Beschrijving / Introductie voor
-                        de Speler:</label>
-                    <textarea id="gbGameDescInput"
-                        placeholder="Vertel de speler in het kort waar deze Game over gaat..."
-                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:10px; border-radius:6px; font-size:13px; width:100%; min-height:80px; resize:vertical; box-sizing:border-box;"></textarea>
+                    <input id="gbSearchInput" type="text" placeholder="🔍 Zoeken..."
+                        style="background:#0f172a; border:1px solid #334155; color:#fff; padding:6px 10px; border-radius:4px; font-size:12px; width:100%; box-sizing:border-box;">
+
+                    <div id="gbAvailableScenariosList"
+                        style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                        <!-- Dynamisch -->
+                    </div>
                 </div>
 
-                <div id="gbSelectedScenariosList" style="display:flex; flex-direction:column; gap:12px; flex:1;">
-                    <!-- Empty state -->
-                    <div id="gbEmptyState"
-                        style="text-align:center; padding:40px 20px; border:2px dashed #334155; border-radius:8px; color:#64748b;">
-                        Voeg scenario's toe uit de linker menubalk om je game-reeks te bouwen.
+                <!-- Main Area: The Game Sequence -->
+                <div
+                    style="background:rgba(30,41,59,0.5); border:1px dashed #475569; border-radius:8px; padding:20px; display:flex; flex-direction:column; overflow-y:auto;">
+                    <h3 style="margin:0 0 16px 0; color:#cbd5e1; font-size:16px;">Jouw Scenario Reeks <span
+                            style="font-size:12px; color:#64748b; font-weight:normal;">(Wordt op volgorde
+                            gespeeld)</span>
+                    </h3>
+
+                    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                        <div style="display:flex; gap:20px; align-items:flex-start;">
+                            <div style="flex:1;">
+                                <label
+                                    style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Beschrijving
+                                    / Introductie voor de Speler:</label>
+                                <textarea id="gbGameDescInput"
+                                    placeholder="Vertel de speler in het kort waar deze Game over gaat..."
+                                    style="background:#1e293b; border:1px solid #475569; color:#fff; padding:10px; border-radius:6px; font-size:13px; width:100%; min-height:80px; resize:vertical; box-sizing:border-box;"></textarea>
+                            </div>
+                            <div style="width:200px; display:flex; flex-direction:column; gap:10px;">
+                                <div>
+                                    <label
+                                        style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Startpunten:</label>
+                                    <input id="gbStartPointsInput" type="number" min="0" value="100"
+                                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; width:100px;">
+                                </div>
+                                <div>
+                                    <label
+                                        style="font-size:12px; color:#94a3b8; display:block; margin-bottom:4px;">Doelpunten
+                                        (Minimaal te behalen score):</label>
+                                    <input id="gbTargetPointsInput" type="number" min="0" value="80"
+                                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; width:100px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="gbSelectedScenariosList" style="display:flex; flex-direction:column; gap:12px; flex:1;">
+                        <!-- Empty state -->
+                        <div id="gbEmptyState"
+                            style="text-align:center; padding:40px 20px; border:2px dashed #334155; border-radius:8px; color:#64748b;">
+                            Voeg scenario's toe uit de linker menubalk om je game-reeks te bouwen.
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script type="module" src="/src/main.ts"></script>
+        <script type="module" src="/src/main.ts"></script>
 </body>
 
 </html>

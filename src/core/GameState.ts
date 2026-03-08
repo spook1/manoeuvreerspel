@@ -5,7 +5,7 @@ export class GameState {
     boat: BoatState;
     harbor: HarborData;
     scenario: ScenarioData | null = null;  // actief scenario (gamemodus)
-    gameMode: 'practice' | 'game' | 'edit' | 'harbor-edit' | 'scenario-edit' = 'practice';
+    gameMode: 'practice' | 'game' | 'edit' | 'harbor-edit' | 'scenario-edit' | 'game-edit' = 'practice';
     currentLevel: number = 1;
     score: number = 100;
     lines: Line[] = [];
@@ -32,6 +32,7 @@ export class GameState {
 
     /** Item geselecteerd in Scenario Editor */
     selectedSEObject: any = null;
+    selectedHarborObjectId: string | null = null;
 
     // Scoring
     lastLinePenaltyTime: number = 0;
