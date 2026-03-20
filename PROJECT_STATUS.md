@@ -137,15 +137,43 @@
 
 ---
 
-## Sprint 8: Polish & Community 💰 (LATER)
+## Sprint 8: UI/UX, QA & Pro Features 🕵️‍♂️ (START HIER)
+*Doel: De applicatie visueel stijltrekken, onnodige 'legacy' onderdelen weghalen, functionaliteit server-side testen en het betaalmodel vormgeven.*
+
+### 🛠️ Nieuwe Use Cases (Gepland voor volgende sessies)
+
+#### 1. UC-801: Verwijderen Ingebouwde Oude Games
+- [ ] Verwijderen van het legacy `tutorial` en `startgame` (alle havens) systeem uit de "Spel" dropdown.
+- [ ] Zorgen dat spelers alléén Game-objecten uit de cloud / API gebruiken en geen hardcoded lokale lijsten meer.
+
+#### 2. UC-802: QA & Server Testing
+- [ ] Zorgvuldig alle "edge cases" testen op de live VPS omgeving (login states, cloud connectivity, opslaan).
+- [ ] Bugs direct signaleren, isoleren en oplossen tijdens de playtest-fase.
+
+#### 3. UC-803: UI / UX Analyse & Redesign
+- [ ] Analyseren of de interface intuïtief genoeg is voor onervaren spelers (UI flow voor Game Selectie vs Oefenen vs Editors).
+- [ ] Vormgeving stijltrekken: De hoofdactieknoppen ("Spel" / "Oefenen") onderscheiden van bouw/editor acties ("Haven"/"Scenario"/"Game" bouwen).
+- [ ] Toepassen van een cleaner, doordachter design-system.
+
+#### 4. UC-804: Admin Beheerportaal Inzichtelijk Maken
+- [ ] Duidelijk in kaart brengen / toegankelijk maken hoe je lokaal (en online) bij het Laravel Admin Panel komt.
+- [ ] Beveiligen en stroomlijnen van superadmin features (wie mag standaard havens en games markeren).
+
+#### 5. UC-805: De "Pro" Features 💎
+- [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's).
+- [ ] De UI voorbereiden op states waarbij "Pro" functionaliteit vergrendeld is.
+
+---
+
+## Sprint 9: Polish & Community 💰 (LATER)
 *Doel: Community en lanceren klaar maken.*
 
 ### TODO
-1.  **UC-801: Delen & Spelen** — Linkjes delen van games
-2.  **UC-802: Advanced Gameplay** — Ankeren, ondiepten, stroming
-3.  **UC-803: Mobile Support** — Touch controls
-4.  **UC-804: Leaderboards** — Scores per game/scenario vergelijken
-5.  **UC-805: User Profiles** — Voortgang, badges, statistieken
+1.  **UC-901: Delen & Spelen** — Linkjes delen van games
+2.  **UC-902: Advanced Gameplay** — Ankeren, ondiepten, stroming
+3.  **UC-903: Mobile Support** — Touch controls
+4.  **UC-904: Leaderboards** — Scores per game/scenario vergelijken
+5.  **UC-905: User Profiles** — Voortgang, badges, statistieken
 
 ---
 
