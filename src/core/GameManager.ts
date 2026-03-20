@@ -56,49 +56,47 @@ export class GameManager {
     public async fetchOfficialScenarios() {
         try {
             const scenarios = await ApiClient.getOfficialScenarios();
-            this.officialScenarios = scenarios.map((s: any) => ({
-                id: s.id.toString(),
-                name: s.name,
-                description: s.description,
-                harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
-                is_official: true,
-                wind: s.json_data?.wind || { direction: 0, force: 0 },
-                mooringSpots: s.json_data?.mooringSpots || [],
-                coins: s.json_data?.coins || [],
-                boatStart: s.json_data?.boatStart,
-                physics: s.json_data?.physics,
-                coinSettings: s.json_data?.coinSettings,
-                objectPenalties: s.json_data?.objectPenalties
-            }));
+            this.officialScenarios = this.mapScenarios(scenarios, true);
             setOfficialScenarios(this.officialScenarios);
-            this.populateScenarioSelector();
         } catch (e) {
             console.warn('Kon officiële scenario\'s niet laden:', e);
         }
     }
+
     public async fetchCloudScenarios() {
         if (!ApiClient.isLoggedIn) return;
         try {
             const scenarios = await ApiClient.getMyScenarios();
-            const cloudOnly = scenarios.filter((s: any) => !s.is_official);
-            this.customScenarios = cloudOnly.map((s: any) => ({
-                id: s.id.toString(),
-                name: s.name,
-                description: s.description,
-                harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
-                // API gives json_data back as object (assuming Laravel casts it to array/object)
-                wind: s.json_data?.wind || { direction: 0, force: 0 },
-                mooringSpots: s.json_data?.mooringSpots || [],
-                coins: s.json_data?.coins || [],
-                boatStart: s.json_data?.boatStart,
-                physics: s.json_data?.physics,
-                coinSettings: s.json_data?.coinSettings,
-                objectPenalties: s.json_data?.objectPenalties
-            }));
-            this.populateScenarioSelector();
+            const offIds = new Set(this.officialScenarios.map(s => s.id));
+            const cloudOnly = scenarios.filter((s: any) => !s.is_official && !offIds.has(s.id.toString()));
+            this.customScenarios = this.mapScenarios(cloudOnly, false);
         } catch (e) {
             console.error('Fout bij ophalen scenarios uit cloud:', e);
         }
+    }
+
+    /** Één methode die alles haalt en de selector precies 1x herbouwt */
+    public async refreshAllScenarios() {
+        await this.fetchOfficialScenarios();
+        await this.fetchCloudScenarios();
+        this.populateScenarioSelector(); // één keer, als alles binnen is
+    }
+
+    private mapScenarios(raw: any[], isOfficial: boolean): ScenarioData[] {
+        return raw.map((s: any) => ({
+            id: s.id.toString(),
+            name: s.name,
+            description: s.description,
+            harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
+            is_official: isOfficial,
+            wind: s.json_data?.wind || { direction: 0, force: 0 },
+            mooringSpots: s.json_data?.mooringSpots || [],
+            coins: s.json_data?.coins || [],
+            boatStart: s.json_data?.boatStart,
+            physics: s.json_data?.physics,
+            coinSettings: s.json_data?.coinSettings,
+            objectPenalties: s.json_data?.objectPenalties
+        }));
     }
 
     public async fetchOfficialGames() {
@@ -506,10 +504,7 @@ export class GameManager {
         (window as any).startScenario = (id: string) => this.startScenario(id);
         (window as any).updateUI = () => this.updateUI();
         (window as any).refreshHarbors = () => this.fetchOfficialHarbors();
-        (window as any).refreshScenarios = async () => {
-            await this.fetchOfficialScenarios();
-            await this.fetchCloudScenarios();
-        };
+        (window as any).refreshScenarios = async () => this.refreshAllScenarios();
         (window as any).refreshGames = async () => {
             await this.fetchOfficialGames();
             await this.fetchCloudGames();
@@ -845,7 +840,7 @@ export class GameManager {
             return;
         }
 
-        // Copy current global settings into the scenario right before saving
+        // Huidige wind/physics als snapshot meenemen
         scenario.wind = { ...gameState.activeWind };
         scenario.physics = {
             thrustGain: Constants.THRUST_GAIN,
@@ -881,23 +876,22 @@ export class GameManager {
             if (scenario.id.startsWith('new_')) {
                 const res = await ApiClient.saveScenario(payload);
                 returnedId = res.scenario.id.toString();
-                scenario.id = returnedId;
             } else {
                 await ApiClient.updateScenario(Number(scenario.id), payload);
             }
 
-            // Herlaad beide lijsten zodat de selector altijd up-to-date is,
-            // ook als een superadmin een scenario aanmaakt/bijwerkt dat als official telt.
-            await this.fetchOfficialScenarios();
-            await this.fetchCloudScenarios();
+            // Één geconsolideerde refresh — dropdown wordt precies 1x herbouwd
+            await this.refreshAllScenarios();
 
-            // Re-sync de editor UI volledig op het opgeslagen scenario
-            // (niet alleen de selector-waarde zetten: ook naamveld, beschrijving etc)
-            gameState.scenario!.id = returnedId;
-            this.startScenarioEdit(gameState.scenario!.harborId);
+            // Update gameState en herstel selector
+            if (gameState.scenario) gameState.scenario.id = returnedId;
+            const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
+            if (seSelector) seSelector.value = returnedId;
+
         } catch (e) {
             console.error("Fout bij opslaan scenario in cloud:", e);
             alert("Er is iets misgegaan bij het opslaan.");
+            throw e; // Laat de save button de fout tonen
         }
     }
 
