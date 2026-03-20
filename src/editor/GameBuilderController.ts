@@ -1,5 +1,4 @@
 import { ApiClient } from '../core/ApiClient';
-import { DEFAULT_SCENARIOS } from '../data/harbors';
 
 // Define Game Interface used for the builder
 export interface GameData {
@@ -14,7 +13,6 @@ export interface GameData {
 }
 
 let activeGame: GameData = { id: 'new', name: '', description: '', scenarios: [], is_public: false, startPoints: 100, targetPoints: 80 };
-let myScenarios: any[] = [];
 let allScenarios: any[] = [];
 let isAdmin = false;
 
@@ -23,21 +21,24 @@ export class GameBuilderController {
     static onExit: (() => void) | null = null;
 
     static async mount() {
-        // Fetch scenarios from API to show in available list
+        // Haal ALLE scenario's op (officieel + eigen) voor de beschikbare lijst
         try {
             if (ApiClient.isLoggedIn) {
-                myScenarios = await ApiClient.getMyScenarios();
                 const officialRecs = await ApiClient.getOfficialScenarios();
-                const offIds = new Set(officialRecs.map((o: any) => o.id));
-                myScenarios = myScenarios.filter((s: any) => !offIds.has(s.id));
+                const myRecs = await ApiClient.getMyScenarios();
+                const offIds = new Set(officialRecs.map((o: any) => String(o.id)));
+                // Eigen scenario's die ook officieel zijn samenvoegen via de map (deduplicate op id)
+                const customOnly = myRecs.filter((s: any) => !offIds.has(String(s.id)));
+
+                const map = new Map<string | number, any>();
+                // Standaardscenario's krijgen is_official vlag zodat de UI ze correct labelt
+                [...officialRecs.map((s: any) => ({...s, is_official: true})), ...customOnly]
+                    .forEach(s => map.set(String(s.id), s));
+                allScenarios = Array.from(map.values());
             }
         } catch (e) {
-            console.error(e);
+            console.error('Kon scenario\'s niet laden voor Game Builder:', e);
         }
-
-        const map = new Map<string | number, any>();
-        [...DEFAULT_SCENARIOS, ...myScenarios].forEach(s => map.set(s.id, s));
-        allScenarios = Array.from(map.values());
 
         this.renderAvailableScenarios();
         this.renderSelectedScenarios();
@@ -170,13 +171,20 @@ export class GameBuilderController {
         container.innerHTML = '';
         const f = filter.toLowerCase();
 
-        allScenarios.filter(s => s.name.toLowerCase().includes(f)).forEach(scen => {
+        const visible = allScenarios.filter(s => s.name.toLowerCase().includes(f));
+
+        if (visible.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b; font-size:13px;">Geen scenario's beschikbaar</div>`;
+            return;
+        }
+
+        visible.forEach(scen => {
             const el = document.createElement('div');
             el.style.cssText = `background:rgba(15,23,42,0.8); border:1px solid #334155; padding:8px 12px; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;`;
             el.innerHTML = `
                 <div>
                     <div style="font-size:13px; color:#e2e8f0; font-weight:bold;">${scen.name}</div>
-                    <div style="font-size:10px; color:#94a3b8;">${String(scen.id).startsWith('s') || scen.is_official ? '⭐ Standaard Scenario' : 'Mijn Scenario'}</div>
+                    <div style="font-size:10px; color:#94a3b8;">${scen.is_official ? '⭐ Standaard Scenario' : 'Mijn Scenario'}</div>
                 </div>
                 <div style="font-size:16px;">➕</div>
             `;
