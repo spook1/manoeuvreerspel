@@ -143,6 +143,10 @@ export class ApiClient {
 
     // --- Game Management ---
 
+    static async getOfficialGames(): Promise<any[]> {
+        return this.request('/games/official');
+    }
+
     static async getMyGames(): Promise<any[]> {
         return this.request('/games');
     }
@@ -179,5 +183,9 @@ export class ApiClient {
 
     static async toggleOfficialScenario(scenarioId: number): Promise<any> {
         return this.request(`/admin/scenarios/${scenarioId}/toggle-official`, 'POST');
+    }
+
+    static async toggleOfficialGame(gameId: number): Promise<any> {
+        return this.request(`/admin/games/${gameId}/toggle-official`, 'POST');
     }
 }

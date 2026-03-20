@@ -15,6 +15,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // Public: officiële havens en scnario's zijn voor iedereen beschikbaar
 Route::get('/harbors/official', [HarborController::class, 'official']);
 Route::get('/scenarios/official', [ScenarioController::class, 'official']);
+Route::get('/games/official', [GameController::class, 'official']);
 
 // Protected routes (Alleen ingelogde users met token)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -45,4 +46,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Admin routes
     Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
     Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);
+    Route::post('/admin/games/{id}/toggle-official', [AdminController::class, 'toggleOfficialGame']);
 });

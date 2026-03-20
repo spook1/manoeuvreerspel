@@ -120,17 +120,17 @@
 - [x] Look en feel van de Game Editor visueel verder aanpassen zodat deze precies overeenkomt met de layout van de andere twee editors.
 
 #### 7.2 Game Loop (UC-702) (Hierna oppakken)
-- [ ] Game spelen gaan oppakken en de scenario reeks correct doorlopen (`GameRunner`).
-- [ ] Speelbare flow: Game selectie → Intro → Scenario 1 → ... → Eindscherm
-- [ ] Scenario-specifieke `start_points` overerven of aftrekken gedurende de runtime
-- [ ] Validatie tegen `target_points` (is doel gehaald bij einde scenario reeks?)
-- [ ] UI: Dashboard updaten om punten / voortgang te tonen tijdens de Game Mode
-- [ ] Overgangsanimatie of "Next Level" tussenscreen tussen scenarios in een reeks
+- [x] Game spelen gaan oppakken en de scenario reeks correct doorlopen (`GameRunner`).
+- [x] Speelbare flow: Game selectie → Intro → Scenario 1 → ... → Eindscherm
+- [x] Scenario-specifieke `start_points` overerven of aftrekken gedurende de runtime
+- [x] Validatie tegen `target_points` (is doel gehaald bij einde scenario reeks?)
+- [x] UI: Dashboard updaten om punten / voortgang te tonen tijdens de Game Mode
+- [x] Overgangsanimatie of "Next Level" tussenscreen tussen scenarios in een reeks
 
 #### 7.4 Kleine Openstaande Verbeteringen
-- [ ] Delete-knop voor scenario's in Scenario Editor (via linker paneel indien nodig)
-- [ ] "Laden..." indicator bij ophalen cloud-data
-- [ ] Scenario Editor: havennaam in de editor header tonen zodra scenario geladen is
+- [x] Delete-knop voor scenario's in Scenario Editor (via linker paneel indien nodig)
+- [x] "Laden..." indicator bij ophalen cloud-data
+- [x] Scenario Editor: havennaam in de editor header tonen zodra scenario geladen is
 
 ---
 

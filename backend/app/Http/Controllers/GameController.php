@@ -13,12 +13,20 @@ class GameController extends Controller
         return response()->json($games);
     }
 
+    public function official()
+    {
+        $games = Game::with('scenarios')->where('is_official', true)->get();
+        return response()->json($games);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_public' => 'boolean',
+            'start_points' => 'integer|min:0',
+            'target_points' => 'integer|min:0',
             'scenario_ids' => 'nullable|array',
             'scenario_ids.*' => 'exists:scenarios,id'
         ]);
@@ -64,6 +72,8 @@ class GameController extends Controller
             'name' => 'string|max:255',
             'description' => 'nullable|string',
             'is_public' => 'boolean',
+            'start_points' => 'integer|min:0',
+            'target_points' => 'integer|min:0',
             'scenario_ids' => 'nullable|array',
             'scenario_ids.*' => 'exists:scenarios,id'
         ]);

@@ -14,10 +14,16 @@ class Game extends Model
         'description',
         'user_id',
         'is_public',
+        'is_official',
+        'start_points',
+        'target_points',
     ];
 
     protected $casts = [
         'is_public' => 'boolean',
+        'is_official' => 'boolean',
+        'start_points' => 'integer',
+        'target_points' => 'integer',
     ];
 
     public function user()

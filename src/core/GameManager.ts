@@ -16,7 +16,7 @@ import {
     wireScenarioEditorUI
 } from '../editor/ScenarioEditorController';
 import { GameBuilderController } from '../editor/GameBuilderController';
-
+import { GameRunner } from './GameRunner';
 
 export class GameManager {
     private customScenarios: ScenarioData[] = [];
@@ -321,18 +321,26 @@ export class GameManager {
         this.applyBodyMode('game');
     }
 
-    startScenario(scenarioId: string) {
-        const scenario = getScenarioById(scenarioId)
-            ?? this.customScenarios.find(s => s.id === scenarioId);
+    startScenario(scenarioIdOrObj: string | any, maintainScore: boolean = false) {
+        let scenario: any;
+        if (typeof scenarioIdOrObj === 'string') {
+            scenario = getScenarioById(scenarioIdOrObj) ?? this.customScenarios.find(s => s.id === scenarioIdOrObj);
+        } else {
+            scenario = scenarioIdOrObj;
+        }
 
-        if (!scenario) { console.error(`Scenario '${scenarioId}' niet gevonden!`); return; }
+        if (!scenario) { console.error(`Scenario niet gevonden!`); return; }
 
-        const harbor = getHarborById(scenario.harborId);
+        const harbor = getHarborById(scenario.harborId) || this.customHarbors.find(h => h.id === scenario.harborId);
         if (!harbor) { console.error(`Haven '${scenario.harborId}' niet gevonden!`); return; }
 
         this.loadHarborState(harbor);
         gameState.scenario = JSON.parse(JSON.stringify(scenario));
-        gameState.score = 100;
+        
+        if (!maintainScore) {
+            gameState.score = 100;
+        }
+        
         gameState.coins = [];
 
         if (scenario.physics) this.applyScenarioPhysics(scenario.physics);
@@ -375,7 +383,7 @@ export class GameManager {
         if (modal) modal.style.display = 'none';
 
         const sel = document.getElementById('scenarioSelector') as HTMLSelectElement | null;
-        if (sel) sel.value = scenarioId;
+        if (sel) sel.value = scenario.id;
 
         console.log(`Scenario '${scenario.name}' gestart op haven '${harbor.name}'`);
     }
@@ -587,7 +595,7 @@ export class GameManager {
                 } else if (val.startsWith('g_')) {
                     const gameId = val.replace('g_', '');
                     gameSelector.value = '';
-                    alert("Gameplay (het spelen van een heel spel) is in de maak.\n\nFunctie voor Game ID: " + gameId + " wordt hier binnenkort geladen!");
+                    GameRunner.start(gameId, this);
                 } else {
                     alert("Onbekende selectie: " + val);
                 }
@@ -815,12 +823,17 @@ export class GameManager {
     private syncSeHarborFromScenario() {
         const seScenSel = document.getElementById('seScenarioSelector') as HTMLSelectElement | null;
         const seHarbSel = document.getElementById('seHarborSelector') as HTMLSelectElement | null;
+        const seHeaderHarborName = document.getElementById('seHeaderHarborName');
         if (!seScenSel || !seHarbSel) return;
 
         const selectedOpt = seScenSel.options[seScenSel.selectedIndex];
         const harborId = selectedOpt?.dataset?.harbor;
         if (harborId) {
             seHarbSel.value = harborId;
+            const harborName = this.getHarborName(harborId);
+            if (seHeaderHarborName) seHeaderHarborName.textContent = `[Haven: ${harborName}]`;
+        } else {
+            if (seHeaderHarborName) seHeaderHarborName.textContent = '';
         }
     }
 

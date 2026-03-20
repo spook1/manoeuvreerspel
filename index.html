@@ -599,11 +599,17 @@
 
                 <!-- Score (game mode only) -->
                 <div class="status-pill game-only" style="margin:0 0 0 16px;">
+                    <span class="label">Score</span>
+                    <span class="value" id="scoreDisplay">100</span>
+                </div>
+
+                <!-- Game Progress (game mode only) -->
+                <div class="status-pill game-only" id="gameProgressPill" style="display:none; margin:0 0 0 16px;">
                     <div
                         style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px 0 0; display:inline-block;">
                     </div>
-                    <span class="label">Score</span>
-                    <span class="value" id="scoreDisplay">100</span>
+                    <span class="label">Voortgang</span>
+                    <span class="value" id="gameProgressDisplay">-/-</span>
                 </div>
 
                 <!-- Propeller (game mode only) -->
@@ -1134,7 +1140,7 @@
 
             <div
                 style="font-size:14px; font-weight:bold; color:#a78bfa; border-bottom:1px solid rgba(139,92,246,0.2); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🎬 Scenario Editor</span>
+                <span>🎬 Scenario Editor <span id="seHeaderHarborName" style="color:#d8b4fe; font-size:12px; margin-left:8px; font-weight:normal;"></span></span>
                 <button id="seExitBtn"
                     style="background:#ef4444; border:none; color:white; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:11px;">✕</button>
             </div>

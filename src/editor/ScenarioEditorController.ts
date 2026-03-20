@@ -424,6 +424,42 @@ export function wireScenarioEditorUI() {
         };
     }
 
+    // ── VERWIJDEREN (CLOUD) ──────────────────────────────────────────────────
+    const deleteBtn = g<HTMLButtonElement>('seDeleteScenarioBtn');
+    if (deleteBtn) {
+        deleteBtn.onclick = async () => {
+            if (!gameState.scenario || gameState.scenario.id.startsWith('new_')) {
+                alert("Dit scenario is nog niet opgeslagen, bewerk gewoon verder of schakel naar een ander scenario.");
+                return;
+            }
+            if (!confirm(`Weet je zeker dat je het scenario '${gameState.scenario.name}' wilt verwijderen?\n\nDit kan niet ongedaan worden! (Let op: als dit in een game reeks zit, gaat dat stuk)`)) return;
+            
+            try {
+                deleteBtn.textContent = '🗑️...';
+                await ApiClient.deleteScenario(Number(gameState.scenario.id));
+                alert("Scenario is succesvol verwijderd.");
+                
+                // Let GameManager refresh
+                if ((window as any).refreshScenarios) {
+                    await (window as any).refreshScenarios();
+                }
+                
+                // Reset actively edited scenario
+                gameState.scenario = null;
+                const dropdown = g<HTMLSelectElement>('seScenarioSelector');
+                if (dropdown) {
+                    dropdown.value = "nieuw";
+                    dropdown.dispatchEvent(new Event('change'));
+                }
+                deleteBtn.textContent = '🗑️';
+            } catch (e: any) {
+                console.error("Kon scenario niet verwijderen:", e);
+                alert("Fout bij verwijderen: " + e.message);
+                deleteBtn.textContent = '🗑️';
+            }
+        };
+    }
+
     // ── OPSLAAN (CLOUD) ─────────────────────────────────────────────────────
     const saveBtn = g<HTMLButtonElement>('seSaveBtn');
     if (saveBtn) {

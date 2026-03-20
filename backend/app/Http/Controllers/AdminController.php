@@ -53,6 +53,19 @@ class AdminController extends Controller
         return response()->json(['message' => 'Scenario official status updated', 'scenario' => $scenario]);
     }
 
+    // Toggle 'Official' status van een game
+    public function toggleOfficialGame($id)
+    {
+        $game = \App\Models\Game::findOrFail($id);
+        $game->is_official = !$game->is_official;
+        if ($game->is_official) {
+            $game->is_public = true;
+        }
+        $game->save();
+
+        return response()->json(['message' => 'Game official status updated', 'game' => $game]);
+    }
+
     // Haal alle officiële havens op (publiek endpoint, maar beheerd door admin)
     public function officialHarbors()
     {
