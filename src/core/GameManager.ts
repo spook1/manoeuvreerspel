@@ -883,18 +883,18 @@ export class GameManager {
                 const res = await ApiClient.saveScenario(payload);
                 returnedId = res.scenario.id.toString();
                 scenario.id = returnedId;
-                this.customScenarios.push(scenario);
             } else {
                 await ApiClient.updateScenario(Number(scenario.id), payload);
-                const idx = this.customScenarios.findIndex(s => s.id === scenario.id);
-                if (idx !== -1) this.customScenarios[idx] = scenario;
             }
-            // Re-populate the selector, filtering by the current harbor
-            this.populateScenarioSelector();
 
-            // Explicitly set the newly updated/created scenario as selected
+            // Herlaad beide lijsten zodat de selector altijd up-to-date is,
+            // ook als een superadmin een scenario aanmaakt/bijwerkt dat als official telt.
+            await this.fetchOfficialScenarios();
+            await this.fetchCloudScenarios();
+
+            // Zet de selector terug op het zojuist opgeslagen scenario
             const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
-            if (seSelector) seSelector.value = scenario.id;
+            if (seSelector) seSelector.value = returnedId;
         } catch (e) {
             console.error("Fout bij opslaan scenario in cloud:", e);
             alert("Er is iets misgegaan bij het opslaan.");
