@@ -490,7 +490,7 @@ export class GameManager {
         // Wire the scenario editor controller exit callback
         initScenarioEditor({
             onExit: () => this.startPracticeMode(),
-            onSave: (scenario) => this.saveScenario(scenario)
+            onSave: async (scenario) => this.saveScenario(scenario)
         });
 
         (window as any).startGame = () => this.startGame();
@@ -891,9 +891,10 @@ export class GameManager {
             await this.fetchOfficialScenarios();
             await this.fetchCloudScenarios();
 
-            // Zet de selector terug op het zojuist opgeslagen scenario
-            const seSelector = document.getElementById('seScenarioSelector') as HTMLSelectElement;
-            if (seSelector) seSelector.value = returnedId;
+            // Re-sync de editor UI volledig op het opgeslagen scenario
+            // (niet alleen de selector-waarde zetten: ook naamveld, beschrijving etc)
+            gameState.scenario!.id = returnedId;
+            this.startScenarioEdit(gameState.scenario!.harborId);
         } catch (e) {
             console.error("Fout bij opslaan scenario in cloud:", e);
             alert("Er is iets misgegaan bij het opslaan.");

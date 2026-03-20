@@ -31,13 +31,13 @@ let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 // Callback naar GameManager voor mode-switches
 let _onExit: (() => void) | null = null;
 
-let _onSave: ((scenario: any) => void) | null = null;
+let _onSave: ((scenario: any) => Promise<void>) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function initScenarioEditor(callbacks: {
     onExit: () => void;
-    onSave?: (scenario: any) => void;
+    onSave?: (scenario: any) => Promise<void>;
 }) {
     _onExit = callbacks.onExit;
     if (callbacks.onSave) _onSave = callbacks.onSave;
@@ -471,17 +471,22 @@ export function wireScenarioEditorUI() {
             if (nameInput?.value) scenario.name = nameInput.value;
             if (descInput) scenario.description = descInput.value;
 
-            console.log('Saving scenario local/cloud:', JSON.parse(JSON.stringify(scenario)));
-            saveBtn.textContent = '⏱️ Bezig...';
+            saveBtn.textContent = '⏳ Bezig...';
+            saveBtn.disabled = true;
 
-            if (_onSave) _onSave(scenario);
-
-            await new Promise(r => setTimeout(r, 600));
-            saveBtn.textContent = '✅ Opgeslagen';
-            setTimeout(() => {
-                saveBtn.textContent = '💾 Opslaan';
-                updateAdminUI(); // Update admin state after save
-            }, 2000);
+            try {
+                if (_onSave) await _onSave(scenario); // AWAIT: wacht op volledige save+fetch cyclus
+                saveBtn.textContent = '✅ Opgeslagen';
+            } catch (e) {
+                saveBtn.textContent = '❌ Fout';
+                console.error('Save failed:', e);
+            } finally {
+                saveBtn.disabled = false;
+                setTimeout(() => {
+                    saveBtn.textContent = '💾 Opslaan';
+                    updateAdminUI();
+                }, 2000);
+            }
         };
     }
 
