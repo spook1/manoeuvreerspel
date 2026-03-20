@@ -873,10 +873,22 @@ export class GameManager {
             };
 
             let returnedId = scenario.id;
-            if (scenario.id.startsWith('new_')) {
+
+            // Zoek de originele naam van dit scenario in de huidige lijsten
+            const originalInDb =
+                this.officialScenarios.find(s => s.id === scenario.id) ||
+                this.customScenarios.find(s => s.id === scenario.id);
+
+            const isNew = scenario.id.startsWith('new_');
+            const nameChanged = originalInDb && originalInDb.name !== scenario.name;
+
+            if (isNew || nameChanged) {
+                // Naam veranderd of gloednieuw → altijd als NIEUW opslaan (POST)
+                // Het originele scenario blijft onaangeroerd.
                 const res = await ApiClient.saveScenario(payload);
                 returnedId = res.scenario.id.toString();
             } else {
+                // Zelfde naam → UPDATE het bestaande scenario op de server (PUT)
                 await ApiClient.updateScenario(Number(scenario.id), payload);
             }
 
