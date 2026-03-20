@@ -658,6 +658,7 @@ export class GameManager {
                 } else {
                     this.startScenario(seSelector.value);
                 }
+                this.syncSeHarborFromScenario();
                 this.startScenarioEdit(gameState.harbor.id);
             });
         }
@@ -817,9 +818,7 @@ export class GameManager {
                 <optgroup label="Standaard">${html}</optgroup>
                 <optgroup label="Mijn Scenario's">${customHtml}</optgroup>
             `;
-
-            // Sync haven-kolom als scenario verandert
-            seSelector.onchange = () => this.syncSeHarborFromScenario();
+            // Geen onchange hier — die wordt beheerd door de addEventListener in setupModeButtons()
         }
     }
 
