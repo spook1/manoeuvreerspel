@@ -61,9 +61,14 @@ export class GameRunner {
         };
 
         const title = this.currentIndex === 0 ? `🚀 Game Start: ${this.activeGame.name}` : `✅ Level Voltooid!`;
-        const desc = this.currentIndex === 0 
-           ? (this.activeGame.description || 'Bereid je voor op het eerste scenario...') 
-           : `Op naar het volgende scenario: ${sc.name}`;
+        
+        let desc = '';
+        if (this.currentIndex === 0 && this.activeGame.description) {
+            desc += `${this.activeGame.description}\n\n`;
+        }
+        
+        const scDesc = sc.description ? sc.description : 'Probeer alle opdrachten binnen de tijd te voltooien.';
+        desc += `Opdracht (${sc.name}):\n${scDesc}`;
 
         this.updateUI();
 

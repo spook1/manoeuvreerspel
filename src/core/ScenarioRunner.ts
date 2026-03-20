@@ -242,3 +242,4 @@ export class ScenarioRunner {
 }
 
 export const scenarioRunner = new ScenarioRunner();
+(window as any)._scenarioRunner = scenarioRunner;
