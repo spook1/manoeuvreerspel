@@ -104,6 +104,35 @@ export class GameBuilderController {
             }
         }
 
+        // Populate game selector
+        const selector = document.getElementById('gbGameSelector') as HTMLSelectElement | null;
+        if (selector) {
+            try {
+                let html = '<option value="new">➕ Nieuwe Game Maken</option>';
+                if (ApiClient.isLoggedIn) {
+                    const offGames = await ApiClient.getOfficialGames();
+                    const myGames = await ApiClient.getMyGames();
+                    const offIds = new Set(offGames.map((g: any) => g.id));
+                    const myFiltered = myGames.filter((g: any) => !offIds.has(g.id));
+
+                    if (offGames.length > 0) {
+                        html += '<optgroup label="⭐ Standaard Games">' + offGames.map((g: any) => `<option value="${g.id}">⭐ ${g.name}</option>`).join('') + '</optgroup>';
+                    }
+                    if (myFiltered.length > 0) {
+                        html += '<optgroup label="Mijn Games">' + myFiltered.map((g: any) => `<option value="${g.id}">${g.name}</option>`).join('') + '</optgroup>';
+                    }
+                }
+                selector.innerHTML = html;
+                selector.value = activeGame.id;
+            } catch (e) {
+                console.error("Kon games niet laden voor selector", e);
+            }
+
+            selector.onchange = () => {
+                this.show(selector.value);
+            };
+        }
+
         (document.getElementById('gbGameNameInput') as HTMLInputElement).value = activeGame.name;
         (document.getElementById('gbGameDescInput') as HTMLTextAreaElement).value = activeGame.description;
         (document.getElementById('gbStartPointsInput') as HTMLInputElement).value = activeGame.startPoints?.toString() || '100';
@@ -230,14 +259,19 @@ export class GameBuilderController {
 
         const name = nameInput.value.trim();
 
-        // Check voor unieke naam
+        // Check voor unieke naam / overschrijven
         try {
             if (ApiClient.isLoggedIn) {
                 const myGames = await ApiClient.getMyGames();
-                const exists = myGames.some((g: any) => g.name.toLowerCase() === name.toLowerCase() && String(g.id) !== String(activeGame.id));
-                if (exists) {
-                    alert('Je hebt al een game met deze naam. Kies a.u.b. een unieke naam!');
-                    return;
+                const existingGame = myGames.find((g: any) => g.name.toLowerCase() === name.toLowerCase() && String(g.id) !== String(activeGame.id));
+                if (existingGame) {
+                    const confirmOverwrite = confirm(`Je hebt al een game met deze naam ("${existingGame.name}").\nWeet je zeker dat je deze wilt overschrijven met de huidige reeks?`);
+                    if (!confirmOverwrite) {
+                        return; // Cancelled
+                    } else {
+                        // User wants to overwrite, so we adopt the ID of the existing game to actually overwrite it in the API call.
+                        activeGame.id = String(existingGame.id);
+                    }
                 }
             }
         } catch (e) {

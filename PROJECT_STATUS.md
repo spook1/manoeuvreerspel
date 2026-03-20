@@ -115,9 +115,9 @@
 **Werkwijze:** De structuur van een Game is nu deels opslaanbaar en bewerkbaar. Eerst de Game Editor verfijnen, daarna gaat de speler de flow ervaren.
 
 #### 7.1 Game Builder Verdere Verfijning (UC-701 vervolg)
-- [ ] In de Game Editor een selector inbouwen om te kiezen welke game je wilt bewerken, óf een knop om een Nieuwe Game te maken.
-- [ ] Bij opslaan van game met zelfde naam: i.p.v. blokkade vragen "Je hebt al een game met deze naam, weet je zeker dat je deze wilt overschrijven?"
-- [ ] Look en feel van de Game Editor visueel verder aanpassen zodat deze precies overeenkomt met de layout van de andere twee editors.
+- [x] In de Game Editor een selector inbouwen om te kiezen welke game je wilt bewerken, óf een knop om een Nieuwe Game te maken.
+- [x] Bij opslaan van game met zelfde naam: i.p.v. blokkade vragen "Je hebt al een game met deze naam, weet je zeker dat je deze wilt overschrijven?"
+- [x] Look en feel van de Game Editor visueel verder aanpassen zodat deze precies overeenkomt met de layout van de andere twee editors.
 
 #### 7.2 Game Loop (UC-702) (Hierna oppakken)
 - [ ] Game spelen gaan oppakken en de scenario reeks correct doorlopen (`GameRunner`).
