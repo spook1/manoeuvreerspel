@@ -1,4 +1,4 @@
-﻿import { GameState, gameState } from '../core/GameState';
+import { GameState, gameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
 import { ApiClient } from '../core/ApiClient';
 import { drawShores, drawNPCBoats } from '../ui/DrawHarborEnvironment';
@@ -1148,22 +1148,16 @@ export class HarborEditor {
 
         const currentName = gameState.harbor.name || 'Nieuwe Haven';
         const rawInput = window.prompt("Geef een naam voor je haven in de cloud:", currentName);
-        if (rawInput === null) return; // User cancelled
+        if (rawInput === null) return;
 
         const name = rawInput.trim() || 'Naamloze Haven';
 
-        // Disable button during save
         const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
         if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Opslaan...'; }
 
         try {
-            // Check for existing harbors with same name
-            const existingHarbors = await ApiClient.getMyHarbors();
-            const existingMatch = existingHarbors.find((h: any) => h.json_data?.name === name);
-
-            // Haven-editor slaat ALLEEN haven-structuur op (geen wind/spots/coins)
             const harborData = {
-                id: existingMatch ? existingMatch.json_data.id : (gameState.harbor.id || `custom_${Date.now()}`),
+                id: gameState.harbor.id || `custom_${Date.now()}`,
                 name: name,
                 version: "1.0",
                 boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
@@ -1173,26 +1167,26 @@ export class HarborEditor {
                 shores: gameState.harbor.shores
             };
 
-            if (existingMatch) {
-                if (window.confirm(`Je hebt al een haven met de naam "${name}". Wil je deze overschrijven?`)) {
-                    const wasOfficial = existingMatch.json_data?.is_official || existingMatch.is_official;
-                    await ApiClient.updateHarbor(existingMatch.id, harborData, wasOfficial ? true : undefined);
-                    gameState.harbor.id = wasOfficial ? `official_${existingMatch.id}` : `custom_${existingMatch.id}`;
-                    (gameState.harbor as any).db_id = existingMatch.id;
-                    (gameState.harbor as any).is_official = !!wasOfficial;
-                } else {
-                    return; // abort
-                }
+            const dbId = (gameState.harbor as any).db_id;
+            const isOfficial = !!(gameState.harbor as any).is_official;
+            const nameChanged = name !== currentName;
+
+            if (dbId && !nameChanged) {
+                // Zelfde naam, bestaande haven → UPDATE in-place, bewaar is_official
+                await ApiClient.updateHarbor(dbId, harborData, isOfficial ? true : undefined);
+                gameState.harbor.name = name;
             } else {
+                // Naam veranderd of gloednieuw → sla op als NIEUW haven (POST)
+                // Originele haven blijft onaangeroerd
                 const res = await ApiClient.saveHarbor(harborData, false);
                 gameState.harbor.id = `custom_${res.id}`;
                 (gameState.harbor as any).db_id = res.id;
+                (gameState.harbor as any).is_official = false;
+                gameState.harbor.name = name;
             }
 
             this.showEditorStatus('✅ Haven opgeslagen!', 'ok');
-            gameState.harbor.name = name;
 
-            // Update input label
             const nameInput = document.getElementById('harborNameInput') as HTMLInputElement | null;
             if (nameInput) nameInput.value = name;
 
@@ -1200,7 +1194,6 @@ export class HarborEditor {
                 await (window as any).refreshHarbors();
             }
 
-            // Auto-select the saved harbor in the editor dropdown
             const heSelector = document.getElementById('heHarborSelector') as HTMLSelectElement | null;
             if (heSelector && gameState.harbor.id) {
                 heSelector.value = gameState.harbor.id;
@@ -1213,9 +1206,6 @@ export class HarborEditor {
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '☁️ Cloud Opslaan'; }
         }
     }
-
-
-
 
     updateProperties() {
         if (!this.propertiesPanel) return;

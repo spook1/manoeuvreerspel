@@ -889,7 +889,12 @@ export class GameManager {
                 returnedId = res.scenario.id.toString();
             } else {
                 // Zelfde naam → UPDATE het bestaande scenario op de server (PUT)
-                await ApiClient.updateScenario(Number(scenario.id), payload);
+                // Bewaar de is_official status van het origineel in de payload
+                const updatePayload = {
+                    ...payload,
+                    ...(originalInDb && (originalInDb as any).is_official ? { is_official: true } : {})
+                };
+                await ApiClient.updateScenario(Number(scenario.id), updatePayload);
             }
 
             // Één geconsolideerde refresh — dropdown wordt precies 1x herbouwd
