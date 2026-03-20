@@ -1,7 +1,7 @@
 # Project Roadmap & Sprint Planning 🗺️
 
-> **Laatst bijgewerkt:** 8 Maart 2026
-> **Fase:** MVP — Scenario Editor voltooid, nu richting Game Builder
+> **Laatst bijgewerkt:** 20 Maart 2026
+> **Fase:** MVP — Game Builder & Game Loop voltooid, nu richting Polish & Community
 
 ---
 
@@ -99,7 +99,7 @@
 
 ---
 
-## Sprint 7: Game Builder & Game Loop 🎮 (BEZIG)
+## Sprint 7: Game Builder & Game Loop 🎮 (✅ AFGEROND — 20 Maart 2026)
 *Doel: Games samenstellen uit scenario's en speelbaar maken als aaneengesloten flow.*
 
 ### ✔️ Voltooid in deze sessie (Sessie: Game Builder Polish)
@@ -110,9 +110,12 @@
 - [x] **Verwijderen Opties**: Trash-can button toegevoegd om games weg te gooien, direct naast de titel.
 - [x] **Officiële Games**: Standaard games kunnen door admin gemarkeerd worden en in aparte dropdown lijst belanden.
 
-### 🛠️ START HIER VOLGENDE KEER:
-
-**Werkwijze:** De structuur van een Game is nu deels opslaanbaar en bewerkbaar. Eerst de Game Editor verfijnen, daarna gaat de speler de flow ervaren.
+### Voltooid in deze sessie
+- [x] **Gameplay Flow**: Volledig werkende overgangen tussen scenario's inclusief uitleg/opdracht per scenario.
+- [x] **Data Mapping**: Fix voor het inladen van de juiste API formaten tijdens runtime activering van scenario's.
+- [x] **Save Logica Resolutie**: "Opslaan als nieuw" vs "Overschrijven" logica rechtgetrokken voor zowel scenario's als havens.
+- [x] **Editor Layouts**: Alle editors consistent gemaakt met correcte weergave/verbergen van de benodigde globale panelen (settings & weergaves).
+- [x] **Coin Timers**: Globale animatie context hersteld zodat timers op munten/spots zichtbaar zijn in speelmodus.
 
 #### 7.1 Game Builder Verdere Verfijning (UC-701 vervolg)
 - [x] In de Game Editor een selector inbouwen om te kiezen welke game je wilt bewerken, óf een knop om een Nieuwe Game te maken.
