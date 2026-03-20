@@ -5,7 +5,7 @@ import { editor } from '../editor/HarborEditor';
 import {
     DEFAULT_HARBORS, DEFAULT_SCENARIOS,
     EMPTY_HARBOR_TEMPLATE, officialHarbors,
-    setOfficialHarbors,
+    setOfficialHarbors, setOfficialScenarios,
     getHarborById, getScenarioById,
     ScenarioData, HarborData
 } from '../data/harbors';
@@ -70,6 +70,7 @@ export class GameManager {
                 coinSettings: s.json_data?.coinSettings,
                 objectPenalties: s.json_data?.objectPenalties
             }));
+            setOfficialScenarios(this.officialScenarios);
             this.populateScenarioSelector();
         } catch (e) {
             console.warn('Kon officiële scenario\'s niet laden:', e);
@@ -324,7 +325,9 @@ export class GameManager {
     startScenario(scenarioIdOrObj: string | any, maintainScore: boolean = false) {
         let scenario: any;
         if (typeof scenarioIdOrObj === 'string') {
-            scenario = getScenarioById(scenarioIdOrObj) ?? this.customScenarios.find(s => s.id === scenarioIdOrObj);
+            scenario = getScenarioById(scenarioIdOrObj) 
+                    ?? this.officialScenarios.find(s => s.id === scenarioIdOrObj)
+                    ?? this.customScenarios.find(s => s.id === scenarioIdOrObj);
         } else {
             scenario = scenarioIdOrObj;
         }
