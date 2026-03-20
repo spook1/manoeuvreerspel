@@ -39,8 +39,27 @@ export class GameRunner {
             return;
         }
 
-        const sc = this.activeGame.scenarios[this.currentIndex];
-        
+        const raw = this.activeGame.scenarios[this.currentIndex];
+
+        // Vertaal ruwe API-data naar het ScenarioData-formaat dat startScenario() verwacht.
+        // De API geeft 'harbor_id' en 'json_data', maar startScenario() verwacht 'harborId', 'wind', etc.
+        const sc = {
+            id: String(raw.id),
+            name: raw.name,
+            description: raw.description || '',
+            harborId: raw.harbor
+                ? (raw.harbor.is_official ? `official_${raw.harbor_id}` : `custom_${raw.harbor_id}`)
+                : `official_${raw.harbor_id}`,
+            is_official: raw.is_official || false,
+            wind: raw.json_data?.wind || { direction: 0, force: 0 },
+            mooringSpots: raw.json_data?.mooringSpots || [],
+            coins: raw.json_data?.coins || [],
+            boatStart: raw.json_data?.boatStart,
+            physics: raw.json_data?.physics,
+            coinSettings: raw.json_data?.coinSettings,
+            objectPenalties: raw.json_data?.objectPenalties
+        };
+
         const title = this.currentIndex === 0 ? `🚀 Game Start: ${this.activeGame.name}` : `✅ Level Voltooid!`;
         const desc = this.currentIndex === 0 
            ? (this.activeGame.description || 'Bereid je voor op het eerste scenario...') 
