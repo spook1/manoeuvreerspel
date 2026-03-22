@@ -137,27 +137,27 @@
 
 ---
 
-## Sprint 8: UI/UX, QA & Pro Features 🕵️‍♂️ (START HIER)
+## Sprint 8: UI/UX, QA & Pro Features 🕵️‍♂️ (IN BEHANDELING)
 *Doel: De applicatie visueel stijltrekken, onnodige 'legacy' onderdelen weghalen, functionaliteit server-side testen en het betaalmodel vormgeven.*
 
 ### Voltooid in de meest recente sessie
-- [x] **CRUD Logica Gefixt**: De knoppen voor 'Cloud Opslaan' in álle editors (Haven, Scenario, Game) zijn opgesplitst in expliciete **"💾 Overschrijven"** en **"📄 Als Kopie"** knoppen. Geen verwarrende overschrijvingen meer gebaseerd op stiekeme naam-vergelijkingen.
-- [x] **Admin Rechten (Backend & UI)**: De `destroy`, `update` en `show` acties in `HarborController`, `ScenarioController` en `GameController` zijn aangepast zodat Admins 100% beheerrechten hebben (de 403 Unauthorized foutmeldingen bij het verwijderen van andermans werk zijn verholpen).
+- [x] **CRUD Logica Gefixt**: De knoppen voor 'Cloud Opslaan' in álle editors zijn samengevoegd tot één krachtige **"💾 Opslaan"** knop met slimme overschrijf- / nieuw-logica op basis van exacte naam (en unieke bevestigings-prompt) om dubbele records te voorkomen.
+- [x] **Admin Rechten (Backend & UI)**: De `destroy`, `update` en `show` logica is 100% cloud-based en Admin-proof gemaakt met de juiste rolverificaties.
+- [x] **UC-801: Verwijderen Ingebouwde Oude Games**: Alle hardcoded 'Tutorial' en 'Startgame' mock-ups zijn volledig verwijderd. De database is nu leidend.
+- [x] **Draggable Editors**: De panelen van de Haven, Scenario en Game Builder editors zijn nu zwevend en versleepbaar gemaakt via een globale `makeDraggable` helper.
+- [x] **Beveiligde UI voor Gasten**: "Niet ingelogde" gebruikers zien de Bewerk-knoppen nu helemaal niet meer, ter voorkoming van verwarring en dead-ends.
+- [x] **Anchor-Based Resizing**: De resize-hendels in de editor behouden nu feilloos hun verankerde X/Y positie aan de tegenovergestelde zijde.
 
 ### 🛠️ Nieuwe Use Cases (Gepland voor volgende sessies)
 
-#### 1. UC-801: Verwijderen Ingebouwde Oude Games
-- [ ] Verwijderen van het legacy `tutorial` en `startgame` (alle havens) systeem uit de "Spel" dropdown.
-- [ ] Zorgen dat spelers alléén Game-objecten uit de cloud / API gebruiken en geen hardcoded lokale lijsten meer.
+#### 1. UC-802: QA & Server Testing (Prioriteit 1)
+- [ ] Zorgvuldig alle "edge cases" testen (cloud connectivity, gameloop uitspelen via VPS, foutief wachtwoord login states).
+- [ ] Spelend testen vanaf de *gebruikerskant*: zijn er stappen in de game-loop die vastlopen?
 
-#### 2. UC-802: QA & Server Testing
-- [ ] Zorgvuldig alle "edge cases" testen op de live VPS omgeving (login states, cloud connectivity, opslaan).
-- [ ] Bugs direct signaleren, isoleren en oplossen tijdens de playtest-fase.
-
-#### 3. UC-803: UI / UX Analyse & Redesign
-- [ ] Analyseren of de interface intuïtief genoeg is voor onervaren spelers (UI flow voor Game Selectie vs Oefenen vs Editors).
-- [ ] Vormgeving stijltrekken: De hoofdactieknoppen ("Spel" / "Oefenen") onderscheiden van bouw/editor acties ("Haven"/"Scenario"/"Game" bouwen).
-- [ ] Toepassen van een cleaner, doordachter design-system.
+#### 2. UC-803: UI / UX Analyse & Redesign (Prioriteit 2)
+- [ ] Analyseren of de interface intuïtief genoeg is voor onervaren spelers (UI flow voor Game Selectie vs Oefenen).
+- [ ] Vormgeving stijltrekken: De hoofdactieknoppen ("Spel" / "Oefenen") onderscheiden van bouw/editor acties.
+- [ ] Toepassen van een cleaner, doordachter design-system (misschien knoppen verbergen die pas relevant zijn na een keuze).
 
 #### 4. UC-804: Admin Beheerportaal Inzichtelijk Maken
 - [ ] Duidelijk in kaart brengen / toegankelijk maken hoe je lokaal (en online) bij het Laravel Admin Panel komt.
