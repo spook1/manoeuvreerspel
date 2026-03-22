@@ -469,9 +469,16 @@ export class GameManager {
 
         if (btnGame) btnGame.onclick = () => this.startGameMode();
         if (btnPractice) btnPractice.onclick = () => this.startPracticeMode();
-        if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
-        if (btnScenarioEdit) btnScenarioEdit.onclick = () => this.startScenarioEdit();
-        if (btnGameEdit) btnGameEdit.onclick = () => this.startGameEdit();
+        
+        if (!ApiClient.isLoggedIn) {
+            if (btnEdit) btnEdit.style.display = 'none';
+            if (btnScenarioEdit) btnScenarioEdit.style.display = 'none';
+            if (btnGameEdit) btnGameEdit.style.display = 'none';
+        } else {
+            if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
+            if (btnScenarioEdit) btnScenarioEdit.onclick = () => this.startScenarioEdit();
+            if (btnGameEdit) btnGameEdit.onclick = () => this.startGameEdit();
+        }
     }
 
     setMode(mode: 'game' | 'practice') {

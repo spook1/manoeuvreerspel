@@ -801,19 +801,42 @@ export class HarborEditor {
             const cos = Math.cos(rad);
             const sin = Math.sin(rad);
 
+            const dw = dx * cos + dy * sin;
+            const dh = -dx * sin + dy * cos;
+
             let newW = start.w;
             let newH = start.h;
+            let cxOff = 0;
+            let cyOff = 0;
 
-            // Symmetric Resize Logic
-            if (side === 'E') newW = Math.max(10, start.w + (dx * cos + dy * sin) * 2);
-            else if (side === 'W') newW = Math.max(10, start.w - (dx * cos + dy * sin) * 2);
-            else if (side === 'S') newH = Math.max(10, start.h + (dx * (-sin) + dy * cos) * 2);
-            else if (side === 'N') newH = Math.max(10, start.h - (dx * (-sin) + dy * cos) * 2);
+            if (side === 'E') {
+                newW = Math.max(10, start.w + dw);
+                cxOff = (newW - start.w) / 2;
+            } else if (side === 'W') {
+                newW = Math.max(10, start.w - dw);
+                cxOff = -(newW - start.w) / 2;
+            } else if (side === 'S') {
+                newH = Math.max(10, start.h + dh);
+                cyOff = (newH - start.h) / 2;
+            } else if (side === 'N') {
+                newH = Math.max(10, start.h - dh);
+                cyOff = -(newH - start.h) / 2;
+            }
 
             if (!e.altKey) {
                 newW = Math.round(newW / 5) * 5;
                 newH = Math.round(newH / 5) * 5;
+                if (side === 'E') cxOff = (newW - start.w) / 2;
+                if (side === 'W') cxOff = -(newW - start.w) / 2;
+                if (side === 'S') cyOff = (newH - start.h) / 2;
+                if (side === 'N') cyOff = -(newH - start.h) / 2;
             }
+
+            const gCxOff = cxOff * cos - cyOff * sin;
+            const gCyOff = cxOff * sin + cyOff * cos;
+
+            const newX = (start.x + start.w / 2 + gCxOff) - newW / 2;
+            const newY = (start.y + start.h / 2 + gCyOff) - newH / 2;
 
             if (obj.w !== undefined) {
                 obj.w = newW;
@@ -822,6 +845,8 @@ export class HarborEditor {
                 obj.width = newW;
                 if (side === 'N' || side === 'S') obj.height = newH;
             }
+            obj.x = newX;
+            obj.y = newY;
             this.updateProperties();
             return;
         }
@@ -1149,7 +1174,7 @@ export class HarborEditor {
         }
 
         const currentName = gameState.harbor.name || 'Nieuwe Haven';
-        const rawInput = window.prompt("Geef een naam voor je haven in de cloud:", currentName);
+        const rawInput = window.prompt("Kies een naam voor deze opslag:", currentName);
         if (rawInput === null) return;
 
         const name = rawInput.trim() || 'Naamloze Haven';
@@ -1187,7 +1212,8 @@ export class HarborEditor {
                 gameState.harbor.name = name;
             }
 
-            this.showEditorStatus('✅ Haven opgeslagen!', 'ok');
+            if (saveBtn && !asNew) { saveBtn.textContent = '✅ Opgeslagen'; }
+            if (newBtn && asNew) { newBtn.textContent = '✅ Opgeslagen'; }
 
             const nameInput = document.getElementById('harborNameInput') as HTMLInputElement | null;
             if (nameInput) nameInput.value = name;
@@ -1203,12 +1229,17 @@ export class HarborEditor {
             this.updateAdminUI();
         } catch (e: any) {
             console.error(e);
-            this.showEditorStatus('❌ Fout: ' + (e.message || 'Verbindingsfout'), 'error');
+            if (saveBtn) { saveBtn.textContent = '❌ Fout'; }
+            if (newBtn) { newBtn.textContent = '❌ Fout'; }
+            // Optioneel: toon de error message via de standaard popup
+            alert('Fout bij opslaan: ' + (e.message || 'Verbindingsfout'));
         } finally {
-            const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
-            const newBtn = document.getElementById('cloudSaveNewBtn') as HTMLButtonElement | null;
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Overschrijven'; }
-            if (newBtn) { newBtn.disabled = false; newBtn.textContent = '📄 Als Kopie'; }
+            setTimeout(() => {
+                const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
+                const newBtn = document.getElementById('cloudSaveNewBtn') as HTMLButtonElement | null;
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Overschrijven'; }
+                if (newBtn) { newBtn.disabled = false; newBtn.textContent = '📄 Als Kopie'; }
+            }, 2000);
         }
     }
 
