@@ -31,13 +31,13 @@ let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 // Callback naar GameManager voor mode-switches
 let _onExit: (() => void) | null = null;
 
-let _onSave: ((scenario: any, asNew: boolean) => Promise<void>) | null = null;
+let _onSave: ((scenario: any) => Promise<void>) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function initScenarioEditor(callbacks: {
     onExit: () => void;
-    onSave?: (scenario: any, asNew: boolean) => Promise<void>;
+    onSave?: (scenario: any) => Promise<void>;
 }) {
     _onExit = callbacks.onExit;
     if (callbacks.onSave) _onSave = callbacks.onSave;
@@ -462,9 +462,8 @@ export function wireScenarioEditorUI() {
 
     // ── OPSLAAN (CLOUD) ─────────────────────────────────────────────────────
     const saveBtn = g<HTMLButtonElement>('seSaveBtn');
-    const newBtn = g<HTMLButtonElement>('seSaveNewBtn');
 
-    const doSave = async (btn: HTMLButtonElement, defaultLabel: string, asNew: boolean) => {
+    const doSave = async (btn: HTMLButtonElement, defaultLabel: string) => {
         const scenario = getOrMakeScenario();
         const nameInput = g<HTMLInputElement>('scenarioNameInput');
         const descInput = g<HTMLTextAreaElement>('scenarioDescInput');
@@ -476,22 +475,21 @@ export function wireScenarioEditorUI() {
         btn.disabled = true;
 
         try {
-            if (_onSave) await _onSave(scenario, asNew);
+            if (_onSave) await _onSave(scenario);
             btn.textContent = '✅ Opgeslagen';
         } catch (e) {
             btn.textContent = '❌ Fout';
             console.error('Save failed:', e);
         } finally {
-            btn.disabled = false;
             setTimeout(() => {
+                btn.disabled = false;
                 btn.textContent = defaultLabel;
                 updateAdminUI();
             }, 2000);
         }
     };
 
-    if (saveBtn) saveBtn.onclick = () => doSave(saveBtn, '💾 Overschrijven', false);
-    if (newBtn) newBtn.onclick = () => doSave(newBtn, '📄 Als Kopie', true);
+    if (saveBtn) saveBtn.onclick = () => doSave(saveBtn, '💾 Opslaan');
 
     // ── ADMIN TOGGLE ────────────────────────────────────────────────────────
     function updateAdminUI() {

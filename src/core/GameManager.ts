@@ -495,7 +495,7 @@ export class GameManager {
         // Wire the scenario editor controller exit callback
         initScenarioEditor({
             onExit: () => this.startPracticeMode(),
-            onSave: async (scenario, asNew) => this.saveScenario(scenario, asNew)
+            onSave: async (scenario) => this.saveScenario(scenario)
         });
 
         (window as any).startGame = () => this.startGame();
@@ -841,7 +841,7 @@ export class GameManager {
         }
     }
 
-    async saveScenario(scenario: ScenarioData, asNew: boolean = false) {
+    async saveScenario(scenario: ScenarioData) {
         if (!ApiClient.isLoggedIn) {
             alert("Je moet ingelogd zijn om scenario's te kunnen opslaan.");
             return;
@@ -879,27 +879,26 @@ export class GameManager {
                 }
             };
 
+            const myScenarios = await ApiClient.getMyScenarios();
+            const existing = myScenarios.find(s => s.name.toLowerCase() === scenario.name.toLowerCase());
+
             let returnedId = scenario.id;
 
-            // Zoek de originele naam van dit scenario in de huidige lijsten
-            const originalInDb =
-                this.officialScenarios.find(s => s.id === scenario.id) ||
-                this.customScenarios.find(s => s.id === scenario.id);
-
-            const isNew = scenario.id.startsWith('new_');
-
-            if (isNew || asNew) {
+            if (existing) {
+                if (!confirm(`Je hebt al een scenario met de naam '${scenario.name}'. Wil je deze overschrijven?`)) {
+                    throw new Error("Geannuleerd door gebruiker");
+                }
+                // UPDATE het bestaande scenario op de server (PUT)
+                const updatePayload = {
+                    ...payload,
+                    ...(existing.is_official ? { is_official: true } : {})
+                };
+                await ApiClient.updateScenario(existing.id, updatePayload);
+                returnedId = existing.id.toString();
+            } else {
                 // Altijd als NIEUW opslaan (POST)
                 const res = await ApiClient.saveScenario(payload);
                 returnedId = res.scenario.id.toString();
-            } else {
-                // UPDATE het bestaande scenario op de server (PUT)
-                // Bewaar de is_official status van het origineel in de payload
-                const updatePayload = {
-                    ...payload,
-                    ...(originalInDb && (originalInDb as any).is_official ? { is_official: true } : {})
-                };
-                await ApiClient.updateScenario(Number(scenario.id), updatePayload);
             }
 
             // Één geconsolideerde refresh — dropdown wordt precies 1x herbouwd

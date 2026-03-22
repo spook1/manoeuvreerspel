@@ -59,9 +59,7 @@ export class GameBuilderController {
 
         // Bind Save
         const bSave = document.getElementById('gbSaveBtn');
-        if (bSave) bSave.onclick = () => this.saveGame(false);
-        const bSaveNew = document.getElementById('gbSaveNewBtn');
-        if (bSaveNew) bSaveNew.onclick = () => this.saveGame(true);
+        if (bSave) bSave.onclick = () => this.saveGame();
 
         // Bind Exit
         const bExit = document.getElementById('gbExitBtn');
@@ -256,7 +254,7 @@ export class GameBuilderController {
         this.renderSelectedScenarios();
     }
 
-    static async saveGame(asNew: boolean = false) {
+    static async saveGame() {
         const nameInput = document.getElementById('gbGameNameInput') as HTMLInputElement;
         const descInput = document.getElementById('gbGameDescInput') as HTMLTextAreaElement;
 
@@ -267,23 +265,30 @@ export class GameBuilderController {
 
         const name = nameInput.value.trim();
 
+        let targetDbId: number | null = activeGame.id !== 'new' ? Number(activeGame.id) : null;
+
         // Check voor unieke naam / overschrijven
         try {
             if (ApiClient.isLoggedIn) {
                 const myGames = await ApiClient.getMyGames();
-                const existingGame = myGames.find((g: any) => g.name.toLowerCase() === name.toLowerCase() && String(g.id) !== String(activeGame.id));
+                // Vind game met exact deze naam
+                const existingGame = myGames.find((g: any) => g.name.toLowerCase() === name.toLowerCase());
+
                 if (existingGame) {
-                    const confirmOverwrite = confirm(`Je hebt al een game met deze naam ("${existingGame.name}").\nWeet je zeker dat je deze wilt overschrijven met de huidige reeks?`);
+                    const confirmOverwrite = confirm(`Je hebt al een game met de naam "${existingGame.name}".\nWeet je zeker dat je deze wilt overschrijven met de huidige reeks?`);
                     if (!confirmOverwrite) {
                         return; // Cancelled
                     } else {
-                        // User wants to overwrite, so we adopt the ID of the existing game to actually overwrite it in the API call.
+                        // User wants to overwrite
+                        targetDbId = Number(existingGame.id);
                         activeGame.id = String(existingGame.id);
                     }
+                } else {
+                    targetDbId = null; // Nieuwe game (heeft deze unieke naam nog niet)
                 }
             }
         } catch (e) {
-            console.error("Kon bestaande games niet verifiëren voor unieke naam", e);
+            console.error("Kon bestaande games niet verifiëren", e);
         }
 
         if (activeGame.scenarios.length === 0) {
@@ -320,27 +325,22 @@ export class GameBuilderController {
         };
 
         const btn = document.getElementById('gbSaveBtn');
-        const newBtn = document.getElementById('gbSaveNewBtn');
         if (btn) btn.textContent = '⏳ ...';
-        if (newBtn) newBtn.textContent = '⏳ ...';
 
         try {
-            if (activeGame.id === 'new' || asNew) {
+            if (!targetDbId) {
                 await ApiClient.saveGame(payload);
             } else {
-                await ApiClient.updateGame(Number(activeGame.id), payload);
+                await ApiClient.updateGame(targetDbId, payload);
             }
             if (btn) btn.textContent = '✅ Opgeslagen';
-            if (newBtn) newBtn.textContent = '✅ Opgeslagen';
             setTimeout(() => {
-                if (btn) btn.textContent = '💾 Overschrijven';
-                if (newBtn) newBtn.textContent = '📄 Opslaan als Kopie';
+                if (btn) btn.textContent = '💾 Game Opslaan';
                 this.hide();
             }, 1000);
         } catch (e: any) {
             alert('Mislukt: ' + e.message);
-            if (btn) btn.textContent = '💾 Overschrijven';
-            if (newBtn) newBtn.textContent = '📄 Opslaan als Kopie';
+            if (btn) btn.textContent = '💾 Game Opslaan';
         }
     }
 
