@@ -140,6 +140,10 @@
 ## Sprint 8: UI/UX, QA & Pro Features 🕵️‍♂️ (START HIER)
 *Doel: De applicatie visueel stijltrekken, onnodige 'legacy' onderdelen weghalen, functionaliteit server-side testen en het betaalmodel vormgeven.*
 
+### Voltooid in de meest recente sessie
+- [x] **CRUD Logica Gefixt**: De knoppen voor 'Cloud Opslaan' in álle editors (Haven, Scenario, Game) zijn opgesplitst in expliciete **"💾 Overschrijven"** en **"📄 Als Kopie"** knoppen. Geen verwarrende overschrijvingen meer gebaseerd op stiekeme naam-vergelijkingen.
+- [x] **Admin Rechten (Backend & UI)**: De `destroy`, `update` en `show` acties in `HarborController`, `ScenarioController` en `GameController` zijn aangepast zodat Admins 100% beheerrechten hebben (de 403 Unauthorized foutmeldingen bij het verwijderen van andermans werk zijn verholpen).
+
 ### 🛠️ Nieuwe Use Cases (Gepland voor volgende sessies)
 
 #### 1. UC-801: Verwijderen Ingebouwde Oude Games
