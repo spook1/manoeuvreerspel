@@ -52,8 +52,8 @@ class GameController extends Controller
         $game = Game::with('scenarios')->findOrFail($id);
         
         // Public games can be viewed by anyone, assuming future logic here. 
-        // For now, check ownership if not public.
-        if (!$game->is_public && $game->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if (!$game->is_public && $game->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -64,7 +64,8 @@ class GameController extends Controller
     {
         $game = Game::findOrFail($id);
 
-        if ($game->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if ($game->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -95,7 +96,8 @@ class GameController extends Controller
     {
         $game = Game::findOrFail($id);
 
-        if ($game->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if ($game->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

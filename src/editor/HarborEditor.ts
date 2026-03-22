@@ -93,7 +93,9 @@ export class HarborEditor {
 
         // Cloud Save
         const saveCloudBtn = document.getElementById('cloudSaveBtn');
-        if (saveCloudBtn) saveCloudBtn.addEventListener('click', () => this.promptCloudSave());
+        if (saveCloudBtn) saveCloudBtn.addEventListener('click', () => this.promptCloudSave(false));
+        const saveCloudNewBtn = document.getElementById('cloudSaveNewBtn');
+        if (saveCloudNewBtn) saveCloudNewBtn.addEventListener('click', () => this.promptCloudSave(true));
 
 
 
@@ -1140,7 +1142,7 @@ export class HarborEditor {
         (statusEl as any)._hideTimer = setTimeout(() => { statusEl!.style.opacity = '0'; }, 4000);
     }
 
-    async promptCloudSave() {
+    async promptCloudSave(asNew: boolean = false) {
         if (!ApiClient.isLoggedIn) {
             this.showEditorStatus('⚠️ Je moet ingelogd zijn om op te slaan.', 'warn');
             return;
@@ -1153,7 +1155,9 @@ export class HarborEditor {
         const name = rawInput.trim() || 'Naamloze Haven';
 
         const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
-        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Opslaan...'; }
+        const newBtn = document.getElementById('cloudSaveNewBtn') as HTMLButtonElement | null;
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ ...'; }
+        if (newBtn) { newBtn.disabled = true; newBtn.textContent = '⏳ ...'; }
 
         try {
             const harborData = {
@@ -1169,15 +1173,13 @@ export class HarborEditor {
 
             const dbId = (gameState.harbor as any).db_id;
             const isOfficial = !!(gameState.harbor as any).is_official;
-            const nameChanged = name !== currentName;
 
-            if (dbId && !nameChanged) {
-                // Zelfde naam, bestaande haven → UPDATE in-place, bewaar is_official
+            if (dbId && !asNew) {
+                // UPDATE in-place
                 await ApiClient.updateHarbor(dbId, harborData, isOfficial ? true : undefined);
                 gameState.harbor.name = name;
             } else {
-                // Naam veranderd of gloednieuw → sla op als NIEUW haven (POST)
-                // Originele haven blijft onaangeroerd
+                // Sla op als NIEUW haven (POST)
                 const res = await ApiClient.saveHarbor(harborData, false);
                 gameState.harbor.id = `custom_${res.id}`;
                 (gameState.harbor as any).db_id = res.id;
@@ -1203,7 +1205,10 @@ export class HarborEditor {
             console.error(e);
             this.showEditorStatus('❌ Fout: ' + (e.message || 'Verbindingsfout'), 'error');
         } finally {
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '☁️ Cloud Opslaan'; }
+            const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
+            const newBtn = document.getElementById('cloudSaveNewBtn') as HTMLButtonElement | null;
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Overschrijven'; }
+            if (newBtn) { newBtn.disabled = false; newBtn.textContent = '📄 Als Kopie'; }
         }
     }
 

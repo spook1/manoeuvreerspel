@@ -488,7 +488,7 @@ export class GameManager {
         // Wire the scenario editor controller exit callback
         initScenarioEditor({
             onExit: () => this.startPracticeMode(),
-            onSave: async (scenario) => this.saveScenario(scenario)
+            onSave: async (scenario, asNew) => this.saveScenario(scenario, asNew)
         });
 
         (window as any).startGame = () => this.startGame();
@@ -834,7 +834,7 @@ export class GameManager {
         }
     }
 
-    async saveScenario(scenario: ScenarioData) {
+    async saveScenario(scenario: ScenarioData, asNew: boolean = false) {
         if (!ApiClient.isLoggedIn) {
             alert("Je moet ingelogd zijn om scenario's te kunnen opslaan.");
             return;
@@ -880,15 +880,13 @@ export class GameManager {
                 this.customScenarios.find(s => s.id === scenario.id);
 
             const isNew = scenario.id.startsWith('new_');
-            const nameChanged = originalInDb && originalInDb.name !== scenario.name;
 
-            if (isNew || nameChanged) {
-                // Naam veranderd of gloednieuw → altijd als NIEUW opslaan (POST)
-                // Het originele scenario blijft onaangeroerd.
+            if (isNew || asNew) {
+                // Altijd als NIEUW opslaan (POST)
                 const res = await ApiClient.saveScenario(payload);
                 returnedId = res.scenario.id.toString();
             } else {
-                // Zelfde naam → UPDATE het bestaande scenario op de server (PUT)
+                // UPDATE het bestaande scenario op de server (PUT)
                 // Bewaar de is_official status van het origineel in de payload
                 const updatePayload = {
                     ...payload,

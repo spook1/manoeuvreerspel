@@ -31,13 +31,13 @@ let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 // Callback naar GameManager voor mode-switches
 let _onExit: (() => void) | null = null;
 
-let _onSave: ((scenario: any) => Promise<void>) | null = null;
+let _onSave: ((scenario: any, asNew: boolean) => Promise<void>) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function initScenarioEditor(callbacks: {
     onExit: () => void;
-    onSave?: (scenario: any) => Promise<void>;
+    onSave?: (scenario: any, asNew: boolean) => Promise<void>;
 }) {
     _onExit = callbacks.onExit;
     if (callbacks.onSave) _onSave = callbacks.onSave;
@@ -462,33 +462,36 @@ export function wireScenarioEditorUI() {
 
     // ── OPSLAAN (CLOUD) ─────────────────────────────────────────────────────
     const saveBtn = g<HTMLButtonElement>('seSaveBtn');
-    if (saveBtn) {
-        saveBtn.onclick = async () => {
-            const scenario = getOrMakeScenario();
-            const nameInput = g<HTMLInputElement>('scenarioNameInput');
-            const descInput = g<HTMLTextAreaElement>('scenarioDescInput');
+    const newBtn = g<HTMLButtonElement>('seSaveNewBtn');
 
-            if (nameInput?.value) scenario.name = nameInput.value;
-            if (descInput) scenario.description = descInput.value;
+    const doSave = async (btn: HTMLButtonElement, defaultLabel: string, asNew: boolean) => {
+        const scenario = getOrMakeScenario();
+        const nameInput = g<HTMLInputElement>('scenarioNameInput');
+        const descInput = g<HTMLTextAreaElement>('scenarioDescInput');
 
-            saveBtn.textContent = '⏳ Bezig...';
-            saveBtn.disabled = true;
+        if (nameInput?.value) scenario.name = nameInput.value;
+        if (descInput) scenario.description = descInput.value;
 
-            try {
-                if (_onSave) await _onSave(scenario); // AWAIT: wacht op volledige save+fetch cyclus
-                saveBtn.textContent = '✅ Opgeslagen';
-            } catch (e) {
-                saveBtn.textContent = '❌ Fout';
-                console.error('Save failed:', e);
-            } finally {
-                saveBtn.disabled = false;
-                setTimeout(() => {
-                    saveBtn.textContent = '💾 Opslaan';
-                    updateAdminUI();
-                }, 2000);
-            }
-        };
-    }
+        btn.textContent = '⏳ ...';
+        btn.disabled = true;
+
+        try {
+            if (_onSave) await _onSave(scenario, asNew);
+            btn.textContent = '✅ Opgeslagen';
+        } catch (e) {
+            btn.textContent = '❌ Fout';
+            console.error('Save failed:', e);
+        } finally {
+            btn.disabled = false;
+            setTimeout(() => {
+                btn.textContent = defaultLabel;
+                updateAdminUI();
+            }, 2000);
+        }
+    };
+
+    if (saveBtn) saveBtn.onclick = () => doSave(saveBtn, '💾 Overschrijven', false);
+    if (newBtn) newBtn.onclick = () => doSave(newBtn, '📄 Als Kopie', true);
 
     // ── ADMIN TOGGLE ────────────────────────────────────────────────────────
     function updateAdminUI() {

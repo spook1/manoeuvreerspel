@@ -42,8 +42,8 @@ class ScenarioController extends Controller
     {
         $scenario = Scenario::findOrFail($id);
         
-        // Ensure the user owns this scenario
-        if ($scenario->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -54,7 +54,8 @@ class ScenarioController extends Controller
     {
         $scenario = Scenario::findOrFail($id);
 
-        if ($scenario->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -76,7 +77,8 @@ class ScenarioController extends Controller
     {
         $scenario = Scenario::findOrFail($id);
 
-        if ($scenario->user_id !== $request->user()->id) {
+        $user = $request->user();
+        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

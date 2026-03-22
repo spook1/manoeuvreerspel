@@ -1108,8 +1108,11 @@
 
             <div style="display:flex; gap:6px; margin-top:4px;">
                 <button id="cloudSaveBtn"
-                    style="flex:1; background:#22c55e; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer;"
-                    title="Opslaan in Cloud">☁️ Cloud Opslaan</button>
+                    style="flex:1; background:#3b82f6; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; font-size:11px;"
+                    title="Overschrijven">💾 Overschrijven</button>
+                <button id="cloudSaveNewBtn"
+                    style="flex:1; background:#22c55e; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; font-size:11px;"
+                    title="Opslaan als Nieuw (kopie)">📄 Als Kopie</button>
             </div>
             <!-- Admin only: markeer als standaard haven -->
             <div id="adminOfficialRow" style="display:none; margin-top:4px;">
@@ -1271,8 +1274,12 @@
             <!-- Opslaan -->
             <div style="display:flex; gap:6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
                 <button id="seSaveBtn"
-                    style="flex:1; background:#22c55e; border:none; color:white; padding:8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
-                    💾 Opslaan (Cloud)
+                    style="flex:1; background:#3b82f6; border:none; color:white; padding:8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;" title="Overschrijf dit scenario (alleen eigen)">
+                    💾 Overschrijven
+                </button>
+                <button id="seSaveNewBtn"
+                    style="flex:1; background:#22c55e; border:none; color:white; padding:8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;" title="Maak een nieuwe kopie (POST)">
+                    📄 Als Kopie
                 </button>
                 <button id="seToggleOfficialBtn" class="admin-only"
                     style="display:none; flex:1; background:#6366f1; border:none; color:white; padding:8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;">
@@ -1320,8 +1327,11 @@
                         style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕
                         Sluiten</button>
                     <button id="gbSaveBtn"
-                        style="background:#22c55e; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">💾
-                        Game Opslaan</button>
+                        style="background:#3b82f6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Overschrijven (Alleen je eigen games)">💾
+                        Overschrijven</button>
+                    <button id="gbSaveNewBtn"
+                        style="background:#22c55e; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Opslaan als nieuwe game (kopie)">📄
+                        Opslaan als Kopie</button>
                 </div>
             </div>
 

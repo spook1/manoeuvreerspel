@@ -116,7 +116,8 @@ class HarborController extends Controller
     {
         $harbor = Harbor::findOrFail($id);
 
-        if ($harbor->user_id !== Auth::id()) {
+        $user = Auth::user();
+        if ($harbor->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

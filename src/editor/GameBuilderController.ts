@@ -59,9 +59,9 @@ export class GameBuilderController {
 
         // Bind Save
         const bSave = document.getElementById('gbSaveBtn');
-        if (bSave) {
-            bSave.onclick = () => this.saveGame();
-        }
+        if (bSave) bSave.onclick = () => this.saveGame(false);
+        const bSaveNew = document.getElementById('gbSaveNewBtn');
+        if (bSaveNew) bSaveNew.onclick = () => this.saveGame(true);
 
         // Bind Exit
         const bExit = document.getElementById('gbExitBtn');
@@ -256,7 +256,7 @@ export class GameBuilderController {
         this.renderSelectedScenarios();
     }
 
-    static async saveGame() {
+    static async saveGame(asNew: boolean = false) {
         const nameInput = document.getElementById('gbGameNameInput') as HTMLInputElement;
         const descInput = document.getElementById('gbGameDescInput') as HTMLTextAreaElement;
 
@@ -320,22 +320,27 @@ export class GameBuilderController {
         };
 
         const btn = document.getElementById('gbSaveBtn');
+        const newBtn = document.getElementById('gbSaveNewBtn');
         if (btn) btn.textContent = '⏳ ...';
+        if (newBtn) newBtn.textContent = '⏳ ...';
 
         try {
-            if (activeGame.id === 'new') {
+            if (activeGame.id === 'new' || asNew) {
                 await ApiClient.saveGame(payload);
             } else {
                 await ApiClient.updateGame(Number(activeGame.id), payload);
             }
             if (btn) btn.textContent = '✅ Opgeslagen';
+            if (newBtn) newBtn.textContent = '✅ Opgeslagen';
             setTimeout(() => {
-                if (btn) btn.textContent = '💾 Game Opslaan';
+                if (btn) btn.textContent = '💾 Overschrijven';
+                if (newBtn) newBtn.textContent = '📄 Opslaan als Kopie';
                 this.hide();
             }, 1000);
         } catch (e: any) {
             alert('Mislukt: ' + e.message);
-            if (btn) btn.textContent = '💾 Game Opslaan';
+            if (btn) btn.textContent = '💾 Overschrijven';
+            if (newBtn) newBtn.textContent = '📄 Opslaan als Kopie';
         }
     }
 
