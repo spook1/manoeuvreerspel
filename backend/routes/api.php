@@ -16,6 +16,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/harbors/official', [HarborController::class, 'official']);
 Route::get('/scenarios/official', [ScenarioController::class, 'official']);
 Route::get('/games/official', [GameController::class, 'official']);
+// Public: individuele items ophalen
+Route::get('/harbors/{id}', [HarborController::class, 'show']);
+Route::get('/scenarios/{id}', [ScenarioController::class, 'show']);
+Route::get('/games/{id}', [GameController::class, 'show']);
 
 // Protected routes (Alleen ingelogde users met token)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -25,21 +29,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Havens opslaan & ophalen
     Route::post('/harbors', [HarborController::class, 'store']);
     Route::get('/harbors', [HarborController::class, 'index']);
-    Route::get('/harbors/{id}', [HarborController::class, 'show']);
     Route::put('/harbors/{id}', [HarborController::class, 'update']);
     Route::delete('/harbors/{id}', [HarborController::class, 'destroy']);
 
     // Scenarios opslaan & ophalen
     Route::post('/scenarios', [ScenarioController::class, 'store']);
     Route::get('/scenarios', [ScenarioController::class, 'index']);
-    Route::get('/scenarios/{id}', [ScenarioController::class, 'show']);
     Route::put('/scenarios/{id}', [ScenarioController::class, 'update']);
     Route::delete('/scenarios/{id}', [ScenarioController::class, 'destroy']);
 
     // Games opslaan & ophalen
     Route::post('/games', [GameController::class, 'store']);
     Route::get('/games', [GameController::class, 'index']);
-    Route::get('/games/{id}', [GameController::class, 'show']);
     Route::put('/games/{id}', [GameController::class, 'update']);
     Route::delete('/games/{id}', [GameController::class, 'destroy']);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Scenario;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ScenarioController extends Controller
 {
@@ -42,8 +43,8 @@ class ScenarioController extends Controller
     {
         $scenario = Scenario::findOrFail($id);
         
-        $user = $request->user();
-        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
+        $user = Auth::guard('sanctum')->user();
+        if (!$scenario->is_official && (!$user || ($scenario->user_id !== $user->id && $user->role !== 'admin'))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

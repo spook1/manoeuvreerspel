@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
 {
@@ -51,15 +52,13 @@ class GameController extends Controller
     {
         $game = Game::with('scenarios')->findOrFail($id);
         
-        // Public games can be viewed by anyone, assuming future logic here. 
-        $user = $request->user();
-        if (!$game->is_public && $game->user_id !== $user->id && $user->role !== 'admin') {
+        $user = Auth::guard('sanctum')->user();
+        if (!$game->is_public && !$game->is_official && (!$user || ($game->user_id !== $user->id && $user->role !== 'admin'))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         return response()->json($game);
     }
-
     public function update(Request $request, $id)
     {
         $game = Game::findOrFail($id);

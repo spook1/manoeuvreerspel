@@ -63,8 +63,8 @@ class HarborController extends Controller
     {
         $harbor = Harbor::findOrFail($id);
 
-        // Check if owner OR public
-        if ($harbor->user_id !== Auth::id() && !$harbor->is_public && !$harbor->is_official) {
+        $user = Auth::guard('sanctum')->user();
+        if (!$harbor->is_public && !$harbor->is_official && (!$user || ($harbor->user_id !== $user->id && $user->role !== 'admin'))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
