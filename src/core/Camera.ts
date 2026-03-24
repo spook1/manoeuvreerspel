@@ -11,7 +11,7 @@ export class Camera {
     public active: boolean = true;
     public mode: 'follow' | 'free' = 'follow';
 
-    private readonly ZOOM_MIN = 0.5; // Max zoom out (overview of harbor)
+    private readonly ZOOM_MIN = 1.0; // Max zoom out is 1.0 (exact screen fit)
     private readonly ZOOM_MAX = 3.0; // Max zoom in
     private viewportW: number = 800;
     private viewportH: number = 600;
@@ -86,7 +86,6 @@ export class Camera {
                 const dx = (e.touches[0].clientX - this.lastDragX) / (Constants.GAME_SCALE * this.zoom);
                 const dy = (e.touches[0].clientY - this.lastDragY) / (Constants.GAME_SCALE * this.zoom);
                 
-                // Only mark as free pan if we've actually moved significantly (avoid accidental pans when tapping)
                 if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
                     this.x -= dx;
                     this.y -= dy;
@@ -133,7 +132,6 @@ export class Camera {
         const boat = gameState.boat;
 
         if (this.mode === 'follow') {
-            // Keep the boat roughly in the center
             const targetX = boat.x;
             const targetY = boat.y;
 
@@ -146,21 +144,26 @@ export class Camera {
             }
         }
 
-        // --- CONSTRAIN CAMERA (Both Free and Follow modes) ---
-        const viewH_world = (this.viewportH / Constants.GAME_SCALE) / this.zoom;
-        const viewW_world = (this.viewportW / Constants.GAME_SCALE) / this.zoom;
+        // --- CONSTRAIN CAMERA ---
+        // Native full dimensions of the harbor (1.0 zoom matching screen size)
+        const nativeW = this.viewportW / Constants.GAME_SCALE;
+        const nativeH = this.viewportH / Constants.GAME_SCALE;
         
-        const minY = viewH_world / 2;
+        // Current visible dimensions
+        const viewH_world = nativeH / this.zoom;
+        const viewW_world = nativeW / this.zoom;
+        
+        // Boundaries so the camera never shows space outside [0, nativeW] and [0, nativeH]
         const minX = viewW_world / 2;
+        const maxX = nativeW - (viewW_world / 2);
+        const minY = viewH_world / 2;
+        const maxY = nativeH - (viewH_world / 2);
+        
+        if (this.x < minX) this.x = minX;
+        if (this.x > maxX && maxX >= minX) this.x = maxX; // maxX >= minX ensures safe clamping
         
         if (this.y < minY) this.y = minY;
-        if (this.x < minX) this.x = minX;
-        
-        // Optional bounding box to prevent panning off the map entirely (assume harbor is roughly 3000x2000 max)
-        const maxX = 3000 - minX;
-        const maxY = 2000 - minY;
-        if (this.x > maxX && maxX > minX) this.x = maxX;
-        if (this.y > maxY && maxY > minY) this.y = maxY;
+        if (this.y > maxY && maxY >= minY) this.y = maxY;
     }
 
     public applyTransform(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) {
