@@ -170,9 +170,13 @@
 #### 6. UC-806: Mobiele Controls & Camera (Huidige focus) 📱
 - [x] **Fase 1**: Action Layer Architectuur (`InputState` ipv hardcoded keys in de gameloop).
 - [x] **Fase 2**: Touch UI Overlay ontwikkeld (4-button helm + stopknop) via `TouchUI.ts`. Weergave reageert autonoom op Touch-devices.
-- [x] **Camera Systeem**: `Camera.ts` toegevoegd voor smooth follow, cinematic lookahead en auto-zoom (uitzoomen bij hoge vaart, inzoomen bij stilstand).
-- [ ] **Fase 3: Smart Lijnen (Intent Recognition targeting)**: Lijnen werpen via een "Lijn-modus" knop. De hitboxes voor cleats/palen worden op mobiel virtueel 4x vergroot. Auto-select van de dichtstbijzijnde boeg-cleat als een paal wordt aangetikt.
-- [ ] Testen en feedback van physics/touch op diverse devices doornemen.
+- [x] **Camera Systeem**: `Camera.ts` toegevoegd inclusief **Strict Bounds Panning** (links/rechts/boven/onder vergrendeld aan de native harbor dimensies) en **Handmatige Pinch-Zoom** (auto-zoom uitgefaseerd op wens van gebruiker). Inclusief 🎯 Focus Knop & 'C' shortcut.
+- [ ] **Fase 3: Smart Lijnen (Volgende Sessie)**: Touch interface voor het uitwerpen/losmaken van landvasten (mooring lines). Implementatie van logica waarbij een tik op een bolders/cleat aan wal direct de dichtstbijzijnde boeg/hek cleat op de boot target. Virtueel grotere hitboxes op touchscreen vereist!
+
+#### 7. UC-807: Code Audit & Security Check (Gepland) 🔒
+- [ ] Grondige check op legacys code, ongebruikte componenten of dode variabelen.
+- [ ] Security check: Controle op eventuele hardcoded passwords of test-credentials in backend en frontend omgevingen.
+- [ ] Architectuur-schoonmaak van redundante methodes in classes.
 
 ---
 
