@@ -107,8 +107,11 @@ export class Render {
     }
 
     resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // Use actual displayed size, not full window (canvas may be inside a layout container)
+        const rect = this.canvas.getBoundingClientRect();
+        // Fallback to window size if rect not yet laid out
+        this.canvas.width = rect.width > 0 ? rect.width : window.innerWidth;
+        this.canvas.height = rect.height > 0 ? rect.height : window.innerHeight;
     }
 
     draw(gameState: GameState) {
@@ -182,12 +185,18 @@ export class Render {
     }
 
     drawWater(gameState: GameState) {
+        const w = (this.canvas.width / Constants.GAME_SCALE) / camera.zoom;
+        const h = (this.canvas.height / Constants.GAME_SCALE) / camera.zoom;
+        const left = camera.x - w / 2;
+        const top = camera.y - h / 2;
+
         this.ctx.fillStyle = '#1e3a8a';
-        this.ctx.fillRect(0, 0, this.canvas.width / Constants.GAME_SCALE, this.canvas.height / Constants.GAME_SCALE);
-        this.drawWaves(gameState);
+        this.ctx.fillRect(left, top, w, h);
+        
+        this.drawWaves(gameState, left, top, w, h);
     }
 
-    drawWaves(gameState: GameState) {
+    drawWaves(gameState: GameState, left: number, top: number, vW: number, vH: number) {
         const wind = gameState.activeWind;
         if (wind.force <= 0.1) return;
 
@@ -216,8 +225,10 @@ export class Render {
         const baseLen = 8;
         const waveLen = baseLen + windSpeed * 0.3;
 
-        const w = this.canvas.width / Constants.GAME_SCALE;
-        const h = this.canvas.height / Constants.GAME_SCALE;
+        const startX = Math.floor(left / spacing) * spacing - spacing;
+        const startY = Math.floor(top / spacing) * spacing - spacing;
+        const endX = left + vW + spacing;
+        const endY = top + vH + spacing;
 
         // Primary wave layer
         ctx.strokeStyle = `rgba(255, 255, 255, ${waveOpacity})`;
@@ -227,8 +238,8 @@ export class Render {
         const moveX = Math.cos(windRad) * time * (2 + windSpeed * 0.2);
         const moveY = Math.sin(windRad) * time * (2 + windSpeed * 0.2);
 
-        for (let y = -spacing; y < h + spacing; y += spacing) {
-            for (let x = -spacing; x < w + spacing; x += spacing) {
+        for (let y = startY; y < endY; y += spacing) {
+            for (let x = startX; x < endX; x += spacing) {
                 // Animated offset per wave
                 const phase = Math.sin((x + moveX) * 0.02 + (y + moveY) * 0.025 + time * 1.5) * 8;
                 const cx = x + phase * 0.6;
@@ -245,11 +256,16 @@ export class Render {
         if (windSpeed > 8) {
             const smallSpacing = spacing * 0.5;
             const smallOpacity = (windSpeed - 8) * 0.008;
-            ctx.strokeStyle = `rgba(200, 220, 255, ${Math.min(0.1, smallOpacity)})`;
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${smallOpacity})`;
+            ctx.lineWidth = 1.0;
 
-            for (let y = 0; y < h; y += smallSpacing) {
-                for (let x = 0; x < w; x += smallSpacing) {
+            const startSX = Math.floor(left / smallSpacing) * smallSpacing - smallSpacing;
+            const startSY = Math.floor(top / smallSpacing) * smallSpacing - smallSpacing;
+            const endSX = left + vW + smallSpacing;
+            const endSY = top + vH + smallSpacing;
+
+            for (let y = startSY; y < endSY; y += smallSpacing) {
+                for (let x = startSX; x < endSX; x += smallSpacing) {
                     const phase = Math.sin(x * 0.04 + y * 0.03 + time * 2.5) * 4;
                     const cx = x + phase;
                     const cy = y;
