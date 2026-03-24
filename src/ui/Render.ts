@@ -282,38 +282,38 @@ export class Render {
 
     drawHarbor(gameState: GameState) {
         const ctx = this.ctx;
-        const canvasW = this.canvas.width / Constants.GAME_SCALE;
 
-        // === QUAY (rich wood textures) ===
-        // Base wood
+        // Base wood - Draw across a massive width to act as an infinite shoreline
+        const quayWidth = 5000; 
+
         const quayGrad = ctx.createLinearGradient(0, 0, 0, Constants.QUAY_Y);
         quayGrad.addColorStop(0, '#5c3d1e');
         quayGrad.addColorStop(0.3, '#7c4f2a');
         quayGrad.addColorStop(0.7, '#6b4226');
         quayGrad.addColorStop(1, '#4a2e14');
         ctx.fillStyle = quayGrad;
-        ctx.fillRect(0, 0, canvasW, Constants.QUAY_Y);
+        ctx.fillRect(-1000, 0, quayWidth + 1000, Constants.QUAY_Y);
 
         // Horizontal plank lines
         ctx.strokeStyle = 'rgba(0,0,0,0.15)';
         ctx.lineWidth = 0.5;
         for (let y = 12; y < Constants.QUAY_Y; y += 18) {
             ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvasW, y);
+            ctx.moveTo(-1000, y);
+            ctx.lineTo(quayWidth, y);
             ctx.stroke();
         }
 
         // Quay edge (dark bottom border)
         ctx.fillStyle = '#3a2010';
-        ctx.fillRect(0, Constants.QUAY_Y - 3, canvasW, 3);
+        ctx.fillRect(-1000, Constants.QUAY_Y - 3, quayWidth + 1000, 3);
 
         // Edge highlight
         ctx.strokeStyle = 'rgba(255,255,255,0.08)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(0, Constants.QUAY_Y - 3);
-        ctx.lineTo(canvasW, Constants.QUAY_Y - 3);
+        ctx.moveTo(-1000, Constants.QUAY_Y - 3);
+        ctx.lineTo(quayWidth, Constants.QUAY_Y - 3);
         ctx.stroke();
 
         // === SHORES (drawn first, so they appear beneath jetties) ===
