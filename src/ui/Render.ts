@@ -107,11 +107,8 @@ export class Render {
     }
 
     resize() {
-        // Use actual displayed size, not full window (canvas may be inside a layout container)
-        const rect = this.canvas.getBoundingClientRect();
-        // Fallback to window size if rect not yet laid out
-        this.canvas.width = rect.width > 0 ? rect.width : window.innerWidth;
-        this.canvas.height = rect.height > 0 ? rect.height : window.innerHeight;
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     }
 
     draw(gameState: GameState) {
