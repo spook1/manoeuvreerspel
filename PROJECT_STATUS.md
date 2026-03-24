@@ -137,8 +137,8 @@
 
 ---
 
-## Sprint 8: UI/UX, QA & Pro Features 🕵️‍♂️ (IN BEHANDELING)
-*Doel: De applicatie visueel stijltrekken, onnodige 'legacy' onderdelen weghalen, functionaliteit server-side testen en het betaalmodel vormgeven.*
+## Sprint 8: Mobiele Support, UI/UX, QA & Pro Features 📱 (IN BEHANDELING)
+*Doel: De applicatie visueel stijltrekken, speelbaar maken op mobiele apparaten (Touch Controls), functionaliteit server-side testen en het betaalmodel vormgeven.*
 
 ### Voltooid in de meest recente sessie
 - [x] **CRUD Logica Gefixt**: De knoppen voor 'Cloud Opslaan' in álle editors zijn samengevoegd tot één krachtige **"💾 Opslaan"** knop met slimme overschrijf- / nieuw-logica op basis van exacte naam (en unieke bevestigings-prompt) om dubbele records te voorkomen.
@@ -166,6 +166,13 @@
 #### 5. UC-805: De "Pro" Features 💎
 - [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's).
 - [ ] De UI voorbereiden op states waarbij "Pro" functionaliteit vergrendeld is.
+
+#### 6. UC-806: Mobiele Controls & Camera (Huidige focus) 📱
+- [x] **Fase 1**: Action Layer Architectuur (`InputState` ipv hardcoded keys in de gameloop).
+- [x] **Fase 2**: Touch UI Overlay ontwikkeld (4-button helm + stopknop) via `TouchUI.ts`. Weergave reageert autonoom op Touch-devices.
+- [x] **Camera Systeem**: `Camera.ts` toegevoegd voor smooth follow, cinematic lookahead en auto-zoom (uitzoomen bij hoge vaart, inzoomen bij stilstand).
+- [ ] **Fase 3: Smart Lijnen (Intent Recognition targeting)**: Lijnen werpen via een "Lijn-modus" knop. De hitboxes voor cleats/palen worden op mobiel virtueel 4x vergroot. Auto-select van de dichtstbijzijnde boeg-cleat als een paal wordt aangetikt.
+- [ ] Testen en feedback van physics/touch op diverse devices doornemen.
 
 ---
 
