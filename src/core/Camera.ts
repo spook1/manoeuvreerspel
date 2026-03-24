@@ -7,7 +7,7 @@ import { Constants } from './Constants';
 export class Camera {
     public x: number = 0;
     public y: number = 0;
-    public zoom: number = 0.7; // Start slightly zoomed out to see harbor
+    public zoom: number = 1.0; // 1.0 is exact native harbor view like editor
     public active: boolean = true;
     public mode: 'follow' | 'free' = 'follow';
 
