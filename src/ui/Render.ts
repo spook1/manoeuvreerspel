@@ -4,6 +4,7 @@ import { attachLocalPoint, getAttachmentWorld } from '../core/Utils';
 import { tutorial } from '../core/Tutorial';
 import { editor } from '../editor/HarborEditor';
 import { drawShores, drawNPCBoats } from './DrawHarborEnvironment';
+import { camera } from '../core/Camera';
 
 export class Render {
     canvas: HTMLCanvasElement;
@@ -27,10 +28,7 @@ export class Render {
 
     private getMousePos(evt: MouseEvent): { x: number, y: number } {
         const rect = this.canvas.getBoundingClientRect();
-        return {
-            x: (evt.clientX - rect.left) / Constants.GAME_SCALE,
-            y: (evt.clientY - rect.top) / Constants.GAME_SCALE
-        };
+        return camera.screenToWorld(evt.clientX, evt.clientY, rect);
     }
 
     private handleCanvasClick(e: MouseEvent) {
@@ -119,6 +117,7 @@ export class Render {
 
         ctx.save();
         ctx.scale(Constants.GAME_SCALE, Constants.GAME_SCALE);
+        camera.applyTransform(ctx, this.canvas.width, this.canvas.height);
 
         this.drawWater(gameState);
         this.drawHarbor(gameState);
@@ -131,9 +130,13 @@ export class Render {
         editor.draw(ctx);
         this.drawSEObjectHighlight(gameState);
         this.drawDebugForces(gameState);
+        ctx.restore();
+
+        // UI Layer (ignoring camera)
+        ctx.save();
+        ctx.scale(Constants.GAME_SCALE, Constants.GAME_SCALE);
         this.drawScenarioHUD(gameState);
         this.drawUI(gameState);
-
         ctx.restore();
     }
 

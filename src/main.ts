@@ -8,6 +8,7 @@ import { tutorial } from './core/Tutorial';
 import { UserBar } from './ui/UserBar';
 import { scenarioRunner } from './core/ScenarioRunner';
 import { touchUI } from './ui/TouchUI';
+import { camera } from './core/Camera';
 
 new UserBar(); // instantiated for DOM side-effects
 const render = new Render('simCanvas');
@@ -70,7 +71,9 @@ function loop() {
         || gameState.gameMode === 'scenario-edit';
 
     if (!isEdit) {
+        camera.active = true;
         input.applyToBoat(gameState.boat);
+        camera.update(gameState);
 
         // Physics
         Boat.updatePhysics(gameState);
@@ -81,6 +84,8 @@ function loop() {
         if (gameState.gameMode === 'game') {
             scenarioRunner.update(gameState, 16.666);
         }
+    } else {
+        camera.active = false;
     }
 
     // Touch controls visibility

@@ -53,10 +53,7 @@ export class TouchUI {
             .touch-center-group {
                 display: flex;
                 gap: 10px;
-                position: absolute;
-                left: 50%;
-                bottom: 20px;
-                transform: translateX(-50%);
+                /* Remove absolute positioning to prevent overlap on narrow screens */
             }
             
             .touch-btn {
@@ -84,7 +81,7 @@ export class TouchUI {
             }
 
             .btn-steer { width: 72px; height: 72px; font-size: 28px; }
-            .btn-throttle { width: 80px; height: 60px; font-size: 20px; }
+            .btn-throttle { width: 100px; height: 60px; font-size: 16px; }
             .btn-action { width: 64px; height: 64px; font-size: 24px; }
 
             @media (orientation: landscape) {
@@ -127,8 +124,8 @@ export class TouchUI {
         const throttleGroup = document.createElement('div');
         throttleGroup.className = 'touch-throttle-group';
         
-        const btnUp = this.createButton('▲ GAS', 'btn-throttle', 'up');
-        const btnDown = this.createButton('▼ REM', 'btn-throttle', 'down');
+        const btnUp = this.createButton('▲ VOORUIT', 'btn-throttle', 'up');
+        const btnDown = this.createButton('▼ ACHTERUIT', 'btn-throttle', 'down');
         
         throttleGroup.appendChild(btnUp);
         throttleGroup.appendChild(btnDown);
