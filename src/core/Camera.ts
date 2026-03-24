@@ -2,49 +2,76 @@ import { GameState } from './GameState';
 import { Constants } from './Constants';
 
 /**
- * Camera: smooth follow, look-ahead, dynamic zoom, pinch/scroll override.
- *
- * ZOOM REFERENCE — zoom=1.0 is identiek aan het beeld vóór de camera.
- *   < 1.0 = meer van de wereld zichtbaar (uitgezoomd / overzicht)
- *   > 1.0 = dichterbij / ingezoomd
+ * Camera: Manual zoom and pan, plus a 'follow' mode.
  */
 export class Camera {
     public x: number = 0;
     public y: number = 0;
-    public zoom: number = 1.0;
+    public zoom: number = 0.7; // Start slightly zoomed out to see harbor
     public active: boolean = true;
+    public mode: 'follow' | 'free' = 'follow';
 
-    // Manual zoom override (scroll wheel / pinch)
-    private manualZoom: number | null = null;
-    private readonly ZOOM_MIN = 0.3;
-    private readonly ZOOM_MAX = 3.0;
-
-    // Viewport size used for bounds clamping
+    private readonly ZOOM_MIN = 0.5; // Max zoom out (overview of harbor)
+    private readonly ZOOM_MAX = 3.0; // Max zoom in
     private viewportW: number = 800;
     private viewportH: number = 600;
 
-    private followSmoothness: number = 0.08;
-    private zoomSmoothness: number = 0.04;
-    private lookAheadFactor: number = 0.5;
+    private followSmoothness: number = 0.1;
+    
+    // Drag/Pan state
+    private isDragging: boolean = false;
+    private lastDragX: number = 0;
+    private lastDragY: number = 0;
 
     constructor() {
-        this.setupZoomControls();
+        this.setupControls();
     }
 
-    private setupZoomControls() {
-        // Scroll-wheel zoom (desktop)
+    private setupControls() {
+        // Desktop Scroll / Drag
         window.addEventListener('wheel', (e) => {
             if (!this.active) return;
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            const newZoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, (this.manualZoom ?? this.zoom) * delta));
-            this.manualZoom = newZoom;
+            this.setZoom(this.zoom * delta);
         }, { passive: false });
 
-        // Pinch-to-zoom (mobile)
+        window.addEventListener('mousedown', (e) => {
+            if (!this.active || e.target !== document.getElementById('simCanvas')) return;
+            this.isDragging = true;
+            this.lastDragX = e.clientX;
+            this.lastDragY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!this.active || !this.isDragging) return;
+            const dx = (e.clientX - this.lastDragX) / (Constants.GAME_SCALE * this.zoom);
+            const dy = (e.clientY - this.lastDragY) / (Constants.GAME_SCALE * this.zoom);
+            
+            this.x -= dx;
+            this.y -= dy;
+            this.mode = 'free'; // Break out of follow mode
+            
+            this.lastDragX = e.clientX;
+            this.lastDragY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => this.isDragging = false);
+
+        // Mobile Pinch / Touch Drag
         let lastPinchDist = 0;
+        let activeTouches = 0;
+
         window.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
+            if (!this.active || e.target !== document.getElementById('simCanvas')) return;
+            activeTouches = e.touches.length;
+            
+            if (activeTouches === 1) {
+                this.isDragging = true;
+                this.lastDragX = e.touches[0].clientX;
+                this.lastDragY = e.touches[0].clientY;
+            } else if (activeTouches === 2) {
+                this.isDragging = false; // prioritize pinch over drag
                 lastPinchDist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -53,113 +80,102 @@ export class Camera {
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
-            if (!this.active || e.touches.length !== 2) return;
-            const dist = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-            if (lastPinchDist > 0) {
-                const ratio = dist / lastPinchDist;
-                const newZoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, (this.manualZoom ?? this.zoom) * ratio));
-                this.manualZoom = newZoom;
+            if (!this.active) return;
+            
+            if (e.touches.length === 1 && this.isDragging) {
+                const dx = (e.touches[0].clientX - this.lastDragX) / (Constants.GAME_SCALE * this.zoom);
+                const dy = (e.touches[0].clientY - this.lastDragY) / (Constants.GAME_SCALE * this.zoom);
+                
+                // Only mark as free pan if we've actually moved significantly (avoid accidental pans when tapping)
+                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                    this.x -= dx;
+                    this.y -= dy;
+                    this.mode = 'free';
+                }
+                
+                this.lastDragX = e.touches[0].clientX;
+                this.lastDragY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                if (lastPinchDist > 0) {
+                    const ratio = dist / lastPinchDist;
+                    this.setZoom(this.zoom * ratio);
+                }
+                lastPinchDist = dist;
             }
-            lastPinchDist = dist;
         }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            activeTouches = e.touches.length;
+            if (activeTouches === 0) this.isDragging = false;
+        });
     }
 
-    /** Update viewport dimensions to compute camera bounds */
+    private setZoom(newZoom: number) {
+        this.zoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, newZoom));
+    }
+
     public setViewport(w: number, h: number) {
         this.viewportW = w;
         this.viewportH = h;
     }
 
-    /** Reset to overview (call when loading a new scenario/level) */
-    public resetToOverview() {
-        this.manualZoom = null;
-        this.zoom = 0.85;
-        this.x = 0;
-        this.y = 0;
+    /** Reset to follow boat */
+    public recenter() {
+        this.mode = 'follow';
+        this.zoom = 1.0; 
     }
 
     public update(gameState: GameState) {
         const boat = gameState.boat;
-        const speed = Math.hypot(boat.vx, boat.vy);
 
-        // zoom=1.0 baseline = zelfde beeld als vóór camera
-        // zoom<1.0 = meer zichtbaar (haven overzicht)
-        // zoom>1.0 = ingezoomd (dichtbij)
-        let targetZoom: number;
+        if (this.mode === 'follow') {
+            // Keep the boat roughly in the center
+            const targetX = boat.x;
+            const targetY = boat.y;
 
-        if (this.manualZoom !== null) {
-            targetZoom = this.manualZoom;
-        } else if (speed < 3) {
-            // Stil / nauwelijks beweging → overzicht
-            targetZoom = 0.85;
-        } else if (speed < 15) {
-            // Rustig varen
-            targetZoom = 1.0;
-        } else {
-            // Snelle vaart → iets meer horizon
-            targetZoom = 0.9;
+            if (this.x === 0 && this.y === 0) {
+                this.x = targetX;
+                this.y = targetY;
+            } else {
+                this.x += (targetX - this.x) * this.followSmoothness;
+                this.y += (targetY - this.y) * this.followSmoothness;
+            }
         }
 
-        this.zoom += (targetZoom - this.zoom) * this.zoomSmoothness;
-
-        // --- TARGET POSITION with look-ahead ---
-        const lookAheadX = boat.vx * this.lookAheadFactor;
-        const lookAheadY = boat.vy * this.lookAheadFactor;
-
-        let targetX = boat.x + lookAheadX;
-        let targetY = boat.y + lookAheadY;
-
-        // --- CONSTRAIN TARGET WITHIN HARBOR BOUNDS ---
-        // Prevent camera from showing anything above y=0 (top of the harbor/quay).
+        // --- CONSTRAIN CAMERA (Both Free and Follow modes) ---
         const viewH_world = (this.viewportH / Constants.GAME_SCALE) / this.zoom;
         const viewW_world = (this.viewportW / Constants.GAME_SCALE) / this.zoom;
         
-        const minY = viewH_world / 2; // if targetY = minY, top of screen perfectly hits y=0
-        const minX = viewW_world / 2; // left of screen perfectly hits x=0
+        const minY = viewH_world / 2;
+        const minX = viewW_world / 2;
         
-        if (targetY < minY) targetY = minY;
-        if (targetX < minX) targetX = minX;
-
-        // Snap on very first frame so camera doesn't lurch from (0,0) lerpt
-        if (this.x === 0 && this.y === 0) {
-            this.x = targetX;
-            this.y = targetY;
-        } else {
-            this.x += (targetX - this.x) * this.followSmoothness;
-            this.y += (targetY - this.y) * this.followSmoothness;
-        }
+        if (this.y < minY) this.y = minY;
+        if (this.x < minX) this.x = minX;
+        
+        // Optional bounding box to prevent panning off the map entirely (assume harbor is roughly 3000x2000 max)
+        const maxX = 3000 - minX;
+        const maxY = 2000 - minY;
+        if (this.x > maxX && maxX > minX) this.x = maxX;
+        if (this.y > maxY && maxY > minY) this.y = maxY;
     }
 
-    /**
-     * Apply camera transform to ctx.
-     * Aanroepen NA ctx.scale(GAME_SCALE), VOOR het tekenen van wereld-objecten.
-     * zoom=1.0 → identiek beeld als vóór de camera.
-     */
     public applyTransform(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) {
         if (!this.active) return;
-
-        // Middelpunt canvas in wereld-eenheden (GAME_SCALE is al op ctx)
         const centerX = (canvasWidth / Constants.GAME_SCALE) / 2;
         const centerY = (canvasHeight / Constants.GAME_SCALE) / 2;
-
         ctx.translate(centerX, centerY);
         ctx.scale(this.zoom, this.zoom);
         ctx.translate(-this.x, -this.y);
     }
 
-    /**
-     * Zet schermcoördinaten om naar wereldcoördinaten (inclusief camera).
-     */
     public screenToWorld(clientX: number, clientY: number, canvasRect: DOMRect): { x: number, y: number } {
         const unscaledX = (clientX - canvasRect.left) / Constants.GAME_SCALE;
         const unscaledY = (clientY - canvasRect.top) / Constants.GAME_SCALE;
-
-        if (!this.active) {
-            return { x: unscaledX, y: unscaledY };
-        }
+        if (!this.active) return { x: unscaledX, y: unscaledY };
 
         const centerX = (canvasRect.width / Constants.GAME_SCALE) / 2;
         const centerY = (canvasRect.height / Constants.GAME_SCALE) / 2;
@@ -172,3 +188,4 @@ export class Camera {
 }
 
 export const camera = new Camera();
+(window as any).centerCamera = () => camera.recenter();

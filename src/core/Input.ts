@@ -68,6 +68,7 @@ export class InputManager {
         if (['arrowleft', 'a'].includes(key)) this.handleTouchDown('left');
         if (['arrowright', 'd'].includes(key)) this.handleTouchDown('right');
         if (e.code === 'Space') this.handleTouchDown('stop');
+        if (key === 'c' && (window as any).centerCamera) (window as any).centerCamera();
 
         this.updateContinuousState();
 
