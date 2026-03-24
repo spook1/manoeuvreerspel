@@ -109,6 +109,7 @@ export class Render {
     resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+        camera.setViewport(this.canvas.width, this.canvas.height);
     }
 
     draw(gameState: GameState) {

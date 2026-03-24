@@ -19,6 +19,10 @@ export class Camera {
     private readonly ZOOM_MIN = 0.3;
     private readonly ZOOM_MAX = 3.0;
 
+    // Viewport size used for bounds clamping
+    private viewportW: number = 800;
+    private viewportH: number = 600;
+
     private followSmoothness: number = 0.08;
     private zoomSmoothness: number = 0.04;
     private lookAheadFactor: number = 0.5;
@@ -63,6 +67,12 @@ export class Camera {
         }, { passive: true });
     }
 
+    /** Update viewport dimensions to compute camera bounds */
+    public setViewport(w: number, h: number) {
+        this.viewportW = w;
+        this.viewportH = h;
+    }
+
     /** Reset to overview (call when loading a new scenario/level) */
     public resetToOverview() {
         this.manualZoom = null;
@@ -95,14 +105,25 @@ export class Camera {
 
         this.zoom += (targetZoom - this.zoom) * this.zoomSmoothness;
 
-        // Look-ahead: camera kijkt iets voor de boot uit
+        // --- TARGET POSITION with look-ahead ---
         const lookAheadX = boat.vx * this.lookAheadFactor;
         const lookAheadY = boat.vy * this.lookAheadFactor;
 
-        const targetX = boat.x + lookAheadX;
-        const targetY = boat.y + lookAheadY;
+        let targetX = boat.x + lookAheadX;
+        let targetY = boat.y + lookAheadY;
 
-        // Snap op eerste frame zodat camera niet van (0,0) lerpt
+        // --- CONSTRAIN TARGET WITHIN HARBOR BOUNDS ---
+        // Prevent camera from showing anything above y=0 (top of the harbor/quay).
+        const viewH_world = (this.viewportH / Constants.GAME_SCALE) / this.zoom;
+        const viewW_world = (this.viewportW / Constants.GAME_SCALE) / this.zoom;
+        
+        const minY = viewH_world / 2; // if targetY = minY, top of screen perfectly hits y=0
+        const minX = viewW_world / 2; // left of screen perfectly hits x=0
+        
+        if (targetY < minY) targetY = minY;
+        if (targetX < minX) targetX = minX;
+
+        // Snap on very first frame so camera doesn't lurch from (0,0) lerpt
         if (this.x === 0 && this.y === 0) {
             this.x = targetX;
             this.y = targetY;
