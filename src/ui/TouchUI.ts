@@ -184,7 +184,7 @@ export class TouchUI {
 
     public syncVisibility(gameMode: string) {
         if (!this.isTouchDevice) return;
-        if (gameMode === 'game') {
+        if (gameMode === 'game' || gameMode === 'practice') {
             this.container!.style.display = 'flex';
         } else {
             this.container!.style.display = 'none';

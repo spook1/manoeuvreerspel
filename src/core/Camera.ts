@@ -4,41 +4,90 @@ import { Constants } from './Constants';
 export class Camera {
     public x: number = 0;
     public y: number = 0;
-    public zoom: number = 1.0;
+    public zoom: number = 0.6; // Start zoomed out (overview)
     public active: boolean = true;
+
+    // Manual zoom override — can be set by pinch or scroll wheel
+    private manualZoom: number | null = null;
+    private readonly ZOOM_MIN = 0.3;
+    private readonly ZOOM_MAX = 3.0;
     
-    // Configurable parameters
     private followSmoothness: number = 0.08;
     private zoomSmoothness: number = 0.05;
-    private lookAheadFactor: number = 0.6; // How far ahead to look based on velocity
-    private isMobile: boolean;
+    private lookAheadFactor: number = 0.6;
 
     constructor() {
-        this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        this.setupZoomControls();
+    }
+
+    private setupZoomControls() {
+        // Scroll-wheel zoom (desktop)
+        window.addEventListener('wheel', (e) => {
+            if (!this.active) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, (this.manualZoom ?? this.zoom) * delta));
+            this.manualZoom = newZoom;
+        }, { passive: false });
+
+        // Pinch-to-zoom (mobile)
+        let lastPinchDist = 0;
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                lastPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        }, { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            if (!this.active || e.touches.length !== 2) return;
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            if (lastPinchDist > 0) {
+                const ratio = dist / lastPinchDist;
+                const newZoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, (this.manualZoom ?? this.zoom) * ratio));
+                this.manualZoom = newZoom;
+            }
+            lastPinchDist = dist;
+        }, { passive: true });
+    }
+
+    /** Call when switching levels/scenarios to reset to overview */
+    public resetToOverview() {
+        this.manualZoom = null;
+        this.zoom = 0.4; // Snap to wide view — will smoothly zoom in when moving
+        // Don't reset x/y — camera.update() will snap on first frame anyway
     }
 
     public update(gameState: GameState) {
         const boat = gameState.boat;
-        
-        // 1. Calculate Target Zoom
-        // The smaller the screen, the more we need to zoom by default, but zooming OUT actually means making things smaller (lower zoom value).
-        // Wait, on mobile the screen is physically small. But the coordinate system is fixed CSS pixels.
-        // A phone is like 400px wide. With GAME_SCALE it's maybe smaller. Let's just use 1.0 for desktop and 0.8 / 1.5 logic.
-        let baseZoom = this.isMobile ? 0.9 : 1.0; // Mobile might want slightly more overview
-        
-        let targetZoom = baseZoom;
 
-        // Calculate speed in px/sec
+        // 1. Calculate Target Zoom
         const speed = Math.hypot(boat.vx, boat.vy);
 
-        // Dynamic Zoom: zoom out when moving fast to see further
-        if (speed > 40) {
-            targetZoom = baseZoom * 0.8;
-        } else if (speed < 10) {
-            targetZoom = baseZoom * 1.25;
+        let targetZoom: number;
+
+        if (this.manualZoom !== null) {
+            // Player has manually overridden zoom — respect it
+            targetZoom = this.manualZoom;
+        } else {
+            // Auto zoom: wide overview when still, zoomed in when moving
+            if (speed < 5) {
+                // Standing still / very slow → overview
+                targetZoom = 0.5;
+            } else if (speed < 20) {
+                // Normal speed
+                targetZoom = 0.85;
+            } else {
+                // Fast → zoom out to see ahead
+                targetZoom = 0.65;
+            }
         }
 
-        // Apply smooth zoom
+        // Smooth zoom
         this.zoom += (targetZoom - this.zoom) * this.zoomSmoothness;
 
         // 2. Calculate Target Position with Look-Ahead
