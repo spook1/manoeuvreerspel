@@ -1,20 +1,27 @@
 import { GameState } from './GameState';
 import { Constants } from './Constants';
 
+/**
+ * Camera: smooth follow, look-ahead, dynamic zoom, pinch/scroll override.
+ *
+ * ZOOM REFERENCE — zoom=1.0 is identiek aan het beeld vóór de camera.
+ *   < 1.0 = meer van de wereld zichtbaar (uitgezoomd / overzicht)
+ *   > 1.0 = dichterbij / ingezoomd
+ */
 export class Camera {
     public x: number = 0;
     public y: number = 0;
-    public zoom: number = 0.6; // Start zoomed out (overview)
+    public zoom: number = 1.0;
     public active: boolean = true;
 
-    // Manual zoom override — can be set by pinch or scroll wheel
+    // Manual zoom override (scroll wheel / pinch)
     private manualZoom: number | null = null;
     private readonly ZOOM_MIN = 0.3;
     private readonly ZOOM_MAX = 3.0;
-    
+
     private followSmoothness: number = 0.08;
-    private zoomSmoothness: number = 0.05;
-    private lookAheadFactor: number = 0.6;
+    private zoomSmoothness: number = 0.04;
+    private lookAheadFactor: number = 0.5;
 
     constructor() {
         this.setupZoomControls();
@@ -40,6 +47,7 @@ export class Camera {
                 );
             }
         }, { passive: true });
+
         window.addEventListener('touchmove', (e) => {
             if (!this.active || e.touches.length !== 2) return;
             const dist = Math.hypot(
@@ -55,51 +63,46 @@ export class Camera {
         }, { passive: true });
     }
 
-    /** Call when switching levels/scenarios to reset to overview */
+    /** Reset to overview (call when loading a new scenario/level) */
     public resetToOverview() {
         this.manualZoom = null;
-        this.zoom = 0.4; // Snap to wide view — will smoothly zoom in when moving
-        // Don't reset x/y — camera.update() will snap on first frame anyway
+        this.zoom = 0.85;
+        this.x = 0;
+        this.y = 0;
     }
 
     public update(gameState: GameState) {
         const boat = gameState.boat;
-
-        // 1. Calculate Target Zoom
         const speed = Math.hypot(boat.vx, boat.vy);
 
+        // zoom=1.0 baseline = zelfde beeld als vóór camera
+        // zoom<1.0 = meer zichtbaar (haven overzicht)
+        // zoom>1.0 = ingezoomd (dichtbij)
         let targetZoom: number;
 
         if (this.manualZoom !== null) {
-            // Player has manually overridden zoom — respect it
             targetZoom = this.manualZoom;
+        } else if (speed < 3) {
+            // Stil / nauwelijks beweging → overzicht
+            targetZoom = 0.85;
+        } else if (speed < 15) {
+            // Rustig varen
+            targetZoom = 1.0;
         } else {
-            // Auto zoom: wide overview when still, zoomed in when moving
-            if (speed < 5) {
-                // Standing still / very slow → overview
-                targetZoom = 0.5;
-            } else if (speed < 20) {
-                // Normal speed
-                targetZoom = 0.85;
-            } else {
-                // Fast → zoom out to see ahead
-                targetZoom = 0.65;
-            }
+            // Snelle vaart → iets meer horizon
+            targetZoom = 0.9;
         }
 
-        // Smooth zoom
         this.zoom += (targetZoom - this.zoom) * this.zoomSmoothness;
 
-        // 2. Calculate Target Position with Look-Ahead
+        // Look-ahead: camera kijkt iets voor de boot uit
         const lookAheadX = boat.vx * this.lookAheadFactor;
         const lookAheadY = boat.vy * this.lookAheadFactor;
 
-        // Base target on boat + lookahead
         const targetX = boat.x + lookAheadX;
         const targetY = boat.y + lookAheadY;
 
-        // Apply smooth follow
-        // On the very first frames, snap to prevent an ugly lerp from 0,0
+        // Snap op eerste frame zodat camera niet van (0,0) lerpt
         if (this.x === 0 && this.y === 0) {
             this.x = targetX;
             this.y = targetY;
@@ -110,27 +113,26 @@ export class Camera {
     }
 
     /**
-     * Applies the camera transform to the canvas context.
-     * Must be called AFTER the scaling of Constants.GAME_SCALE and BEFORE drawing world objects.
+     * Apply camera transform to ctx.
+     * Aanroepen NA ctx.scale(GAME_SCALE), VOOR het tekenen van wereld-objecten.
+     * zoom=1.0 → identiek beeld als vóór de camera.
      */
     public applyTransform(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) {
         if (!this.active) return;
-        
-        // Calculate center of screen in unscaled coordinates
+
+        // Middelpunt canvas in wereld-eenheden (GAME_SCALE is al op ctx)
         const centerX = (canvasWidth / Constants.GAME_SCALE) / 2;
         const centerY = (canvasHeight / Constants.GAME_SCALE) / 2;
 
-        // Center transformation
         ctx.translate(centerX, centerY);
         ctx.scale(this.zoom, this.zoom);
         ctx.translate(-this.x, -this.y);
     }
 
     /**
-     * Converts a screen click (mouse event coordinates) into a world coordinate, taking camera into account.
+     * Zet schermcoördinaten om naar wereldcoördinaten (inclusief camera).
      */
     public screenToWorld(clientX: number, clientY: number, canvasRect: DOMRect): { x: number, y: number } {
-        // First convert to game canvas internal normalized coordinates (pre game-scale)
         const unscaledX = (clientX - canvasRect.left) / Constants.GAME_SCALE;
         const unscaledY = (clientY - canvasRect.top) / Constants.GAME_SCALE;
 
@@ -141,18 +143,8 @@ export class Camera {
         const centerX = (canvasRect.width / Constants.GAME_SCALE) / 2;
         const centerY = (canvasRect.height / Constants.GAME_SCALE) / 2;
 
-        // Reverse the transforms:
-        // 1. Remove center translation -> distance from center
-        const fromCenterX = unscaledX - centerX;
-        const fromCenterY = unscaledY - centerY;
-
-        // 2. Remove zoom
-        const unzoomedX = fromCenterX / this.zoom;
-        const unzoomedY = fromCenterY / this.zoom;
-
-        // 3. Add camera offset back
-        const worldX = unzoomedX + this.x;
-        const worldY = unzoomedY + this.y;
+        const worldX = (unscaledX - centerX) / this.zoom + this.x;
+        const worldY = (unscaledY - centerY) / this.zoom + this.y;
 
         return { x: worldX, y: worldY };
     }
