@@ -1,196 +1,208 @@
 import { Constants } from './Constants';
 import { BoatState } from '../types';
 
-export class Input {
-    keys: { [key: string]: boolean } = {};
+export interface ActionState {
+    // Continuous
+    steerLeft: boolean;
+    steerRight: boolean;
 
-    // Double-tap detection for throttle
-    lastKeyProp: string | null = null;
-    lastKeyTimeProp: number = 0;
+    // Triggers (cleared each frame)
+    throttleUp: boolean;
+    throttleDown: boolean;
+    throttleStop: boolean;
 
-    // Multi-tap detection for rudder
-    lastRudderKey: string | null = null;
-    lastRudderKeyTime: number = 0;
-    rudderTapCount: number = 0;
-    maxRudder: number = 20; // Dynamic: 10° (1 tap), 40° (2 taps), 75° (3 taps)
+    // Double taps
+    throttleDoubleUp: boolean;
+    throttleDoubleDown: boolean;
 
-    // Callback for line key commands
-    onLineKey: ((key: string) => void) | null = null;
+    // Rudder overrides
+    rudderMultiTapFactor: number; // 1, 2, or 3
+}
+
+export class InputManager {
+    public state: ActionState = {
+        steerLeft: false,
+        steerRight: false,
+        throttleUp: false,
+        throttleDown: false,
+        throttleStop: false,
+        throttleDoubleUp: false,
+        throttleDoubleDown: false,
+        rudderMultiTapFactor: 1
+    };
+
+    // Keyboard internal tracking
+    private keys: { [key: string]: boolean } = {};
+
+    // Double/multi tap logic
+    private lastThrottleTapTime: number = 0;
+    private lastThrottleTapDir: 'up' | 'down' | null = null;
+
+    private lastRudderTapTime: number = 0;
+    private lastRudderTapDir: 'left' | 'right' | null = null;
+    private rudderTapCount: number = 1;
+
+    public onLineKey: ((key: string) => void) | null = null;
 
     constructor() {
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
     }
 
-    isDown(key: string): boolean {
-        return !!this.keys[key.toLowerCase()];
-    }
-
-    /**
-     * Step-based throttle handling on keydown (matches index.html)
-     * - First 6 clicks (|throttle| < 0.16): small steps (0.027)
-     * - After that: normal steps (0.067)
-     * - Double-tap (< 250ms): jump to near max (0.40)
-     */
-    private handleThrottle(key: string, boat: BoatState): void {
-        const now = Date.now();
-        let currentStep: number;
-
-        if (this.lastKeyProp === key && (now - this.lastKeyTimeProp) < 250) {
-            currentStep = 0.40; // Double-tap: jump to near max
-        } else if (Math.abs(boat.throttle) < 0.16) {
-            currentStep = 0.027; // Small steps for first 6 clicks
-        } else {
-            currentStep = 0.067; // Normal steps after
-        }
-        this.lastKeyProp = key;
-        this.lastKeyTimeProp = now;
-
-        if (key === 'arrowup' || key === 'w') {
-            const current = Math.round(boat.throttle / 0.01) * 0.01;
-            boat.throttle = Math.min(Constants.MAX_THROTTLE, current + currentStep);
-        }
-        if (key === 'arrowdown' || key === 's') {
-            const current = Math.round(boat.throttle / 0.01) * 0.01;
-            boat.throttle = Math.max(-Constants.MAX_THROTTLE, current - currentStep);
-        }
-    }
-
-    /**
-     * Multi-tap rudder handling on keydown (matches index.html)
-     * - 1 tap: MAX_RUDDER = 10°
-     * - 2 taps (< 250ms): MAX_RUDDER = 40°
-     * - 3+ taps (< 250ms): MAX_RUDDER = 75°
-     */
-    private handleRudderTap(key: string): void {
-        const now = Date.now();
-        if (this.lastRudderKey === key && (now - this.lastRudderKeyTime) < 250) {
-            this.rudderTapCount++;
-        } else {
-            this.rudderTapCount = 1;
-        }
-
-        if (this.rudderTapCount === 1) this.maxRudder = 10;
-        else if (this.rudderTapCount === 2) this.maxRudder = 40;
-        else if (this.rudderTapCount >= 3) this.maxRudder = 75;
-
-        this.lastRudderKey = key;
-        this.lastRudderKeyTime = now;
-    }
-
     private onKeyDown(e: KeyboardEvent) {
         if (!e.key) return;
-
         if (e.target instanceof HTMLElement) {
             const tag = e.target.tagName.toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-                return;
-            }
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
         }
 
         const key = e.key.toLowerCase();
-        if (e.repeat) return; // Prevent key repeat for step-based controls
+        if (e.repeat) return; // Ignore repeat
 
-        // Space = neutral throttle
-        if (e.code === 'Space') {
-            e.preventDefault();
-        }
-
-        // Reset
-        if (key === 'r') {
-            // Will be handled externally
-        }
+        if (e.code === 'Space') e.preventDefault();
 
         this.keys[key] = true;
 
-        // Queue throttle keydown for step-based processing
-        if (['arrowup', 'w', 'arrowdown', 's'].includes(key)) {
-            this.pendingKeyDowns.push(key);
+        const now = Date.now();
+
+        // Throttle triggers
+        if (['arrowup', 'w'].includes(key)) {
+            if (this.lastThrottleTapDir === 'up' && (now - this.lastThrottleTapTime) < 250) {
+                this.state.throttleDoubleUp = true;
+            } else {
+                this.state.throttleUp = true;
+            }
+            this.lastThrottleTapDir = 'up';
+            this.lastThrottleTapTime = now;
         }
 
-        // Rudder multi-tap detection
-        if (['arrowleft', 'a', 'arrowright', 'd'].includes(key)) {
-            this.handleRudderTap(key);
+        if (['arrowdown', 's'].includes(key)) {
+            if (this.lastThrottleTapDir === 'down' && (now - this.lastThrottleTapTime) < 250) {
+                this.state.throttleDoubleDown = true;
+            } else {
+                this.state.throttleDown = true;
+            }
+            this.lastThrottleTapDir = 'down';
+            this.lastThrottleTapTime = now;
         }
 
-        // Line key processing
+        // Rudder multi tap
+        if (['arrowleft', 'a'].includes(key)) {
+            if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 250) {
+                this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
+            } else {
+                this.rudderTapCount = 1;
+            }
+            this.lastRudderTapDir = 'left';
+            this.lastRudderTapTime = now;
+        }
+
+        if (['arrowright', 'd'].includes(key)) {
+            if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 250) {
+                this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
+            } else {
+                this.rudderTapCount = 1;
+            }
+            this.lastRudderTapDir = 'right';
+            this.lastRudderTapTime = now;
+        }
+
+        if (e.code === 'Space') {
+            this.state.throttleStop = true;
+        }
+
+        this.updateContinuousState();
+
         if (this.onLineKey) {
             this.onLineKey(key);
         }
     }
 
-    /**
-     * Process throttle input. Must be called from main loop with boat reference.
-     * This is separated because Input doesn't own the boat state.
-     */
-    processKeyDown(key: string, boat: BoatState): void {
-        // Throttle step handling
-        if (['arrowup', 'w', 'arrowdown', 's'].includes(key)) {
-            this.handleThrottle(key, boat);
-        }
-    }
-
     private onKeyUp(e: KeyboardEvent) {
         if (!e.key) return;
-
         if (e.target instanceof HTMLElement) {
             const tag = e.target.tagName.toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-                return;
-            }
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
         }
 
         const key = e.key.toLowerCase();
         this.keys[key] = false;
 
-        // Reset rudder max on Shift release
         if (e.key === 'Shift') {
-            this.maxRudder = 20;
+            this.rudderTapCount = 1;
+        }
+
+        this.updateContinuousState();
+    }
+
+    private updateContinuousState() {
+        this.state.steerLeft = this.keys['arrowleft'] || this.keys['a'];
+        this.state.steerRight = this.keys['arrowright'] || this.keys['d'];
+        this.state.rudderMultiTapFactor = this.rudderTapCount;
+
+        // Automatically drop tap memory if keys are released
+        if (!this.state.steerLeft && !this.state.steerRight) {
+            // We keep the tap factor until pressed again or delay passes, 
+            // but the boat will naturally center rudder and next press sets factor.
         }
     }
 
     /**
-     * Process continuous input in the game loop (rudder centering, rudder setting)
-     * Matches index.html handleInput()
+     * Call this inside the main loop to apply current input state to the boat,
+     * AND to clear any one-frame triggers (like taps).
      */
-    handleInput(boat: BoatState): void {
-        // Rudder — set to current MAX_RUDDER immediately
-        if (this.keys['a'] || this.keys['arrowleft']) {
-            boat.rudder = -this.maxRudder;
-        } else if (this.keys['d'] || this.keys['arrowright']) {
-            boat.rudder = this.maxRudder;
-        }
+    public applyToBoat(boat: BoatState) {
+        this.handleThrottle(boat);
+        this.handleRudder(boat);
+        
+        // Very important: clear triggers so they don't fire continuously
+        this.state.throttleUp = false;
+        this.state.throttleDown = false;
+        this.state.throttleDoubleUp = false;
+        this.state.throttleDoubleDown = false;
+        this.state.throttleStop = false;
+    }
 
-        // Automatic rudder centering when no rudder key pressed
-        if (!this.keys['a'] && !this.keys['d'] && !this.keys['arrowleft'] && !this.keys['arrowright']) {
+    private handleThrottle(boat: BoatState) {
+        if (this.state.throttleStop) {
+            boat.throttle = 0;
+        } else if (this.state.throttleDoubleUp) {
+            boat.throttle = Math.min(Constants.MAX_THROTTLE, boat.throttle + 0.40);
+        } else if (this.state.throttleUp) {
+            const step = Math.abs(boat.throttle) < 0.16 ? 0.027 : 0.067;
+            const current = Math.round(boat.throttle / 0.01) * 0.01;
+            boat.throttle = Math.min(Constants.MAX_THROTTLE, current + step);
+        } else if (this.state.throttleDoubleDown) {
+            boat.throttle = Math.max(-Constants.MAX_THROTTLE, boat.throttle - 0.40);
+        } else if (this.state.throttleDown) {
+            const step = Math.abs(boat.throttle) < 0.16 ? 0.027 : 0.067;
+            const current = Math.round(boat.throttle / 0.01) * 0.01;
+            boat.throttle = Math.max(-Constants.MAX_THROTTLE, current - step);
+        }
+    }
+
+    private handleRudder(boat: BoatState) {
+        let maxRudder = 20; // Default max (if count is somehow reset but held)
+        if (this.state.rudderMultiTapFactor === 1) maxRudder = 10;
+        if (this.state.rudderMultiTapFactor === 2) maxRudder = 40;
+        if (this.state.rudderMultiTapFactor >= 3) maxRudder = 75;
+
+        if (this.state.steerLeft) {
+            boat.rudder = -maxRudder;
+        } else if (this.state.steerRight) {
+            boat.rudder = maxRudder;
+        } else {
+            // Recenter
             if (boat.rudder > 0) {
                 boat.rudder = Math.max(0, boat.rudder - 10 * Constants.DT * 60 * 0.3);
             } else if (boat.rudder < 0) {
+                boat.rudder = Math.min(0, boat.rudder - 10 * Constants.DT * 60 * 0.3); // Minus from negative 
+                // Wait, if rudder < 0, we want to bring it to 0
                 boat.rudder = Math.min(0, boat.rudder + 10 * Constants.DT * 60 * 0.3);
             }
         }
-
-        // Space = kill throttle immediately
-        if (this.keys[' ']) {
-            boat.throttle = 0;
-        }
     }
 
-    /**
-     * Get keys that were pressed this frame (for step-based throttle).
-     * Returns key names that just went down since last call.
-     */
-    private pendingKeyDowns: string[] = [];
-
-    queueKeyDown(key: string): void {
-        this.pendingKeyDowns.push(key);
-    }
-
-    consumeKeyDowns(): string[] {
-        const result = this.pendingKeyDowns.slice();
-        this.pendingKeyDowns = [];
-        return result;
-    }
 }
 
-export const input = new Input();
+export const input = new InputManager();

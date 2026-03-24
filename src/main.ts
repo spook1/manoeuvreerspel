@@ -68,16 +68,8 @@ function loop() {
         || gameState.gameMode === 'harbor-edit'
         || gameState.gameMode === 'scenario-edit';
 
-    // Always consume to keep buffer clear
-    const keyDowns = input.consumeKeyDowns();
-
     if (!isEdit) {
-        for (const key of keyDowns) {
-            input.processKeyDown(key, gameState.boat);
-        }
-
-        // Continuous input handling (rudder, space)
-        input.handleInput(gameState.boat);
+        input.applyToBoat(gameState.boat);
 
         // Physics
         Boat.updatePhysics(gameState);
