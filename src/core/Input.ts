@@ -63,10 +63,24 @@ export class InputManager {
 
         this.keys[key] = true;
 
+        if (['arrowup', 'w'].includes(key)) this.handleTouchDown('up');
+        if (['arrowdown', 's'].includes(key)) this.handleTouchDown('down');
+        if (['arrowleft', 'a'].includes(key)) this.handleTouchDown('left');
+        if (['arrowright', 'd'].includes(key)) this.handleTouchDown('right');
+        if (e.code === 'Space') this.handleTouchDown('stop');
+
+        this.updateContinuousState();
+
+        if (this.onLineKey) {
+            this.onLineKey(key);
+        }
+    }
+
+    // Touch API for external UI components
+    public handleTouchDown(action: 'up'|'down'|'left'|'right'|'stop') {
         const now = Date.now();
 
-        // Throttle triggers
-        if (['arrowup', 'w'].includes(key)) {
+        if (action === 'up') {
             if (this.lastThrottleTapDir === 'up' && (now - this.lastThrottleTapTime) < 250) {
                 this.state.throttleDoubleUp = true;
             } else {
@@ -76,7 +90,7 @@ export class InputManager {
             this.lastThrottleTapTime = now;
         }
 
-        if (['arrowdown', 's'].includes(key)) {
+        if (action === 'down') {
             if (this.lastThrottleTapDir === 'down' && (now - this.lastThrottleTapTime) < 250) {
                 this.state.throttleDoubleDown = true;
             } else {
@@ -86,8 +100,8 @@ export class InputManager {
             this.lastThrottleTapTime = now;
         }
 
-        // Rudder multi tap
-        if (['arrowleft', 'a'].includes(key)) {
+        if (action === 'left') {
+            this.state.steerLeft = true; // For touch
             if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 250) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
@@ -97,7 +111,8 @@ export class InputManager {
             this.lastRudderTapTime = now;
         }
 
-        if (['arrowright', 'd'].includes(key)) {
+        if (action === 'right') {
+            this.state.steerRight = true; // For touch
             if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 250) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
@@ -107,15 +122,21 @@ export class InputManager {
             this.lastRudderTapTime = now;
         }
 
-        if (e.code === 'Space') {
+        if (action === 'stop') {
             this.state.throttleStop = true;
         }
 
-        this.updateContinuousState();
+        this.state.rudderMultiTapFactor = this.rudderTapCount;
 
-        if (this.onLineKey) {
-            this.onLineKey(key);
+        // Vibrate for feedback if supported
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(10);
         }
+    }
+
+    public handleTouchUp(action: 'left'|'right') {
+        if (action === 'left') this.state.steerLeft = false;
+        if (action === 'right') this.state.steerRight = false;
     }
 
     private onKeyUp(e: KeyboardEvent) {

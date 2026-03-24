@@ -7,6 +7,7 @@ import { GameManager } from './core/GameManager';
 import { tutorial } from './core/Tutorial';
 import { UserBar } from './ui/UserBar';
 import { scenarioRunner } from './core/ScenarioRunner';
+import { touchUI } from './ui/TouchUI';
 
 new UserBar(); // instantiated for DOM side-effects
 const render = new Render('simCanvas');
@@ -81,6 +82,9 @@ function loop() {
             scenarioRunner.update(gameState, 16.666);
         }
     }
+
+    // Touch controls visibility
+    touchUI.syncVisibility(gameState.gameMode);
 
     // Render
     render.draw(gameState);
