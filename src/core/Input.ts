@@ -102,10 +102,12 @@ export class InputManager {
         }
 
         if (action === 'left') {
-            this.state.steerLeft = true; // For touch
-            if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 250) {
+            this.state.steerRight = false; // Release opposite to avoid stuck state
+            this.state.steerLeft = true;
+            if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
+                // Direction changed or long pause: always reset count
                 this.rudderTapCount = 1;
             }
             this.lastRudderTapDir = 'left';
@@ -113,10 +115,12 @@ export class InputManager {
         }
 
         if (action === 'right') {
-            this.state.steerRight = true; // For touch
-            if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 250) {
+            this.state.steerLeft = false; // Release opposite to avoid stuck state
+            this.state.steerRight = true;
+            if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
+                // Direction changed or long pause: always reset count
                 this.rudderTapCount = 1;
             }
             this.lastRudderTapDir = 'right';
@@ -136,8 +140,13 @@ export class InputManager {
     }
 
     public handleTouchUp(action: 'left'|'right') {
-        if (action === 'left') this.state.steerLeft = false;
-        if (action === 'right') this.state.steerRight = false;
+        if (action === 'left') {
+            this.state.steerLeft = false;
+            // Don't reset rudderTapCount — kept until next direction press
+        }
+        if (action === 'right') {
+            this.state.steerRight = false;
+        }
     }
 
     private onKeyUp(e: KeyboardEvent) {
