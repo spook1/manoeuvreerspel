@@ -528,6 +528,17 @@
                 display: none !important;
             }
         }
+
+        /* Dynamisch verbergen van top navigatie in Game / Practice mode */
+        body.mode-game #mainNavGroup,
+        body.mode-practice #mainNavGroup {
+            display: none !important;
+        }
+
+        /* Settings tandwiel verbergen in echte game, (wel zichtbaar in practice) */
+        body.mode-game #settingsToggle {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -560,12 +571,11 @@
         <nav id="gameDashboard">
             <!-- LEFT: Operations -->
             <div class="dash-section left">
-                <div class="dash-brand">
-                    <span>⚓ Manoeuvreer Sim</span>
-                </div>
 
-                <!-- Mode Switcher (replaces old gameModeLabel + settings buttons) -->
-                <div style="display:flex; gap:4px; align-items:center;">
+                <!-- Group all nav buttons to easily hide them in game mode -->
+                <div id="mainNavGroup" style="display:flex; align-items:center; gap:16px;">
+                    <!-- Mode Switcher (replaces old gameModeLabel + settings buttons) -->
+                    <div style="display:flex; gap:4px; align-items:center;">
                     <button id="btnModeGame" class="mode-btn" style="background:#f59e0b;">🎮 Spel</button>
                     <button id="btnModePractice" class="mode-btn active" style="background:#22c55e;">⚓ Oefenen</button>
                     <button id="btnModeEdit" class="mode-btn" style="background:#3b82f6;">⚓ Haven Editor</button>
@@ -610,6 +620,7 @@
                     </select>
                     <input type="file" id="hbrFileInput" accept=".hbr,.json" style="display:none;">
                 </div>
+                </div> <!-- End mainNavGroup -->
             </div>
 
             <!-- CENTER: Navigation (Wind Rose) - always visible -->
