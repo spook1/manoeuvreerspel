@@ -146,37 +146,37 @@ export class TouchUI {
         btn.innerHTML = text;
 
         if (action) {
+            let steerReleaseTimer: number | null = null;
+
+            const release = () => {
+                if (steerReleaseTimer !== null) {
+                    clearTimeout(steerReleaseTimer);
+                    steerReleaseTimer = null;
+                }
+                btn.classList.remove('active');
+                if (action === 'left' || action === 'right') {
+                    input.handleTouchUp(action);
+                }
+            };
+
             btn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
+                // Capture pointer so pointerup always fires on this element
+                // even if finger moves off-button quickly (e.g. double-tap)
+                btn.setPointerCapture(e.pointerId);
                 btn.classList.add('active');
                 input.handleTouchDown(action);
-            });
 
-            btn.addEventListener('pointerup', (e) => {
-                e.preventDefault();
-                btn.classList.remove('active');
+                // Safety auto-release: if pointerup is somehow missed, clear after 600ms
                 if (action === 'left' || action === 'right') {
-                    input.handleTouchUp(action);
+                    if (steerReleaseTimer !== null) clearTimeout(steerReleaseTimer);
+                    steerReleaseTimer = window.setTimeout(release, 600);
                 }
             });
 
-            btn.addEventListener('pointercancel', (e) => {
-                e.preventDefault();
-                btn.classList.remove('active');
-                if (action === 'left' || action === 'right') {
-                    input.handleTouchUp(action);
-                }
-            });
-            
-            btn.addEventListener('pointerleave', (e) => {
-                e.preventDefault();
-                if (btn.classList.contains('active')) {
-                    btn.classList.remove('active');
-                    if (action === 'left' || action === 'right') {
-                        input.handleTouchUp(action);
-                    }
-                }
-            });
+            btn.addEventListener('pointerup', release);
+            btn.addEventListener('pointercancel', release);
+            // pointerleave is no longer needed since we capture the pointer
         }
 
         return btn;
