@@ -167,13 +167,20 @@
 - [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's).
 - [ ] De UI voorbereiden op states waarbij "Pro" functionaliteit vergrendeld is.
 
-#### 6. UC-806: Mobiele Controls & Camera (Huidige focus) 📱
+#### 6. UC-806: Mobiele Controls & Camera 📱 (✅ AFGEROND)
 - [x] **Fase 1**: Action Layer Architectuur (`InputState` ipv hardcoded keys in de gameloop).
-- [x] **Fase 2**: Touch UI Overlay ontwikkeld (4-button helm + stopknop) via `TouchUI.ts`. Weergave reageert autonoom op Touch-devices.
-- [x] **Camera Systeem**: `Camera.ts` toegevoegd inclusief **Strict Bounds Panning** (links/rechts/boven/onder vergrendeld aan de native harbor dimensies) en **Handmatige Pinch-Zoom** (auto-zoom uitgefaseerd op wens van gebruiker). Inclusief 🎯 Focus Knop & 'C' shortcut.
-- [ ] **Fase 3: Smart Lijnen (Volgende Sessie)**: Touch interface voor het uitwerpen/losmaken van landvasten (mooring lines). Implementatie van logica waarbij een tik op een bolders/cleat aan wal direct de dichtstbijzijnde boeg/hek cleat op de boot target. Virtueel grotere hitboxes op touchscreen vereist!
+- [x] **Fase 2**: Touch UI Overlay ontwikkeld (4-button helm + stopknop) via `TouchUI.ts`. Weergave reageert autonoom op Touch-devices. Buttons horizontaal geplaatst ("Meer Gas", "Geen Gas", "Minder Gas").
+- [x] **Camera Systeem**: `Camera.ts` toegevoegd inclusief **Strict Bounds Panning** en **Handmatige Pinch-Zoom**. Inclusief 🎯 Focus Knop & 'C' shortcut.
+- [x] **Vastlopend Roer & URL Balk Fix**: State-machine van touch/keyboard volledig gescheiden ter voorkoming van hangend roer. CSS PWA `manifest.json` en `100dvh` geïmplementeerd om navigatiebalken van mobile browsers permanent te verbergen.
 
-#### 7. UC-807: Code Audit & Security Check (Gepland) 🔒
+#### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (Nieuw - Volgende Sessie) 🖥️
+- [ ] Verwijderen van de `<h1>` titel linksboven ("Motorboot Manoeuvreersimulatie") om verticale canvas-ruimte te maximaliseren.
+- [ ] Dynamisch verbergen van navigatie (Spel, Oefenen, Game-kiezer) zodra een game of oefensessie actief is.
+- [ ] **Game Modus UI**: Alleen Windroos, Snelheid, Voortgang, Focus, Reset, en Help tonen.
+- [ ] **Oefen Modus UI**: Zelfde als Game Modus, plus de Settings-knop (tandwiel).
+- [ ] Oude instructietekst onderin het canvas permanent verwijderd.
+
+#### 8. UC-808: Code Audit & Security Check (Gepland) 🔒
 - [ ] Grondige check op legacys code, ongebruikte componenten of dode variabelen.
 - [ ] Security check: Controle op eventuele hardcoded passwords of test-credentials in backend en frontend omgevingen.
 - [ ] Architectuur-schoonmaak van redundante methodes in classes.
