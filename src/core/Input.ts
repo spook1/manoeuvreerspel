@@ -2,7 +2,7 @@ import { Constants } from './Constants';
 import { BoatState } from '../types';
 
 export interface ActionState {
-    // Continuous
+    // Continuous steering — set by both keyboard and touch, separately
     steerLeft: boolean;
     steerRight: boolean;
 
@@ -15,8 +15,8 @@ export interface ActionState {
     throttleDoubleUp: boolean;
     throttleDoubleDown: boolean;
 
-    // Rudder overrides
-    rudderMultiTapFactor: number; // 1, 2, or 3
+    // Rudder multi-tap factor: 1=10°, 2=40°, 3=75°
+    rudderMultiTapFactor: number;
 }
 
 export class InputManager {
@@ -31,8 +31,12 @@ export class InputManager {
         rudderMultiTapFactor: 1
     };
 
-    // Keyboard internal tracking
+    // --- Keyboard state (completely separate from touch) ---
     private keys: { [key: string]: boolean } = {};
+
+    // --- Touch state (completely separate from keyboard) ---
+    private touchSteerLeft: boolean = false;
+    private touchSteerRight: boolean = false;
 
     // Double/multi tap logic
     private lastThrottleTapTime: number = 0;
@@ -57,27 +61,99 @@ export class InputManager {
         }
 
         const key = e.key.toLowerCase();
-        if (e.repeat) return; // Ignore repeat
+        if (e.repeat) return;
 
         if (e.code === 'Space') e.preventDefault();
 
         this.keys[key] = true;
 
-        if (['arrowup', 'w'].includes(key)) this.handleTouchDown('up');
-        if (['arrowdown', 's'].includes(key)) this.handleTouchDown('down');
-        if (['arrowleft', 'a'].includes(key)) this.handleTouchDown('left');
-        if (['arrowright', 'd'].includes(key)) this.handleTouchDown('right');
-        if (e.code === 'Space') this.handleTouchDown('stop');
+        // Throttle triggers (keyboard only, no tap-count side-effects on rudder)
+        if (['arrowup', 'w'].includes(key)) {
+            const now = Date.now();
+            if (this.lastThrottleTapDir === 'up' && (now - this.lastThrottleTapTime) < 250) {
+                this.state.throttleDoubleUp = true;
+            } else {
+                this.state.throttleUp = true;
+            }
+            this.lastThrottleTapDir = 'up';
+            this.lastThrottleTapTime = now;
+        }
+        if (['arrowdown', 's'].includes(key)) {
+            const now = Date.now();
+            if (this.lastThrottleTapDir === 'down' && (now - this.lastThrottleTapTime) < 250) {
+                this.state.throttleDoubleDown = true;
+            } else {
+                this.state.throttleDown = true;
+            }
+            this.lastThrottleTapDir = 'down';
+            this.lastThrottleTapTime = now;
+        }
+        if (e.code === 'Space') {
+            this.state.throttleStop = true;
+        }
+
+        // Rudder multi-tap on keyboard (separate from touch tap count)
+        if (['arrowleft', 'a'].includes(key)) {
+            const now = Date.now();
+            if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 300) {
+                this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
+            } else {
+                this.rudderTapCount = 1;
+            }
+            this.lastRudderTapDir = 'left';
+            this.lastRudderTapTime = now;
+        }
+        if (['arrowright', 'd'].includes(key)) {
+            const now = Date.now();
+            if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 300) {
+                this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
+            } else {
+                this.rudderTapCount = 1;
+            }
+            this.lastRudderTapDir = 'right';
+            this.lastRudderTapTime = now;
+        }
+
         if (key === 'c' && (window as any).centerCamera) (window as any).centerCamera();
 
-        this.updateContinuousState();
+        this.syncCombinedSteerState();
 
         if (this.onLineKey) {
             this.onLineKey(key);
         }
     }
 
-    // Touch API for external UI components
+    private onKeyUp(e: KeyboardEvent) {
+        if (!e.key) return;
+        if (e.target instanceof HTMLElement) {
+            const tag = e.target.tagName.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        }
+
+        const key = e.key.toLowerCase();
+        this.keys[key] = false;
+
+        if (e.key === 'Shift') {
+            this.rudderTapCount = 1;
+        }
+
+        this.syncCombinedSteerState();
+    }
+
+    /**
+     * Combines keyboard + touch steer state into the public state.
+     * ONLY touches steerLeft/Right, never rudderMultiTapFactor.
+     * Called after any keyboard event.
+     */
+    private syncCombinedSteerState() {
+        this.state.steerLeft  = !!(this.keys['arrowleft'] || this.keys['a']) || this.touchSteerLeft;
+        this.state.steerRight = !!(this.keys['arrowright'] || this.keys['d']) || this.touchSteerRight;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Touch API — called by TouchUI and (legacy) touch button components
+    // ---------------------------------------------------------------------------
+
     public handleTouchDown(action: 'up'|'down'|'left'|'right'|'stop') {
         const now = Date.now();
 
@@ -102,12 +178,13 @@ export class InputManager {
         }
 
         if (action === 'left') {
-            this.state.steerRight = false; // Release opposite to avoid stuck state
-            this.state.steerLeft = true;
+            // Release opposite first to avoid stuck state
+            this.touchSteerRight = false;
+            this.touchSteerLeft  = true;
+
             if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
-                // Direction changed or long pause: always reset count
                 this.rudderTapCount = 1;
             }
             this.lastRudderTapDir = 'left';
@@ -115,12 +192,13 @@ export class InputManager {
         }
 
         if (action === 'right') {
-            this.state.steerLeft = false; // Release opposite to avoid stuck state
-            this.state.steerRight = true;
+            // Release opposite first to avoid stuck state
+            this.touchSteerLeft  = false;
+            this.touchSteerRight = true;
+
             if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
             } else {
-                // Direction changed or long pause: always reset count
                 this.rudderTapCount = 1;
             }
             this.lastRudderTapDir = 'right';
@@ -132,66 +210,58 @@ export class InputManager {
         }
 
         this.state.rudderMultiTapFactor = this.rudderTapCount;
+        this.syncCombinedSteerState();
 
-        // Vibrate for feedback if supported
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate(10);
         }
     }
 
     public handleTouchUp(action: 'left'|'right') {
-        if (action === 'left') {
-            this.state.steerLeft = false;
-            // Don't reset rudderTapCount — kept until next direction press
-        }
-        if (action === 'right') {
-            this.state.steerRight = false;
-        }
-    }
-
-    private onKeyUp(e: KeyboardEvent) {
-        if (!e.key) return;
-        if (e.target instanceof HTMLElement) {
-            const tag = e.target.tagName.toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-        }
-
-        const key = e.key.toLowerCase();
-        this.keys[key] = false;
-
-        if (e.key === 'Shift') {
-            this.rudderTapCount = 1;
-        }
-
-        this.updateContinuousState();
-    }
-
-    private updateContinuousState() {
-        this.state.steerLeft = this.keys['arrowleft'] || this.keys['a'];
-        this.state.steerRight = this.keys['arrowright'] || this.keys['d'];
-        this.state.rudderMultiTapFactor = this.rudderTapCount;
-
-        // Automatically drop tap memory if keys are released
-        if (!this.state.steerLeft && !this.state.steerRight) {
-            // We keep the tap factor until pressed again or delay passes, 
-            // but the boat will naturally center rudder and next press sets factor.
-        }
+        if (action === 'left')  this.touchSteerLeft  = false;
+        if (action === 'right') this.touchSteerRight = false;
+        // Always sync after releasing touch
+        this.syncCombinedSteerState();
     }
 
     /**
-     * Call this inside the main loop to apply current input state to the boat,
-     * AND to clear any one-frame triggers (like taps).
+     * Emergency reset — call this if steer state becomes inconsistent.
+     * e.g. when switching game modes.
+     */
+    public resetSteer() {
+        this.touchSteerLeft  = false;
+        this.touchSteerRight = false;
+        this.keys['arrowleft'] = false;
+        this.keys['arrowright'] = false;
+        this.keys['a'] = false;
+        this.keys['d'] = false;
+        this.state.steerLeft  = false;
+        this.state.steerRight = false;
+        this.rudderTapCount = 1;
+        this.state.rudderMultiTapFactor = 1;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Game-loop application
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Call each frame to apply current input to the boat,
+     * then clear single-frame triggers.
      */
     public applyToBoat(boat: BoatState) {
+        // Ensure steer state is current
+        this.state.rudderMultiTapFactor = this.rudderTapCount;
+
         this.handleThrottle(boat);
         this.handleRudder(boat);
-        
-        // Very important: clear triggers so they don't fire continuously
-        this.state.throttleUp = false;
-        this.state.throttleDown = false;
-        this.state.throttleDoubleUp = false;
+
+        // Clear one-frame triggers
+        this.state.throttleUp        = false;
+        this.state.throttleDown      = false;
+        this.state.throttleDoubleUp  = false;
         this.state.throttleDoubleDown = false;
-        this.state.throttleStop = false;
+        this.state.throttleStop      = false;
     }
 
     private handleThrottle(boat: BoatState) {
@@ -213,27 +283,23 @@ export class InputManager {
     }
 
     private handleRudder(boat: BoatState) {
-        let maxRudder = 20; // Default max (if count is somehow reset but held)
-        if (this.state.rudderMultiTapFactor === 1) maxRudder = 10;
-        if (this.state.rudderMultiTapFactor === 2) maxRudder = 40;
-        if (this.state.rudderMultiTapFactor >= 3) maxRudder = 75;
+        const factor = this.state.rudderMultiTapFactor;
+        const maxRudder = factor === 1 ? 10 : factor === 2 ? 40 : 75;
 
         if (this.state.steerLeft) {
             boat.rudder = -maxRudder;
         } else if (this.state.steerRight) {
             boat.rudder = maxRudder;
         } else {
-            // Recenter
+            // Auto-recenter rudder towards 0
+            const returnRate = 10 * Constants.DT * 60 * 0.3; // ~3 deg/frame
             if (boat.rudder > 0) {
-                boat.rudder = Math.max(0, boat.rudder - 10 * Constants.DT * 60 * 0.3);
+                boat.rudder = Math.max(0, boat.rudder - returnRate);
             } else if (boat.rudder < 0) {
-                boat.rudder = Math.min(0, boat.rudder - 10 * Constants.DT * 60 * 0.3); // Minus from negative 
-                // Wait, if rudder < 0, we want to bring it to 0
-                boat.rudder = Math.min(0, boat.rudder + 10 * Constants.DT * 60 * 0.3);
+                boat.rudder = Math.min(0, boat.rudder + returnRate);
             }
         }
     }
-
 }
 
 export const input = new InputManager();

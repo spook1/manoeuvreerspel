@@ -1,4 +1,5 @@
 import { gameState } from './GameState';
+import { input } from './Input';
 import { Constants } from './Constants';
 import { tutorial } from './Tutorial';
 import { editor } from '../editor/HarborEditor';
@@ -436,6 +437,9 @@ export class GameManager {
     }
 
     applyBodyMode(mode: 'game' | 'practice' | 'harbor-edit' | 'scenario-edit' | 'game-edit') {
+        // Always clear any stuck steer input when switching modes
+        input.resetSteer();
+
         document.body.classList.remove(
             'mode-game', 'mode-practice', 'mode-edit',
             'mode-harbor-edit', 'mode-scenario-edit', 'mode-game-edit',
