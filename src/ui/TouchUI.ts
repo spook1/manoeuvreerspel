@@ -46,8 +46,8 @@ export class TouchUI {
             /* Right side: throttle */
             .touch-throttle-group {
                 display: flex;
-                flex-direction: column;
-                gap: 15px;
+                flex-direction: row;
+                gap: 10px;
             }
             /* Center: stop / line */
             .touch-center-group {
@@ -81,7 +81,7 @@ export class TouchUI {
             }
 
             .btn-steer { width: 72px; height: 72px; font-size: 28px; }
-            .btn-throttle { width: 100px; height: 60px; font-size: 16px; }
+            .btn-throttle { width: 90px; height: 60px; font-size: 14px; text-align: center; }
             .btn-action { width: 64px; height: 64px; font-size: 24px; }
 
             @media (orientation: landscape) {
@@ -111,23 +111,23 @@ export class TouchUI {
         const centerGroup = document.createElement('div');
         centerGroup.className = 'touch-center-group';
         
-        const btnStop = this.createButton('⏹', 'btn-action', 'stop');
         const btnLine = this.createButton('🪢', 'btn-action'); // Line logic later
         
         // Hide line button temporarily until phase 3
         btnLine.style.display = 'none';
 
-        centerGroup.appendChild(btnStop);
         centerGroup.appendChild(btnLine);
 
         // 3. THROTTLE (Right)
         const throttleGroup = document.createElement('div');
         throttleGroup.className = 'touch-throttle-group';
         
-        const btnUp = this.createButton('▲ VOORUIT', 'btn-throttle', 'up');
-        const btnDown = this.createButton('▼ ACHTERUIT', 'btn-throttle', 'down');
+        const btnUp = this.createButton('Meer<br>Gas', 'btn-throttle', 'up');
+        const btnStop = this.createButton('Geen<br>Gas', 'btn-throttle', 'stop');
+        const btnDown = this.createButton('Minder<br>Gas', 'btn-throttle', 'down');
         
         throttleGroup.appendChild(btnUp);
+        throttleGroup.appendChild(btnStop);
         throttleGroup.appendChild(btnDown);
 
         row.appendChild(steerGroup);
