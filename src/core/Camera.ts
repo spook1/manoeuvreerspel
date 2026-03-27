@@ -11,7 +11,7 @@ export class Camera {
     public active: boolean = true;
     public mode: 'follow' | 'free' = 'follow';
 
-    private readonly ZOOM_MIN = 1.0; // Max zoom out is 1.0 (exact screen fit)
+    public zoomMin: number = 1.0; // Dynamically calculated max zoom out
     private readonly ZOOM_MAX = 3.0; // Max zoom in
     private viewportW: number = 800;
     private viewportH: number = 600;
@@ -114,12 +114,26 @@ export class Camera {
     }
 
     private setZoom(newZoom: number) {
-        this.zoom = Math.min(this.ZOOM_MAX, Math.max(this.ZOOM_MIN, newZoom));
+        this.zoom = Math.min(this.ZOOM_MAX, Math.max(this.zoomMin, newZoom));
     }
 
     public setViewport(w: number, h: number) {
         this.viewportW = w;
         this.viewportH = h;
+        
+        // Mobile screens are narrow, calculate the zoom required to see at least 1200 units width
+        const minRequiredWorldW = 1200;
+        const currentWorldWAtZoom1 = w / Constants.GAME_SCALE;
+        
+        if (currentWorldWAtZoom1 < minRequiredWorldW) {
+            this.zoomMin = currentWorldWAtZoom1 / minRequiredWorldW;
+        } else {
+            this.zoomMin = 1.0;
+        }
+
+        if (this.zoom < this.zoomMin) {
+            this.zoom = this.zoomMin;
+        }
     }
 
     /** Reset to follow boat */
@@ -145,25 +159,28 @@ export class Camera {
         }
 
         // --- CONSTRAIN CAMERA ---
-        // Native full dimensions of the harbor (1.0 zoom matching screen size)
-        const nativeW = this.viewportW / Constants.GAME_SCALE;
-        const nativeH = this.viewportH / Constants.GAME_SCALE;
+        // Let's establish the bounds of the "scene".
+        // On desktop, the scene is exactly the viewport size at zoom=1.0.
+        // On mobile, to see the whole scene we need to pretend the scene is at least 1200 x 800.
+        const sceneW = Math.max(1200, this.viewportW / Constants.GAME_SCALE);
+        const sceneH = Math.max(800, this.viewportH / Constants.GAME_SCALE);
         
         // Current visible dimensions
-        const viewH_world = nativeH / this.zoom;
-        const viewW_world = nativeW / this.zoom;
+        const viewW_world = (this.viewportW / Constants.GAME_SCALE) / this.zoom;
+        const viewH_world = (this.viewportH / Constants.GAME_SCALE) / this.zoom;
         
-        // Boundaries so the camera never shows space outside [0, nativeW] and [0, nativeH]
+        // Boundaries so the camera never shows space outside [0, sceneW] and [0, sceneH]
         const minX = viewW_world / 2;
-        const maxX = nativeW - (viewW_world / 2);
+        const maxX = Math.max(minX, sceneW - (viewW_world / 2));
+        
         const minY = viewH_world / 2;
-        const maxY = nativeH - (viewH_world / 2);
+        const maxY = Math.max(minY, sceneH - (viewH_world / 2));
         
         if (this.x < minX) this.x = minX;
-        if (this.x > maxX && maxX >= minX) this.x = maxX; // maxX >= minX ensures safe clamping
+        if (this.x > maxX) this.x = maxX; 
         
         if (this.y < minY) this.y = minY;
-        if (this.y > maxY && maxY >= minY) this.y = maxY;
+        if (this.y > maxY) this.y = maxY;
     }
 
     public applyTransform(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) {
