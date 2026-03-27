@@ -174,6 +174,7 @@
 - [x] **Vastlopend Roer & URL Balk Fix**: State-machine van touch/keyboard volledig gescheiden ter voorkoming van hangend roer. CSS PWA `manifest.json` en `100dvh` geïmplementeerd om navigatiebalken van mobile browsers permanent te verbergen.
 
 #### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (Nieuw - Volgende Sessie) 🖥️
+*(Let op: Hiervoor is al een gedetailleerd `implementation_plan.md` en `task.md` uitgewerkt in de backend AI workspace!)*
 - [ ] Verwijderen van de `<h1>` titel linksboven ("Motorboot Manoeuvreersimulatie") om verticale canvas-ruimte te maximaliseren.
 - [ ] Dynamisch verbergen van navigatie (Spel, Oefenen, Game-kiezer) zodra een game of oefensessie actief is.
 - [ ] **Game Modus UI**: Alleen Windroos, Snelheid, Voortgang, Focus, Reset, en Help tonen.
