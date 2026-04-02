@@ -9,6 +9,7 @@ import { UserBar } from './ui/UserBar';
 import { scenarioRunner } from './core/ScenarioRunner';
 import { touchUI } from './ui/TouchUI';
 import { camera } from './core/Camera';
+import { GameRunner } from './core/GameRunner';
 
 new UserBar(); // instantiated for DOM side-effects
 const render = new Render('simCanvas');
@@ -65,6 +66,13 @@ makeDraggable('gbHeader', 'gbPanel');
 // Expose tutorial to GameManager
 (window as any)._tutorial = tutorial;
 
+function syncGameplayChrome() {
+    const isPlayingSession = tutorial.active
+        || (gameState.gameMode === 'game' && (scenarioRunner.state !== 'idle' || GameRunner.isPlaying));
+
+    document.body.classList.toggle('playing-session', isPlayingSession);
+}
+
 function loop() {
     const isEdit = gameState.gameMode === 'edit'
         || gameState.gameMode === 'harbor-edit'
@@ -87,6 +95,8 @@ function loop() {
     } else {
         camera.active = false;
     }
+
+    syncGameplayChrome();
 
     // Touch controls visibility
     touchUI.syncVisibility(gameState.gameMode);

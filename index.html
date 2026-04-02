@@ -667,6 +667,31 @@
             </div>
         </nav>
 
+        <div id="playHud" aria-hidden="true">
+            <div class="play-hud-card play-hud-wind">
+                <span class="play-hud-kicker">Wind</span>
+                <div class="play-hud-wind-body">
+                    <div class="play-hud-rose-shell">
+                        <canvas id="playHudWindRoseCanvas" width="56" height="56"></canvas>
+                    </div>
+                    <div class="play-hud-reading">
+                        <span class="play-hud-value" id="playHudWindSpeed">0 kn</span>
+                        <span class="play-hud-subtle">Windkracht</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="play-hud-card play-hud-metric">
+                <span class="play-hud-kicker">Snelheid</span>
+                <span class="play-hud-big" id="playHudSpeed">0.0 kn</span>
+            </div>
+
+            <div class="play-hud-card play-hud-metric score">
+                <span class="play-hud-kicker">Score</span>
+                <span class="play-hud-big" id="playHudScore">100</span>
+            </div>
+        </div>
+
         <!-- SETTINGS PANEL (Dropdown) - Practice/Editor mode only -->
         <div id="settingsPanel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">

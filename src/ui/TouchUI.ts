@@ -146,13 +146,15 @@ export class TouchUI {
         btn.innerHTML = text;
 
         if (action) {
-            let steerReleaseTimer: number | null = null;
+            let activePointerId: number | null = null;
+            let isPressed = false;
 
-            const release = () => {
-                if (steerReleaseTimer !== null) {
-                    clearTimeout(steerReleaseTimer);
-                    steerReleaseTimer = null;
-                }
+            const release = (pointerId?: number) => {
+                if (!isPressed) return;
+                if (pointerId !== undefined && activePointerId !== null && pointerId !== activePointerId) return;
+
+                isPressed = false;
+                activePointerId = null;
                 btn.classList.remove('active');
                 if (action === 'left' || action === 'right') {
                     input.handleTouchUp(action);
@@ -161,22 +163,31 @@ export class TouchUI {
 
             btn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
-                // Capture pointer so pointerup always fires on this element
-                // even if finger moves off-button quickly (e.g. double-tap)
-                btn.setPointerCapture(e.pointerId);
+                if (isPressed) release();
+
+                isPressed = true;
+                activePointerId = e.pointerId;
+
+                // Keep the pointer bound to the button until the finger actually lifts.
+                if (btn.hasPointerCapture && !btn.hasPointerCapture(e.pointerId)) {
+                    try {
+                        btn.setPointerCapture(e.pointerId);
+                    } catch {
+                        // Ignore browsers that reject pointer capture here.
+                    }
+                }
+
                 btn.classList.add('active');
                 input.handleTouchDown(action);
-
-                // Safety auto-release: if pointerup is somehow missed, clear after 600ms
-                if (action === 'left' || action === 'right') {
-                    if (steerReleaseTimer !== null) clearTimeout(steerReleaseTimer);
-                    steerReleaseTimer = window.setTimeout(release, 600);
-                }
             });
 
-            btn.addEventListener('pointerup', release);
-            btn.addEventListener('pointercancel', release);
-            // pointerleave is no longer needed since we capture the pointer
+            btn.addEventListener('pointerup', (e) => release(e.pointerId));
+            btn.addEventListener('pointercancel', (e) => release(e.pointerId));
+            btn.addEventListener('lostpointercapture', () => release());
+            window.addEventListener('blur', () => release());
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) release();
+            });
         }
 
         return btn;

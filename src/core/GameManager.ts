@@ -156,7 +156,11 @@ export class GameManager {
         const modal = document.getElementById('introModal');
         if (modal) modal.style.display = 'none';
         gameState.gameMode = 'practice';
+        gameState.scenario = null;
+        this.applyBodyMode('practice');
+        this.updateUI();
         tutorial.start(gameState);
+        this.updateWindDisplay();
     }
 
     startHarborEdit() {
@@ -922,13 +926,14 @@ export class GameManager {
 
     // ── WIND DISPLAY ─────────────────────────────────────────────────────────
 
-    updateWindDisplay() {
-        const wind = gameState.activeWind;
-        const windSpeedDisplay = document.getElementById('windSpeedDisplay');
-        if (windSpeedDisplay) windSpeedDisplay.textContent = wind.force.toFixed(0) + ' kn';
+    private setTextContent(ids: string[], value: string) {
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
+    }
 
-        const canvas = document.getElementById('windRoseCanvas') as HTMLCanvasElement | null;
-        if (!canvas) return;
+    private drawWindRose(canvas: HTMLCanvasElement, wind: { direction: number; force: number }) {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
@@ -943,20 +948,43 @@ export class GameManager {
 
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.font = 'bold 8px system-ui';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('N', cx, cy - r + 6); ctx.fillText('Z', cx, cy + r - 6);
-        ctx.fillText('O', cx + r - 6, cy); ctx.fillText('W', cx - r + 6, cy);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('N', cx, cy - r + 6);
+        ctx.fillText('Z', cx, cy + r - 6);
+        ctx.fillText('O', cx + r - 6, cy);
+        ctx.fillText('W', cx - r + 6, cy);
 
         if (wind.force > 0) {
             const len = 8 + Math.min(10, wind.force * 0.4);
             const rad = (wind.direction + 180 - 90) * Math.PI / 180;
             ctx.save();
-            ctx.translate(cx, cy); ctx.rotate(rad);
-            ctx.strokeStyle = '#3b82f6'; ctx.fillStyle = '#3b82f6'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(len, 0); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(len, 0); ctx.lineTo(len - 5, -3); ctx.lineTo(len - 5, 3);
-            ctx.closePath(); ctx.fill();
+            ctx.translate(cx, cy);
+            ctx.rotate(rad);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.fillStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-len, 0);
+            ctx.lineTo(len, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(len, 0);
+            ctx.lineTo(len - 5, -3);
+            ctx.lineTo(len - 5, 3);
+            ctx.closePath();
+            ctx.fill();
             ctx.restore();
         }
+    }
+
+    updateWindDisplay() {
+        const wind = gameState.activeWind;
+        this.setTextContent(['windSpeedDisplay', 'playHudWindSpeed'], wind.force.toFixed(0) + ' kn');
+
+        ['windRoseCanvas', 'playHudWindRoseCanvas'].forEach((id) => {
+            const canvas = document.getElementById(id) as HTMLCanvasElement | null;
+            if (canvas) this.drawWindRose(canvas, wind);
+        });
     }
 }

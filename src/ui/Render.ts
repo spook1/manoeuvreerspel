@@ -167,16 +167,6 @@ export class Render {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('✅ Scenario voltooid!', cw / 2, 300);
-        } else {
-            // Stap-indicator rechtsboven
-            const text = runner.hudText;
-            ctx.font = 'bold 16px system-ui';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'top';
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(cw - 130, 12, 120, 28);
-            ctx.fillStyle = '#fff';
-            ctx.fillText(text, cw - 16, 18);
         }
 
         ctx.restore();
@@ -715,15 +705,17 @@ export class Render {
 
         // Speed (px/s ÷ PX_PER_KNOT = knots)
         const speedKnots = (Math.hypot(boat.vx, boat.vy) / Constants.PX_PER_KNOT).toFixed(1);
-        const speedometerEl = document.getElementById('speedometer');
-        if (speedometerEl) speedometerEl.textContent = speedKnots + ' kn';
+        ['speedometer', 'playHudSpeed'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = speedKnots + ' kn';
+        });
 
         // Score
-        const scoreDisplayEl = document.getElementById('scoreDisplay');
-        if (scoreDisplayEl) {
-            const displayScore = (gameState.gameMode === 'game') ? gameState.score : gameState.score; // simplify
-            scoreDisplayEl.textContent = Math.floor(displayScore).toString();
-        }
+        const displayScore = gameState.score;
+        ['scoreDisplay', 'playHudScore'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = Math.floor(displayScore).toString();
+        });
 
         // Wind
         const windSpeedLabelEl = document.getElementById('windSpeedLabel');
