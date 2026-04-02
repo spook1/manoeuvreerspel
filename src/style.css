@@ -1,3 +1,10 @@
+html,
+body {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
 body {
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -8,9 +15,13 @@ body {
     align-items: center;
     justify-content: flex-start;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
     padding: 16px;
     box-sizing: border-box;
     gap: 12px;
+    overflow: hidden;
+    overscroll-behavior: none;
 }
 
 h1 {
@@ -135,20 +146,21 @@ body.playing-session #settingsPanel {
 
 #playHud {
     position: fixed;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(720px, calc(100% - 28px));
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: calc(env(safe-area-inset-right, 0px) + 12px);
+    width: auto;
+    max-width: calc(100vw - 24px);
     display: none;
-    justify-content: center;
+    grid-template-columns: repeat(2, minmax(108px, max-content));
+    justify-content: end;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
     z-index: 1400;
     pointer-events: none;
 }
 
 body.playing-session #playHud {
-    display: flex;
+    display: grid;
 }
 
 .play-hud-card {
@@ -156,9 +168,9 @@ body.playing-session #playHud {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 86px;
-    padding: 14px 18px;
-    border-radius: 18px;
+    min-height: 0;
+    padding: 10px 12px;
+    border-radius: 16px;
     background:
         radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 42%),
         linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.78));
@@ -191,8 +203,8 @@ body.playing-session #playHud {
 }
 
 .play-hud-wind {
-    min-width: 250px;
-    flex: 1.3;
+    grid-column: 1 / -1;
+    min-width: 0;
 }
 
 .play-hud-wind-body {
@@ -202,8 +214,8 @@ body.playing-session #playHud {
 }
 
 .play-hud-rose-shell {
-    width: 68px;
-    height: 68px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -221,7 +233,7 @@ body.playing-session #playHud {
 
 .play-hud-value {
     font-family: "Trebuchet MS", Verdana, sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0.08em;
@@ -237,13 +249,12 @@ body.playing-session #playHud {
 }
 
 .play-hud-metric {
-    min-width: 150px;
-    flex: 1;
+    min-width: 108px;
 }
 
 .play-hud-big {
     font-family: "Trebuchet MS", Verdana, sans-serif;
-    font-size: 30px;
+    font-size: 22px;
     font-weight: 700;
     line-height: 1;
     color: #e0f2fe;
@@ -407,6 +418,8 @@ button.icon-btn.active {
     position: relative;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
     overflow: hidden;
     background: #000;
     /* Letterbox fill */
@@ -414,21 +427,19 @@ button.icon-btn.active {
 
 @media (max-width: 900px) {
     #playHud {
-        top: 12px;
-        width: calc(100% - 16px);
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+        max-width: calc(100vw - 20px);
         gap: 8px;
-        flex-wrap: wrap;
     }
 
     .play-hud-card {
-        min-height: 74px;
-        padding: 12px 14px;
-        border-radius: 16px;
+        padding: 9px 11px;
+        border-radius: 14px;
     }
 
     .play-hud-wind {
         min-width: 0;
-        flex: 1 1 100%;
     }
 
     .play-hud-metric {
@@ -436,16 +447,21 @@ button.icon-btn.active {
     }
 
     .play-hud-rose-shell {
-        width: 58px;
-        height: 58px;
+        width: 48px;
+        height: 48px;
     }
 
     .play-hud-big {
-        font-size: 24px;
+        font-size: 18px;
     }
 
     .play-hud-value {
-        font-size: 14px;
+        font-size: 12px;
+    }
+
+    .play-hud-kicker,
+    .play-hud-subtle {
+        font-size: 9px;
     }
 }
 
