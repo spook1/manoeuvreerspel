@@ -10,8 +10,10 @@ import { scenarioRunner } from './core/ScenarioRunner';
 import { touchUI } from './ui/TouchUI';
 import { camera } from './core/Camera';
 import { GameRunner } from './core/GameRunner';
+import { AdminPanel } from './ui/AdminPanel';
 
 new UserBar(); // instantiated for DOM side-effects
+AdminPanel.mount();
 const render = new Render('simCanvas');
 render.setGameState(gameState);
 const gameManager = new GameManager();

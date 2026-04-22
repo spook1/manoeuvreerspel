@@ -64,6 +64,12 @@ export class UserBar {
             ">Uitloggen</button>
         `;
 
+        // Show admin button if user is admin
+        if (this.user.role === 'admin') {
+            const btnAdmin = document.getElementById('btnAdminPanel');
+            if (btnAdmin) btnAdmin.style.display = 'inline-block';
+        }
+
         document.getElementById('logout-btn')?.addEventListener('click', async () => {
             await ApiClient.logout();
             window.location.reload();

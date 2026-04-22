@@ -45,7 +45,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/games/{id}', [GameController::class, 'destroy']);
 
     // Admin routes
-    Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
-    Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);
-    Route::post('/admin/games/{id}/toggle-official', [AdminController::class, 'toggleOfficialGame']);
+    Route::middleware(['\App\Http\Middleware\CheckRole:admin'])->group(function () {
+        Route::get('/admin/users', [AdminController::class, 'users']);
+        Route::put('/admin/users/{id}/role', [AdminController::class, 'updateUserRole']);
+        Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
+        Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);
+        Route::post('/admin/games/{id}/toggle-official', [AdminController::class, 'toggleOfficialGame']);
+    });
 });
