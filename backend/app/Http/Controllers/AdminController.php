@@ -22,7 +22,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:student,admin,gamemaster,pro',
+            'role' => 'required|in:speler,admin,gamemaster,pro',
         ]);
 
         $user = User::create([
@@ -39,7 +39,7 @@ class AdminController extends Controller
     public function updateUserRole(Request $request, $id)
     {
         $request->validate([
-            'role' => 'required|in:student,admin,gamemaster,pro',
+            'role' => 'required|in:speler,admin,gamemaster,pro',
         ]);
 
         $user = User::findOrFail($id);

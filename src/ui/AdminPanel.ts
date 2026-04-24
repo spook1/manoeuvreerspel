@@ -71,7 +71,7 @@ export class AdminPanel {
                             <input type="email" id="newUserEmail" placeholder="Email" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; flex:1; min-width:150px;">
                             <input type="password" id="newUserPassword" placeholder="Wachtwoord (min 8 char)" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; flex:1; min-width:150px;">
                             <select id="newUserRole" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; min-width:100px;">
-                                <option value="student">Student</option>
+                                <option value="speler">Speler</option>
                                 <option value="pro">Pro</option>
                                 <option value="gamemaster">Gamemaster</option>
                                 <option value="admin">Admin</option>
@@ -106,7 +106,7 @@ export class AdminPanel {
                             </td>
                             <td style="padding:8px;">
                                 <select class="role-select" data-id="${u.id}" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:2px; font-size:11px;">
-                                    <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
+                                    <option value="speler" ${u.role === 'speler' ? 'selected' : ''}>Speler</option>
                                     <option value="pro" ${u.role === 'pro' ? 'selected' : ''}>Pro</option>
                                     <option value="gamemaster" ${u.role === 'gamemaster' ? 'selected' : ''}>Gamemaster</option>
                                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
