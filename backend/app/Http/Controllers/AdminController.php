@@ -15,6 +15,26 @@ class AdminController extends Controller
         return response()->json(User::withCount(['harbors', 'scenarios'])->get());
     }
 
+    // Maak een nieuwe gebruiker aan
+    public function createUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:student,admin,gamemaster,pro',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'role' => $request->role,
+        ]);
+
+        return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
+    }
+
     // Update rol van een gebruiker
     public function updateUserRole(Request $request, $id)
     {

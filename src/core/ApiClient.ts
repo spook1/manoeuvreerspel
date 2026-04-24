@@ -173,6 +173,10 @@ export class ApiClient {
         return this.request('/admin/users');
     }
 
+    static async createUserAdmin(userData: any): Promise<any> {
+        return this.request('/admin/users', 'POST', userData);
+    }
+
     static async updateUserRole(userId: number, role: string): Promise<any> {
         return this.request(`/admin/users/${userId}/role`, 'PUT', { role });
     }

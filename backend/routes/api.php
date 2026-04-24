@@ -47,6 +47,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Admin routes
     Route::middleware(['\App\Http\Middleware\CheckRole:admin'])->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
+        Route::post('/admin/users', [AdminController::class, 'createUser']);
         Route::put('/admin/users/{id}/role', [AdminController::class, 'updateUserRole']);
         Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
         Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);

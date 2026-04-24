@@ -64,6 +64,21 @@ export class AdminPanel {
             if (tab === 'users') {
                 const users = await ApiClient.getUsers();
                 let html = `
+                    <div style="margin-bottom:16px; background:rgba(15,23,42,0.6); padding:12px; border-radius:8px; border:1px solid #475569;">
+                        <h3 style="margin-top:0; color:#e2e8f0; font-size:14px;">➕ Nieuwe Gebruiker Aanmaken</h3>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <input type="text" id="newUserName" placeholder="Naam" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; flex:1; min-width:120px;">
+                            <input type="email" id="newUserEmail" placeholder="Email" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; flex:1; min-width:150px;">
+                            <input type="password" id="newUserPassword" placeholder="Wachtwoord (min 8 char)" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; flex:1; min-width:150px;">
+                            <select id="newUserRole" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:6px; min-width:100px;">
+                                <option value="student">Student</option>
+                                <option value="pro">Pro</option>
+                                <option value="gamemaster">Gamemaster</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button id="btnCreateUser" style="background:#10b981; color:white; border:none; padding:6px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">Aanmaken</button>
+                        </div>
+                    </div>
                     <table style="width:100%; border-collapse:collapse; color:#e2e8f0; font-size:13px; text-align:left;">
                         <thead>
                             <tr style="border-bottom:1px solid #475569; color:#94a3b8;">
@@ -102,6 +117,39 @@ export class AdminPanel {
                 });
                 html += '</tbody></table>';
                 content.innerHTML = html;
+
+                // Create user event listener
+                const btnCreate = document.getElementById('btnCreateUser');
+                if (btnCreate) {
+                    btnCreate.addEventListener('click', async () => {
+                        const name = (document.getElementById('newUserName') as HTMLInputElement).value;
+                        const email = (document.getElementById('newUserEmail') as HTMLInputElement).value;
+                        const password = (document.getElementById('newUserPassword') as HTMLInputElement).value;
+                        const role = (document.getElementById('newUserRole') as HTMLSelectElement).value;
+
+                        if (!name || !email || !password) {
+                            alert("Vul alle velden in.");
+                            return;
+                        }
+
+                        if (password.length < 8) {
+                            alert("Wachtwoord moet minimaal 8 tekens zijn.");
+                            return;
+                        }
+
+                        try {
+                            btnCreate.textContent = "Even geduld...";
+                            btnCreate.setAttribute('disabled', 'true');
+                            await ApiClient.createUserAdmin({ name, email, password, role });
+                            alert("Gebruiker succesvol aangemaakt!");
+                            this.loadTab('users'); // Reload table
+                        } catch (e: any) {
+                            alert(e.message);
+                            btnCreate.textContent = "Aanmaken";
+                            btnCreate.removeAttribute('disabled');
+                        }
+                    });
+                }
 
                 content.querySelectorAll('.role-select').forEach(sel => {
                     sel.addEventListener('change', async (e) => {

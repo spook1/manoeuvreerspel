@@ -56,4 +56,14 @@ class User extends Authenticatable
     public function isPro(): bool {
         return $this->role === 'pro' || $this->role === 'admin';
     }
+
+    public function harbors()
+    {
+        return $this->hasMany(Harbor::class);
+    }
+
+    public function scenarios()
+    {
+        return $this->hasMany(Scenario::class);
+    }
 }
