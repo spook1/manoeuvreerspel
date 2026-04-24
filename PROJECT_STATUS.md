@@ -154,14 +154,20 @@
 - [ ] Zorgvuldig alle "edge cases" testen (cloud connectivity, gameloop uitspelen via VPS, foutief wachtwoord login states).
 - [ ] Spelend testen vanaf de *gebruikerskant*: zijn er stappen in de game-loop die vastlopen?
 
-#### 2. UC-803: UI / UX Analyse & Redesign (Prioriteit 2)
-- [ ] Analyseren of de interface intuïtief genoeg is voor onervaren spelers (UI flow voor Game Selectie vs Oefenen).
-- [ ] Vormgeving stijltrekken: De hoofdactieknoppen ("Spel" / "Oefenen") onderscheiden van bouw/editor acties.
-- [ ] Toepassen van een cleaner, doordachter design-system (misschien knoppen verbergen die pas relevant zijn na een keuze).
+#### 2. UC-803: UI / UX Professionaliseringsslag (Prioriteit 1)
+Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofessionaliseerd (weg van prototype/hobby-look):
+- [ ] **A. Visuele Identiteit:** Emojis (🎮, ⚓, 🎬) vervangen door een strakke, consistente iconenset (bijv. FontAwesome, Material of custom SVG's).
+- [ ] **B. Scheiding Spelers/Makers:** Duidelijke hiërarchie. Hoofdmenu toont enkel "Speel" en "Oefen". Editors/Admin-tools verhuizen naar een afgeschermd of weggestopt "Creators/Bouwers" menu, afhankelijk van inlogstatus.
+- [ ] **C. Formulier & UI Overzicht:** Geavanceerde tools groeperen in 'cards' en accordeon-menu's (bijv. een in-/uitklapbare "Geavanceerde Fysica" sectie) in plaats van alles tegelijk te tonen.
+- [ ] **D. Modals & Onboarding:** Consistente modale vensters met duidelijke 'Primary' (bijv. blauw/groen) en 'Secondary' knoppen. "Draai je apparaat" lock vervangen door een visueel geanimeerde overlay in plaats van ruwe tekst.
+- [ ] **E. Vaktermen & Consistentie:** De interface 100% eentalig maken (Nederlands) of een taalschakelaar toevoegen. Nautische vaktermen consequent doorvoeren (geen mengelmoes meer van Engelse/Nederlandse code-snippets).
 
-#### 4. UC-804: Admin Beheerportaal Inzichtelijk Maken
-- [ ] Duidelijk in kaart brengen / toegankelijk maken hoe je lokaal (en online) bij het Laravel Admin Panel komt.
-- [ ] Beveiligen en stroomlijnen van superadmin features (wie mag standaard havens en games markeren).
+#### 4. UC-804: Admin Beheerportaal Inzichtelijk Maken (✅ AFGEROND)
+- [x] Admin Panel frontend UI gebouwd (`AdminPanel.ts`) met tabbladen voor Gebruikers, Havens, Scenario's en Games.
+- [x] Backend integratie via `AdminController` en API routes (waaronder rollen aanpassen en tellen van havens/scenario's).
+- [x] "Nieuwe Gebruiker Aanmaken" formulier toegevoegd in Admin Panel.
+- [x] Database enum `role` aangepast naar: `user`, `speler`, `pro`, `gamemaster`, `admin` (ter vervanging van `student`).
+- [x] "⚙️ Admin" knop in de navigatiebalk alleen zichtbaar gemaakt voor ingelogde admins.
 
 #### 5. UC-805: De "Pro" Features 💎
 - [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's).
