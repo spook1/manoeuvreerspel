@@ -586,6 +586,7 @@ export class GameManager {
                         gameState.scenario = null;
                         gameState.resetBoat();
                         this.updateWindDisplay();
+                        (window as any).practiceMenuClosed = true;
                     }
                 }
             });

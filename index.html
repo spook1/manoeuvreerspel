@@ -381,110 +381,79 @@
             display: none !important;
         }
 
+        /* MINIMALIST HUD */
         #playHud {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 12px);
-            right: calc(env(safe-area-inset-right, 0px) + 12px);
-            width: auto;
-            max-width: calc(100vw - 24px);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: none;
-            grid-template-columns: repeat(2, minmax(108px, max-content));
-            justify-content: end;
-            align-items: stretch;
-            gap: 10px;
-            z-index: 1400;
             pointer-events: none;
+            z-index: 1400;
         }
 
         body.playing-session #playHud {
-            display: grid;
+            display: block;
         }
 
-        .play-hud-card {
-            position: relative;
+        .hud-top-left {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 0px) + 16px);
+            left: calc(env(safe-area-inset-left, 0px) + 16px);
+            pointer-events: auto;
+        }
+
+        .hud-top-right {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 0px) + 16px);
+            right: calc(env(safe-area-inset-right, 0px) + 16px);
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: 0;
-            padding: 4px 8px;
-            /* Cards removed: just floating text now */
+            gap: 24px;
+            text-align: right;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        .play-hud-card > * {
-            position: relative;
-            z-index: 1;
-        }
-
-        .play-hud-kicker {
-            margin-bottom: 8px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: #93c5fd;
-        }
-
-        .play-hud-wind {
-            grid-column: 1 / -1;
-            min-width: 0;
-        }
-
-        .play-hud-wind-body {
+        .hud-bottom-left {
+            position: absolute;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+            left: calc(env(safe-area-inset-left, 0px) + 24px);
             display: flex;
             align-items: center;
             gap: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        .play-hud-rose-shell {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(2, 6, 23, 0.3);
-            border: 1px solid rgba(125, 211, 252, 0.1);
-        }
-
-        .play-hud-reading {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .play-hud-value {
-            font-family: "Trebuchet MS", Verdana, sans-serif;
+        .hud-btn {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
             font-size: 14px;
-            font-weight: 700;
-            line-height: 1;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #facc15;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s;
+        }
+        .hud-btn:hover {
+            background: rgba(15, 23, 42, 0.9);
         }
 
-        .play-hud-subtle {
+        .hud-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 28px;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .hud-label {
             font-size: 11px;
-            letter-spacing: 0.16em;
             text-transform: uppercase;
+            letter-spacing: 1px;
             color: #cbd5e1;
-        }
-
-        .play-hud-metric {
-            min-width: 108px;
-        }
-
-        .play-hud-big {
-            font-family: "Trebuchet MS", Verdana, sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1;
-            color: #e0f2fe;
-            text-shadow: 0 0 22px rgba(56, 189, 248, 0.24);
-        }
-
-        .play-hud-metric.score .play-hud-big {
-            color: #fde047;
-            text-shadow: 0 0 22px rgba(250, 204, 21, 0.24);
+            margin-bottom: 4px;
         }
 
         .dash-section {
@@ -646,58 +615,14 @@
             background: #000;
         }
 
-        /* Landscape prompt for mobile portrait */
-        #orientationPrompt {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh;
-            background: #0f172a;
-            color: white;
-            z-index: 9999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        @media screen and (orientation: portrait) and (max-width: 900px) {
-            #orientationPrompt {
-                display: flex !important;
-            }
-            .wrapper {
-                display: none !important;
-            }
-        }
-
         @media (max-width: 900px) {
-            #playHud {
-                top: calc(env(safe-area-inset-top, 0px) + 10px);
-                right: calc(env(safe-area-inset-right, 0px) + 10px);
-                max-width: calc(100vw - 20px);
-                gap: 8px;
+            .hud-value {
+                font-size: 20px;
+            }
+            .hud-top-right {
+                gap: 16px;
             }
 
-            .play-hud-card {
-                padding: 9px 11px;
-                border-radius: 14px;
-            }
-
-            .play-hud-rose-shell {
-                width: 48px;
-                height: 48px;
-            }
-
-            .play-hud-big {
-                font-size: 18px;
-            }
-
-            .play-hud-value {
-                font-size: 12px;
-            }
-
-            .play-hud-kicker,
-            .play-hud-subtle {
-                font-size: 9px;
-            }
         }
     </style>
 </head>
@@ -840,27 +765,27 @@
         </nav>
 
         <div id="playHud" aria-hidden="true">
-            <div class="play-hud-card play-hud-wind">
-                <span class="play-hud-kicker">Wind</span>
-                <div class="play-hud-wind-body">
-                    <div class="play-hud-rose-shell">
-                        <canvas id="playHudWindRoseCanvas" width="56" height="56"></canvas>
-                    </div>
-                    <div class="play-hud-reading">
-                        <span class="play-hud-value" id="playHudWindSpeed">0 kn</span>
-                        <span class="play-hud-subtle">Windkracht</span>
-                    </div>
+            <div class="hud-top-left">
+                <button onclick="window.abortGameSession()" class="hud-btn">☰ Menu / Stoppen</button>
+            </div>
+            
+            <div class="hud-top-right">
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <span class="hud-label">Snelheid</span>
+                    <span class="hud-value" id="playHudSpeed">0.0 kn</span>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <span class="hud-label">Score</span>
+                    <span class="hud-value" style="color:#facc15;" id="playHudScore">100</span>
                 </div>
             </div>
 
-            <div class="play-hud-card play-hud-metric">
-                <span class="play-hud-kicker">Snelheid</span>
-                <span class="play-hud-big" id="playHudSpeed">0.0 kn</span>
-            </div>
-
-            <div class="play-hud-card play-hud-metric score">
-                <span class="play-hud-kicker">Score</span>
-                <span class="play-hud-big" id="playHudScore">100</span>
+            <div class="hud-bottom-left">
+                <canvas id="playHudWindRoseCanvas" width="60" height="60"></canvas>
+                <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                    <span class="hud-label">Windkracht</span>
+                    <span class="hud-value" style="font-size:20px; color:#60a5fa;" id="playHudWindSpeed">0 kn</span>
+                </div>
             </div>
         </div>
 

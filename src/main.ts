@@ -68,9 +68,23 @@ makeDraggable('gbHeader', 'gbPanel');
 // Expose tutorial to GameManager
 (window as any)._tutorial = tutorial;
 
+(window as any).practiceMenuClosed = false;
+
+(window as any).abortGameSession = () => {
+    if (gameState.gameMode === 'game') {
+        scenarioRunner.state = 'idle';
+        if ((window as any).GameRunner) (window as any).GameRunner.isPlaying = false;
+        // force reload of UI or simply clear scenario
+        gameState.scenario = null;
+    } else if (gameState.gameMode === 'practice') {
+        (window as any).practiceMenuClosed = false;
+    }
+};
+
 function syncGameplayChrome() {
     const isPlayingSession = tutorial.active
-        || (gameState.gameMode === 'game' && (scenarioRunner.state !== 'idle' || GameRunner.isPlaying));
+        || (gameState.gameMode === 'game' && (scenarioRunner.state !== 'idle' || GameRunner.isPlaying))
+        || (gameState.gameMode === 'practice' && (window as any).practiceMenuClosed);
 
     document.body.classList.toggle('playing-session', isPlayingSession);
 }
