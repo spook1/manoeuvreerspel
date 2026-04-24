@@ -615,6 +615,28 @@
             background: #000;
         }
 
+        /* Landscape prompt for mobile portrait */
+        #orientationPrompt {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh;
+            background: #0f172a;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        @media screen and (orientation: portrait) and (max-width: 900px) {
+            #orientationPrompt {
+                display: flex !important;
+            }
+            .wrapper {
+                display: none !important;
+            }
+        }
+        
         @media (max-width: 900px) {
             .hud-value {
                 font-size: 20px;
