@@ -209,17 +209,6 @@
             display: none;
         }
 
-        /* Show play HUD in practice mode, but keep top bar nav */
-        body.mode-practice #playHud {
-            display: grid;
-        }
-        body.mode-practice .dash-section.center {
-            visibility: hidden; /* Hide top bar wind */
-        }
-        body.mode-practice .dash-section.right .status-pill {
-            display: none !important; /* Hide top bar speed/score */
-        }
-
         /* EDITOR MODE (legacy) */
         body.mode-edit #scenarioPickerBar,
         body.mode-harbor-edit #scenarioPickerBar,

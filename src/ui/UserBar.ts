@@ -9,17 +9,19 @@ export class UserBar {
         this.container.id = 'user-bar';
         this.container.style.cssText = `
             position: absolute;
-            top: 10px;
+            bottom: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 8px;
             border-radius: 4px;
-            color: white;
+            color: rgba(255, 255, 255, 0.7);
             font-family: sans-serif;
-            font-size: 14px;
+            font-size: 11px;
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
             z-index: 1000;
+            pointer-events: auto;
         `;
         document.body.appendChild(this.container);
 
@@ -55,11 +57,12 @@ export class UserBar {
         this.container.innerHTML = `
             <span>Welkom, <b>${this.user.name}</b> ${roleLabel}</span>
             <button id="logout-btn" style="
-                background: #dc3545; 
+                background: rgba(220, 53, 69, 0.5); 
                 border: none; 
-                color: white; 
-                padding: 2px 6px; 
+                color: rgba(255, 255, 255, 0.8); 
+                padding: 2px 4px; 
                 border-radius: 2px; 
+                font-size: 10px;
                 cursor: pointer;
             ">Uitloggen</button>
         `;

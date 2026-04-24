@@ -156,11 +156,12 @@
 
 #### 2. UC-803: UI / UX Professionaliseringsslag (Prioriteit 1)
 Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofessionaliseerd (weg van prototype/hobby-look):
-- [ ] **A. Visuele Identiteit:** Emojis (🎮, ⚓, 🎬) vervangen door een strakke, consistente iconenset (bijv. FontAwesome, Material of custom SVG's).
-- [ ] **B. Scheiding Spelers/Makers:** Duidelijke hiërarchie. Hoofdmenu toont enkel "Speel" en "Oefen". Editors/Admin-tools verhuizen naar een afgeschermd of weggestopt "Creators/Bouwers" menu, afhankelijk van inlogstatus.
-- [ ] **C. Formulier & UI Overzicht:** Geavanceerde tools groeperen in 'cards' en accordeon-menu's (bijv. een in-/uitklapbare "Geavanceerde Fysica" sectie) in plaats van alles tegelijk te tonen.
-- [ ] **D. Modals & Onboarding:** Consistente modale vensters met duidelijke 'Primary' (bijv. blauw/groen) en 'Secondary' knoppen. "Draai je apparaat" lock vervangen door een visueel geanimeerde overlay in plaats van ruwe tekst.
-- [ ] **E. Vaktermen & Consistentie:** De interface 100% eentalig maken (Nederlands) of een taalschakelaar toevoegen. Nautische vaktermen consequent doorvoeren (geen mengelmoes meer van Engelse/Nederlandse code-snippets).
+- [x] **A. Game/Oefen HUD:** 'Cards' vervangen door een moderne, minimalistische transparante HUD die in beide modi consistent werkt.
+- [ ] **B. Visuele Identiteit:** Emojis (🎮, ⚓, 🎬) vervangen door een strakke, consistente iconenset (bijv. FontAwesome, Material of custom SVG's).
+- [ ] **C. Scheiding Spelers/Makers:** Duidelijke hiërarchie. Hoofdmenu toont enkel "Speel" en "Oefen". Editors/Admin-tools verhuizen naar een afgeschermd "Creators" menu.
+- [ ] **D. Formulier & UI Overzicht:** Geavanceerde tools groeperen in accordeon-menu's (bijv. in-/uitklapbare "Geavanceerde Fysica") in plaats van alles te tonen.
+- [ ] **E. Modals & Onboarding:** Consistente modale vensters met duidelijke kleuren.
+- [ ] **F. Vaktermen & Consistentie:** Interface 100% eentalig (Nederlands) en nautische vaktermen consequent doorvoeren.
 
 #### 4. UC-804: Admin Beheerportaal Inzichtelijk Maken (✅ AFGEROND)
 - [x] Admin Panel frontend UI gebouwd (`AdminPanel.ts`) met tabbladen voor Gebruikers, Havens, Scenario's en Games.
