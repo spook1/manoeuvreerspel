@@ -11,6 +11,7 @@ export class TouchUI {
     private throttleLabel?: HTMLElement;
     private throttleModeLabel?: HTMLElement;
     private lastThrottleMode: 'forward' | 'neutral' | 'reverse' = 'neutral';
+    private gestureGuardsInstalled: boolean = false;
 
     constructor() {
         this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -19,10 +20,11 @@ export class TouchUI {
         this.container = document.createElement('div');
         this.container.id = 'touch-ui-container';
         this.injectStyles();
-        this.buildRudderSlider();
+        this.buildRudderWheel();
         this.buildThrottleLever();
         document.body.appendChild(this.container);
         this.container.style.display = 'none';
+        this.installGestureGuards();
     }
 
     private injectStyles() {
@@ -32,16 +34,17 @@ export class TouchUI {
                 position: fixed;
                 top: 0; left: 0; right: 0; bottom: 0;
                 pointer-events: none;
+                touch-action: none;
                 z-index: 1000;
             }
 
-            /* === RUDDER SLIDER (bottom-left) === */
+            /* === RUDDER WHEEL (bottom-left) === */
             .rudder-panel {
                 position: absolute;
                 bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
                 left: calc(env(safe-area-inset-left, 0px) + 16px);
-                width: 240px;
-                padding: 12px 16px 8px;
+                width: 248px;
+                padding: 10px 12px 8px;
                 background: rgba(10, 25, 50, 0.65);
                 border: 1px solid rgba(100, 150, 255, 0.15);
                 border-radius: 14px;
@@ -50,56 +53,72 @@ export class TouchUI {
                 touch-action: none;
                 box-shadow: 0 4px 16px rgba(0,0,0,0.3);
             }
+            .rudder-wheel-viewport {
+                position: relative;
+                height: 88px;
+                overflow: hidden;
+                border-radius: 10px;
+                background: linear-gradient(180deg, rgba(2,10,24,0.58), rgba(2,10,24,0.2));
+                border: 1px solid rgba(100, 150, 255, 0.14);
+                touch-action: none;
+            }
+            .rudder-zero-mark {
+                position: absolute;
+                left: 50%;
+                top: 4px;
+                width: 2px;
+                height: 22px;
+                background: rgba(96,165,250,0.55);
+                transform: translateX(-50%);
+                border-radius: 1px;
+                z-index: 3;
+                pointer-events: none;
+            }
+            .rudder-wheel-image {
+                position: absolute;
+                width: 228px;
+                height: 228px;
+                left: 50%;
+                top: 28px;
+                transform: translateX(-50%) rotate(0deg);
+                transform-origin: 50% 50%;
+                background-image: url('/ui/helm-wheel.svg');
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+                filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+                transition: transform 0.18s ease-out;
+                z-index: 2;
+                pointer-events: none;
+            }
+            .rudder-wheel-image.active {
+                filter: drop-shadow(0 8px 18px rgba(37,99,235,0.35));
+            }
+            .rudder-wheel-hit {
+                position: absolute;
+                inset: 0;
+                z-index: 4;
+                touch-action: none;
+                cursor: grab;
+            }
+            .rudder-wheel-hit:active {
+                cursor: grabbing;
+            }
             .rudder-scale {
                 display: flex;
                 justify-content: space-between;
                 font-size: 9px;
                 color: rgba(203,213,225,0.6);
                 letter-spacing: 0.5px;
-                margin-bottom: 6px;
+                margin-top: 6px;
                 font-family: 'Courier New', monospace;
-            }
-            .rudder-track {
-                position: relative;
-                height: 8px;
-                background: rgba(255,255,255,0.08);
-                border-radius: 4px;
-                margin: 0 20px;
-            }
-            .rudder-track::after {
-                content: '';
-                position: absolute;
-                left: 50%;
-                top: -4px;
-                width: 2px;
-                height: 16px;
-                background: rgba(96,165,250,0.5);
-                transform: translateX(-50%);
-                border-radius: 1px;
-            }
-            .rudder-thumb {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 32px;
-                height: 32px;
-                background: radial-gradient(circle at 40% 35%, #60a5fa, #2563eb);
-                border: 2px solid rgba(255,255,255,0.3);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-                box-shadow: 0 2px 10px rgba(37,99,235,0.5);
-                transition: box-shadow 0.15s;
-            }
-            .rudder-thumb.active {
-                box-shadow: 0 2px 18px rgba(96,165,250,0.8);
-                border-color: rgba(255,255,255,0.6);
             }
             .rudder-value {
                 text-align: center;
                 font-size: 12px;
                 font-weight: 700;
                 color: #e0f2fe;
-                margin-top: 6px;
+                margin-top: 4px;
                 font-family: 'Courier New', monospace;
                 letter-spacing: 0.5px;
             }
@@ -223,7 +242,9 @@ export class TouchUI {
             }
 
             @media (max-width: 600px) {
-                .rudder-panel { width: 200px; }
+                .rudder-panel { width: 214px; }
+                .rudder-wheel-viewport { height: 80px; }
+                .rudder-wheel-image { width: 200px; height: 200px; top: 25px; }
                 .throttle-panel { width: 120px; }
                 .throttle-labels { height: 112px; }
                 .throttle-slider-shell { height: 142px; }
@@ -233,22 +254,31 @@ export class TouchUI {
         document.head.appendChild(style);
     }
 
-    private buildRudderSlider() {
+    private buildRudderWheel() {
         const panel = document.createElement('div');
         panel.className = 'rudder-panel';
+
+        const viewport = document.createElement('div');
+        viewport.className = 'rudder-wheel-viewport';
+
+        const zeroMark = document.createElement('div');
+        zeroMark.className = 'rudder-zero-mark';
+        viewport.appendChild(zeroMark);
+
+        const wheel = document.createElement('div');
+        wheel.className = 'rudder-wheel-image';
+        viewport.appendChild(wheel);
+
+        const hitArea = document.createElement('div');
+        hitArea.className = 'rudder-wheel-hit';
+        viewport.appendChild(hitArea);
+
+        panel.appendChild(viewport);
 
         const scale = document.createElement('div');
         scale.className = 'rudder-scale';
         scale.innerHTML = '<span>-75\u00B0 BB</span><span>0\u00B0</span><span>+75\u00B0 SB</span>';
         panel.appendChild(scale);
-
-        const track = document.createElement('div');
-        track.className = 'rudder-track';
-
-        const thumb = document.createElement('div');
-        thumb.className = 'rudder-thumb';
-        track.appendChild(thumb);
-        panel.appendChild(track);
 
         const label = document.createElement('div');
         label.className = 'rudder-value';
@@ -256,34 +286,34 @@ export class TouchUI {
         this.rudderLabel = label;
         panel.appendChild(label);
 
-        this.setupRudderTouch(track, thumb);
+        this.setupRudderTouch(hitArea, wheel);
         this.container!.appendChild(panel);
     }
 
-    private setupRudderTouch(track: HTMLDivElement, thumb: HTMLDivElement) {
+    private setupRudderTouch(hitArea: HTMLDivElement, wheel: HTMLDivElement) {
         let isDragging = false;
+        let startX = 0;
+        let startDeg = 0;
+        let currentDeg = 0;
+        const MAX_DEG = 75;
+        const DEG_PER_PIXEL = 0.55;
 
-        const updateFromPointer = (clientX: number) => {
-            const rect = track.getBoundingClientRect();
-            const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            const degrees = Math.round((ratio - 0.5) * 150);
-            const clamped = Math.max(-75, Math.min(75, degrees));
-
-            const pct = ((clamped + 75) / 150) * 100;
-            thumb.style.left = pct + '%';
-            input.touchRudderOverride = clamped;
-
+        const applyRudder = (degrees: number) => {
+            currentDeg = Math.max(-MAX_DEG, Math.min(MAX_DEG, Math.round(degrees)));
+            wheel.style.transform = `translateX(-50%) rotate(${currentDeg}deg)`;
+            input.touchRudderOverride = currentDeg;
             if (this.rudderLabel) {
-                const sign = clamped > 0 ? '+' : '';
-                this.rudderLabel.textContent = `${sign}${clamped}\u00B0`;
+                const sign = currentDeg > 0 ? '+' : '';
+                this.rudderLabel.textContent = `${sign}${currentDeg}\u00B0`;
             }
         };
 
         const release = () => {
             if (!isDragging) return;
             isDragging = false;
-            thumb.classList.remove('active');
-            thumb.style.left = '50%';
+            wheel.classList.remove('active');
+            wheel.style.transition = 'transform 0.18s ease-out';
+            applyRudder(0);
             input.touchRudderOverride = 0;
             if (this.rudderLabel) this.rudderLabel.textContent = '0\u00B0';
             setTimeout(() => {
@@ -291,24 +321,27 @@ export class TouchUI {
             }, 300);
         };
 
-        track.addEventListener('pointerdown', (e) => {
+        hitArea.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             isDragging = true;
-            thumb.classList.add('active');
-            try { track.setPointerCapture(e.pointerId); } catch {}
-            updateFromPointer(e.clientX);
+            startX = e.clientX;
+            startDeg = currentDeg;
+            wheel.classList.add('active');
+            wheel.style.transition = 'none';
+            try { hitArea.setPointerCapture(e.pointerId); } catch {}
             if (navigator.vibrate) navigator.vibrate(5);
         });
 
-        track.addEventListener('pointermove', (e) => {
+        hitArea.addEventListener('pointermove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
-            updateFromPointer(e.clientX);
+            const deltaX = e.clientX - startX;
+            applyRudder(startDeg + (deltaX * DEG_PER_PIXEL));
         });
 
-        track.addEventListener('pointerup', release);
-        track.addEventListener('pointercancel', release);
-        track.addEventListener('lostpointercapture', release);
+        hitArea.addEventListener('pointerup', release);
+        hitArea.addEventListener('pointercancel', release);
+        hitArea.addEventListener('lostpointercapture', release);
     }
 
     private buildThrottleLever() {
@@ -457,6 +490,40 @@ export class TouchUI {
         track.addEventListener('pointerup', release);
         track.addEventListener('pointercancel', release);
         track.addEventListener('lostpointercapture', release);
+    }
+
+    private isControlsActive(): boolean {
+        return !!this.container && this.container.style.display !== 'none';
+    }
+
+    private installGestureGuards() {
+        if (this.gestureGuardsInstalled) return;
+        this.gestureGuardsInstalled = true;
+
+        const shouldBlock = (target: EventTarget | null): boolean => {
+            const el = target as HTMLElement | null;
+            if (!el) return false;
+            return !!el.closest('#touch-ui-container') || el.id === 'simCanvas';
+        };
+
+        const blockPinchLikeGesture = (e: TouchEvent) => {
+            if (!this.isControlsActive()) return;
+            if (e.touches.length < 2) return;
+            if (!shouldBlock(e.target)) return;
+            e.preventDefault();
+        };
+
+        const blockIOSGesture = (e: Event) => {
+            if (!this.isControlsActive()) return;
+            if (!shouldBlock(e.target)) return;
+            e.preventDefault();
+        };
+
+        document.addEventListener('touchstart', blockPinchLikeGesture, { passive: false });
+        document.addEventListener('touchmove', blockPinchLikeGesture, { passive: false });
+        document.addEventListener('gesturestart', blockIOSGesture as EventListener, { passive: false });
+        document.addEventListener('gesturechange', blockIOSGesture as EventListener, { passive: false });
+        document.addEventListener('gestureend', blockIOSGesture as EventListener, { passive: false });
     }
 
     public syncVisibility(gameMode: string) {

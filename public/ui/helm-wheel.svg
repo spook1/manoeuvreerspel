@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7a2f16"/>
+      <stop offset="0.45" stop-color="#9d4a26"/>
+      <stop offset="1" stop-color="#5f2412"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ececec"/>
+      <stop offset="1" stop-color="#969696"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="216" fill="none" stroke="url(#wood)" stroke-width="42"/>
+  <g stroke="url(#metal)" stroke-width="8" stroke-linecap="round">
+    <line x1="256" y1="256" x2="256" y2="78"/>
+    <line x1="256" y1="256" x2="402" y2="146"/>
+    <line x1="256" y1="256" x2="434" y2="256"/>
+    <line x1="256" y1="256" x2="402" y2="366"/>
+    <line x1="256" y1="256" x2="256" y2="434"/>
+    <line x1="256" y1="256" x2="110" y2="366"/>
+    <line x1="256" y1="256" x2="78" y2="256"/>
+    <line x1="256" y1="256" x2="110" y2="146"/>
+  </g>
+  <g fill="url(#wood)" stroke="#4f1d0f" stroke-width="2">
+    <rect x="248" y="72" width="16" height="54" rx="7"/>
+    <rect x="386" y="134" width="16" height="54" rx="7" transform="rotate(52 394 161)"/>
+    <rect x="412" y="248" width="16" height="54" rx="7" transform="rotate(90 420 275)"/>
+    <rect x="386" y="324" width="16" height="54" rx="7" transform="rotate(128 394 351)"/>
+    <rect x="248" y="386" width="16" height="54" rx="7"/>
+    <rect x="110" y="324" width="16" height="54" rx="7" transform="rotate(-128 118 351)"/>
+    <rect x="84" y="248" width="16" height="54" rx="7" transform="rotate(-90 92 275)"/>
+    <rect x="110" y="134" width="16" height="54" rx="7" transform="rotate(-52 118 161)"/>
+  </g>
+  <circle cx="256" cy="256" r="56" fill="url(#metal)" stroke="#8a8a8a" stroke-width="4"/>
+  <circle cx="256" cy="256" r="12" fill="#c3c3c3"/>
+</svg>
