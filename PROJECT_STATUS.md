@@ -1,30 +1,42 @@
-# Project Roadmap & Sprint Planning 🗺️
+# Project Roadmap & Sprint Planning
 
-> **Laatst bijgewerkt:** 25 April 2026
-> **Fase:** MVP — Game Builder & Game Loop voltooid, nu richting Polish & Community
+> **Laatst bijgewerkt:** 26 April 2026  
+> **Fase:** Beta/MVP+ (core game + cloud editors + admin basis staan)  
+> **Globale voortgang:** ongeveer 85%
 
 ---
 
-## Update 25 April 2026 (Reality Check)
+## Status Snapshot (26 April 2026)
 
-### Nu gerealiseerd
-- [x] Mobiele HUD overhaul: roerslider + verticale gashendel + compacte top-HUD.
-- [x] Tutorial-instructies zijn gesplitst voor desktop en mobiel.
-- [x] Hamburger in play HUD brengt sessie terug naar menu-flow (intro modal).
-- [x] Frontend role-gating voor makersmenu: editors alleen zichtbaar/toegankelijk voor `pro`, `gamemaster`, `super_admin`.
+### Klaar en werkend
+- [x] Core gameplay loop met scenario's en game-reeksen.
+- [x] Cloud-first opslag (havens, scenario's, games) met CRUD basis.
+- [x] Authenticatie + rollenmodel in gebruik (`speler`, `pro`, `gamemaster`, `super_admin`).
+- [x] Adminpanel basis voor gebruikersbeheer (aanmaken, rol wijzigen, bewerken, verwijderen).
+- [x] Mobiele besturing vernieuwd:
+  - [x] Roer als draaibaar stuurwiel (linksonder).
+  - [x] Gashendel vooruit/neutraal/achteruit in 1 verticale lever (rechtsonder).
+  - [x] Controls zonder zware kaarten, transparante overlay-stijl voor meer zichtbaar speelveld.
+- [x] Speel-HUD met hamburger + centreer-op-boot knop.
+- [x] Scenario/Haven editor belangrijke bugs opgelost (o.a. save-crash, standaard-toggle, exit-flow).
 
-### Nog open (belangrijk)
-- [ ] Backend role-enforcement voor maker-acties: harbor/scenario/game CRUD staat nog open voor elke ingelogde gebruiker.
-- [ ] Admin tabs voor volledig beheer van alle havens/scenario's/games hebben nog dedicated all-record API endpoints nodig.
-- [ ] Mobile QA op iOS/Android voor touch-ergonomie en pinch-zoom regressies.
+### Nog te doen (belangrijkste open punten)
+- [ ] **Backend autorisatie aanscherpen**: rechten server-side afdwingen volgens doelmodel (speler: haven, pro: scenario/opname, gamemaster: games/delen, super_admin: alles).
+- [ ] **Admin full-management API's** voor alle havens/scenario's/games (nu deels via losse editors en toggles).
+- [ ] **Mobiele QA ronde** op echte devices (Android + iOS): ergonomie, touch-gedrag, pinch/zoom regressies, safe-area gedrag.
+- [ ] **Guest-save funnel**: als niet-ingelogde gebruiker op "Opslaan" klikt, direct register/login-flow tonen en na succesvolle account-aanmaak de save automatisch afronden.
+- [ ] **UX polish**:
+  - [ ] eenduidige iconset (nu mix van emoji en teksticonen),
+  - [ ] duidelijke scheiding "Speler" vs "Makers/Beheer",
+  - [ ] afronding copy/taalconsistentie.
 
-### Rolmodel (huidig doelbeeld)
-| Rol | Spelen/Oefenen | Eigen content maken | Officieel markeren | Gebruikersbeheer |
+### Rolmodel (doelbeeld dat nu grotendeels gevolgd wordt)
+| Rol | Spelen/Oefenen | Mag maken | Delen/Publiceren | Beheer |
 |---|---|---|---|---|
-| `speler` | ✅ | ❌ | ❌ | ❌ |
-| `pro` | ✅ | ✅ | ❌ | ❌ |
-| `gamemaster` | ✅ | ✅ | ✅ | ❌ |
-| `super_admin` | ✅ | ✅ | ✅ | ✅ |
+| `speler` | ja | havens | nee | nee |
+| `pro` | ja | scenario's + opnames | beperkt (eigen pro-content) | nee |
+| `gamemaster` | ja | games/reeksen | ja (delen met doelgroep) | nee |
+| `super_admin` | ja | alles | alles | ja |
 
 ---
 
@@ -161,7 +173,7 @@
 
 ---
 
-## Sprint 8: Mobiele Support, UI/UX, QA & Pro Features 📱 (IN BEHANDELING)
+## Sprint 8: Mobiele Support, UI/UX, QA & Pro Features (IN BEHANDELING)
 *Doel: De applicatie visueel stijltrekken, speelbaar maken op mobiele apparaten (Touch Controls), functionaliteit server-side testen en het betaalmodel vormgeven.*
 
 ### Voltooid in de meest recente sessie
@@ -195,16 +207,28 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 - [x] "⚙️ Admin" knop in de navigatiebalk alleen zichtbaar gemaakt voor ingelogde admins.
 
 #### 5. UC-805: De "Pro" Features 💎
-- [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's, opnemen game om te delen met anderen).
-- [ ] De UI voorbereiden op states waarbij "Pro" functionaliteit vergrendeld is.
+- [ ] **Pakketdefinitie uitwerken**:
+  - [ ] `Speler`: haven maken en lokaal/oefen gebruiken.
+  - [ ] `Pro`: scenario's maken, acties/sessies opnemen, eigen content delen.
+  - [ ] `Gamemaster`: games/reeksen bouwen en gericht delen/publiceren.
+- [ ] **Betaalmodule ontwerpen**:
+  - [ ] abonnementsniveaus en entitlement-checks (frontend + backend),
+  - [ ] betaalprovider-keuze (bijv. Stripe/Mollie), webhook-flow en facturatie basis,
+  - [ ] upgrade/downgrade UX in accountomgeving.
+- [ ] **UI-lock states**: vergrendelde Pro/Gamemaster functies met duidelijke upgrade-flow.
+- [ ] **Content sharing roadmap**:
+  - [ ] opnames exporteren en delen (Pro),
+  - [ ] games publiceren en delen (Gamemaster),
+  - [ ] optie "Havenmeester Academy": instructievideo's over haven-gedrag los van game-scenario's.
 
-#### 6. UC-806: Mobiele Controls & Camera 📱 (✅ AFGEROND)
+#### 6. UC-806: Mobiele Controls & Camera (doorlopend verbeterd)
 - [x] **Fase 1**: Action Layer Architectuur (`InputState` ipv hardcoded keys in de gameloop).
 - [x] **Fase 2**: Touch UI Overlay ontwikkeld (4-button helm + stopknop) via `TouchUI.ts`. Weergave reageert autonoom op Touch-devices. Buttons horizontaal geplaatst ("Meer Gas", "Geen Gas", "Minder Gas").
 - [x] **Camera Systeem**: `Camera.ts` toegevoegd inclusief **Strict Bounds Panning** en **Handmatige Pinch-Zoom**. Inclusief 🎯 Focus Knop & 'C' shortcut.
 - [x] **Vastlopend Roer & URL Balk Fix**: State-machine van touch/keyboard volledig gescheiden ter voorkoming van hangend roer. CSS PWA `manifest.json` en `100dvh` geïmplementeerd om navigatiebalken van mobile browsers permanent te verbergen.
+- [x] **Nieuwe mobiele controls**: roerslider vervangen door draaibaar stuurwiel; gashendel naar compacte kaartloze overlay.
 
-#### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (IN BEHANDELING — 25 April 2026) 🖥️
+#### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (IN BEHANDELING)
 *Doel: Professionele, nautische HUD met intuïtieve mobiele besturing.*
 
 - [x] **A. Action Layer Architectuur**: `InputManager` uitgebreid met `touchRudderOverride` en `touchThrottleOverride`.
@@ -212,7 +236,8 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 - [x] **C. HUD Layout Overhaul**: Hamburgermenu, Digitaal Kompas en Telemetrie-kaarten geïmplementeerd.
 - [x] **D. Visuele Identiteit**: Semi-transparante nautische styling met blur-effecten.
 - [x] **E. Render Engine Sync**: `Render.ts` hersteld en gesynchroniseerd met nieuwe HUD-data.
-- [ ] **F. QA & Ergonomie**: Testen en fine-tuning op mobiel.
+- [x] **F. Verdere mobile cleanup**: kaartloze stuurwiel/throttle controls en extra center-knop in play HUD.
+- [ ] **G. QA & Ergonomie**: Testen en fine-tuning op mobiel.
 
 #### 8. UC-808: Code Audit & Security Check (Gepland) 🔒
 - [ ] Grondige check op legacys code, ongebruikte componenten of dode variabelen.
