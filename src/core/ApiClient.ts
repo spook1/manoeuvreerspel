@@ -182,6 +182,14 @@ export class ApiClient {
         return this.request(`/admin/users/${userId}/role`, 'PUT', { role });
     }
 
+    static async updateUserAdmin(userId: number, userData: any): Promise<any> {
+        return this.request(`/admin/users/${userId}`, 'PUT', userData);
+    }
+
+    static async deleteUserAdmin(userId: number): Promise<any> {
+        return this.request(`/admin/users/${userId}`, 'DELETE');
+    }
+
     static async toggleOfficial(harborId: number): Promise<any> {
         return this.request(`/admin/harbors/${harborId}/toggle-official`, 'POST');
     }

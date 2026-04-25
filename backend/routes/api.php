@@ -44,11 +44,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/games/{id}', [GameController::class, 'update']);
     Route::delete('/games/{id}', [GameController::class, 'destroy']);
 
-    // Admin routes
-    Route::middleware(['\App\Http\Middleware\CheckRole:admin'])->group(function () {
+    // User management: legacy admin + super admin
+    Route::middleware(['\App\Http\Middleware\CheckRole:admin,super_admin'])->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
         Route::post('/admin/users', [AdminController::class, 'createUser']);
+        Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
         Route::put('/admin/users/{id}/role', [AdminController::class, 'updateUserRole']);
+        Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+    });
+
+    // Content curation: super admin/admin + gamemaster
+    Route::middleware(['\App\Http\Middleware\CheckRole:admin,super_admin,gamemaster'])->group(function () {
         Route::post('/admin/harbors/{id}/toggle-official', [AdminController::class, 'toggleOfficialHarbor']);
         Route::post('/admin/scenarios/{id}/toggle-official', [AdminController::class, 'toggleOfficialScenario']);
         Route::post('/admin/games/{id}/toggle-official', [AdminController::class, 'toggleOfficialGame']);

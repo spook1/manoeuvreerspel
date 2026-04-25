@@ -11,18 +11,29 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
+    private const ROLE_PLAYER = 'speler';
+    private const ROLE_PRO = 'pro';
+    private const ROLE_GAMEMASTER = 'gamemaster';
+    private const ROLE_ADMIN = 'admin';
+    private const ROLE_SUPER_ADMIN = 'super_admin';
+
     private const MANAGED_ROLES = [
-        User::ROLE_PLAYER,
-        User::ROLE_PRO,
-        User::ROLE_GAMEMASTER,
-        User::ROLE_ADMIN,
-        User::ROLE_SUPER_ADMIN,
+        self::ROLE_PLAYER,
+        self::ROLE_PRO,
+        self::ROLE_GAMEMASTER,
+        self::ROLE_ADMIN,
+        self::ROLE_SUPER_ADMIN,
     ];
 
     private function normalizeRole(string $role): string
     {
         // Keep legacy "admin" input compatible, but store as the preferred super admin role.
-        return $role === User::ROLE_ADMIN ? User::ROLE_SUPER_ADMIN : $role;
+        return $role === self::ROLE_ADMIN ? self::ROLE_SUPER_ADMIN : $role;
+    }
+
+    private function isAdminRole(?string $role): bool
+    {
+        return in_array($role, [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN], true);
     }
 
     private function roleColumnMismatchResponse(QueryException $e)
@@ -72,6 +83,42 @@ class AdminController extends Controller
         return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
     }
 
+    // Bewerk gebruiker (naam/email/rol + optioneel wachtwoord)
+    public function updateUser(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($id)],
+            'role' => ['required', 'string', Rule::in(self::MANAGED_ROLES)],
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $role = $this->normalizeRole($request->role);
+        $user = User::findOrFail($id);
+
+        // Voorkom dat een super admin zichzelf per ongeluk downgrade.
+        if ((int) $request->user()->id === (int) $user->id && $role !== self::ROLE_SUPER_ADMIN) {
+            return response()->json([
+                'message' => 'Je kunt je eigen super admin rol niet verwijderen.',
+            ], 422);
+        }
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->role = $role;
+        if ($request->filled('password')) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        }
+
+        try {
+            $user->save();
+        } catch (QueryException $e) {
+            return $this->roleColumnMismatchResponse($e);
+        }
+
+        return response()->json(['message' => 'User updated successfully', 'user' => $user]);
+    }
+
     // Update rol van een gebruiker
     public function updateUserRole(Request $request, $id)
     {
@@ -82,6 +129,13 @@ class AdminController extends Controller
         $role = $this->normalizeRole($request->role);
 
         $user = User::findOrFail($id);
+
+        if ((int) $request->user()->id === (int) $user->id && $role !== self::ROLE_SUPER_ADMIN) {
+            return response()->json([
+                'message' => 'Je kunt je eigen super admin rol niet verwijderen.',
+            ], 422);
+        }
+
         $user->role = $role;
         try {
             $user->save();
@@ -90,6 +144,33 @@ class AdminController extends Controller
         }
 
         return response()->json(['message' => "User role updated to {$role}", 'user' => $user]);
+    }
+
+    // Verwijder gebruiker
+    public function deleteUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ((int) $request->user()->id === (int) $user->id) {
+            return response()->json([
+                'message' => 'Je kunt je eigen account niet verwijderen.',
+            ], 422);
+        }
+
+        // Houd altijd minimaal 1 admin/super admin account over.
+        if ($this->isAdminRole($user->role)) {
+            $otherAdminCount = User::whereIn('role', [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN])
+                ->where('id', '!=', $user->id)
+                ->count();
+            if ($otherAdminCount < 1) {
+                return response()->json([
+                    'message' => 'Je kunt de laatste admin niet verwijderen.',
+                ], 422);
+            }
+        }
+
+        $user->delete();
+        return response()->json(['message' => 'User deleted successfully']);
     }
 
     // Toggle 'Official' status van een haven
