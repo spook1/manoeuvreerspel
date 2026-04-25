@@ -5,10 +5,37 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Harbor;
 use App\Models\Scenario;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
+    private const MANAGED_ROLES = [
+        User::ROLE_PLAYER,
+        User::ROLE_PRO,
+        User::ROLE_GAMEMASTER,
+        User::ROLE_ADMIN,
+        User::ROLE_SUPER_ADMIN,
+    ];
+
+    private function normalizeRole(string $role): string
+    {
+        // Keep legacy "admin" input compatible, but store as the preferred super admin role.
+        return $role === User::ROLE_ADMIN ? User::ROLE_SUPER_ADMIN : $role;
+    }
+
+    private function roleColumnMismatchResponse(QueryException $e)
+    {
+        if (str_contains($e->getMessage(), "Data truncated for column 'role'")) {
+            return response()->json([
+                'message' => "De users.role kolom is verouderd. Draai eerst database migraties: php artisan migrate --force",
+            ], 500);
+        }
+
+        throw $e;
+    }
+
     // Haal alle gebruikers op
     public function users()
     {
@@ -22,15 +49,21 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:speler,admin,gamemaster,pro',
+            'role' => ['required', 'string', Rule::in(self::MANAGED_ROLES)],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+        $role = $this->normalizeRole($request->role);
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+                'role' => $role,
+            ]);
+        } catch (QueryException $e) {
+            return $this->roleColumnMismatchResponse($e);
+        }
 
         return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
     }
@@ -39,14 +72,20 @@ class AdminController extends Controller
     public function updateUserRole(Request $request, $id)
     {
         $request->validate([
-            'role' => 'required|in:speler,admin,gamemaster,pro',
+            'role' => ['required', 'string', Rule::in(self::MANAGED_ROLES)],
         ]);
 
-        $user = User::findOrFail($id);
-        $user->role = $request->role;
-        $user->save();
+        $role = $this->normalizeRole($request->role);
 
-        return response()->json(['message' => "User role updated to {$request->role}", 'user' => $user]);
+        $user = User::findOrFail($id);
+        $user->role = $role;
+        try {
+            $user->save();
+        } catch (QueryException $e) {
+            return $this->roleColumnMismatchResponse($e);
+        }
+
+        return response()->json(['message' => "User role updated to {$role}", 'user' => $user]);
     }
 
     // Toggle 'Official' status van een haven

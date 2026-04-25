@@ -64,7 +64,7 @@ class HarborController extends Controller
         $harbor = Harbor::findOrFail($id);
 
         $user = Auth::guard('sanctum')->user();
-        if (!$harbor->is_public && !$harbor->is_official && (!$user || ($harbor->user_id !== $user->id && $user->role !== 'admin'))) {
+        if (!$harbor->is_public && !$harbor->is_official && (!$user || ($harbor->user_id !== $user->id && !$user->isAdmin()))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -80,7 +80,7 @@ class HarborController extends Controller
         $user = Auth::user();
 
         // Admin mag alle havens bewerken (inclusief official)
-        if ($harbor->user_id !== $user->id && $user->role !== 'admin') {
+        if ($harbor->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -96,7 +96,7 @@ class HarborController extends Controller
         ];
 
         // Alleen admin mag is_official wijzigen
-        if ($user->role === 'admin' && isset($validated['is_official'])) {
+        if ($user->isAdmin() && isset($validated['is_official'])) {
             $updateData['is_official'] = $validated['is_official'];
             // Officiële havens zijn altijd public
             if ($validated['is_official']) {
@@ -117,7 +117,7 @@ class HarborController extends Controller
         $harbor = Harbor::findOrFail($id);
 
         $user = Auth::user();
-        if ($harbor->user_id !== $user->id && $user->role !== 'admin') {
+        if ($harbor->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

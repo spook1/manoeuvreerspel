@@ -13,6 +13,13 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const ROLE_USER = 'user';
+    public const ROLE_PLAYER = 'speler';
+    public const ROLE_PRO = 'pro';
+    public const ROLE_GAMEMASTER = 'gamemaster';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -50,11 +57,11 @@ class User extends Authenticatable
 
     // Helpers voor frontend checks
     public function isAdmin(): bool {
-        return $this->role === 'admin';
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN], true);
     }
 
     public function isPro(): bool {
-        return $this->role === 'pro' || $this->role === 'admin';
+        return in_array($this->role, [self::ROLE_PRO, self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN], true);
     }
 
     public function harbors()

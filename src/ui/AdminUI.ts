@@ -20,7 +20,7 @@ export class AdminUI {
 
         try {
             const user = await ApiClient.getUser();
-            if (user.role === 'admin') {
+            if (user.role === 'admin' || user.role === 'super_admin') {
                 this.injectAdminButton();
             }
         } catch (e) {
@@ -106,20 +106,21 @@ export class AdminUI {
             html += '<tr style="background:#334155;"><th>ID</th><th>Naam</th><th>Email</th><th>Rol</th><th>Actie</th></tr>';
 
             users.forEach((u: any) => {
+                const normalizedRole = u.role === 'admin' ? 'super_admin' : (u.role === 'student' ? 'speler' : u.role);
                 html += `
                     <tr style="border-bottom:1px solid #334155;">
                         <td style="padding:8px;">${u.id}</td>
                         <td style="padding:8px;">${u.name}</td>
                         <td style="padding:8px; font-size:0.9em; color:#94a3b8;">${u.email}</td>
                         <td style="padding:8px;">
-                            <span style="background:${this.getRoleColor(u.role)}; padding:2px 6px; border-radius:4px; font-size:0.8em;">${u.role}</span>
+                            <span style="background:${this.getRoleColor(normalizedRole)}; padding:2px 6px; border-radius:4px; font-size:0.8em;">${normalizedRole}</span>
                         </td>
                         <td style="padding:8px;">
                             <select onchange="window.updateRole(${u.id}, this.value)" style="background:#0f172a; color:white; border:1px solid #475569; padding:4px;">
-                                <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
+                                <option value="speler" ${(u.role === 'speler' || u.role === 'student' || u.role === 'user') ? 'selected' : ''}>Speler</option>
                                 <option value="pro" ${u.role === 'pro' ? 'selected' : ''}>Pro</option>
-                                <option value="gamemaster" ${u.role === 'gamemaster' ? 'selected' : ''}>GameMaster</option>
-                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="gamemaster" ${u.role === 'gamemaster' ? 'selected' : ''}>Gamemaster</option>
+                                <option value="super_admin" ${(u.role === 'super_admin' || u.role === 'admin') ? 'selected' : ''}>Super admin</option>
                             </select>
                         </td>
                     </tr>
@@ -146,6 +147,7 @@ export class AdminUI {
 
     getRoleColor(role: string): string {
         switch (role) {
+            case 'super_admin':
             case 'admin': return '#ef4444';
             case 'gamemaster': return '#a855f7';
             case 'pro': return '#3b82f6';

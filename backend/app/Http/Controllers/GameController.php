@@ -53,7 +53,7 @@ class GameController extends Controller
         $game = Game::with('scenarios')->findOrFail($id);
         
         $user = Auth::guard('sanctum')->user();
-        if (!$game->is_public && !$game->is_official && (!$user || ($game->user_id !== $user->id && $user->role !== 'admin'))) {
+        if (!$game->is_public && !$game->is_official && (!$user || ($game->user_id !== $user->id && !$user->isAdmin()))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -64,7 +64,7 @@ class GameController extends Controller
         $game = Game::findOrFail($id);
 
         $user = $request->user();
-        if ($game->user_id !== $user->id && $user->role !== 'admin') {
+        if ($game->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -96,7 +96,7 @@ class GameController extends Controller
         $game = Game::findOrFail($id);
 
         $user = $request->user();
-        if ($game->user_id !== $user->id && $user->role !== 'admin') {
+        if ($game->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

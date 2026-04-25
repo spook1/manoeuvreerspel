@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -24,7 +25,14 @@ class UserController extends Controller
         }
 
         $request->validate([
-            'role' => 'required|in:user,pro,admin',
+            'role' => ['required', 'string', Rule::in([
+                User::ROLE_USER,
+                User::ROLE_PLAYER,
+                User::ROLE_PRO,
+                User::ROLE_GAMEMASTER,
+                User::ROLE_ADMIN,
+                User::ROLE_SUPER_ADMIN,
+            ])],
         ]);
 
         $user = User::findOrFail($id);

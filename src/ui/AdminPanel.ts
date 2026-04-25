@@ -74,7 +74,7 @@ export class AdminPanel {
                                 <option value="speler">Speler</option>
                                 <option value="pro">Pro</option>
                                 <option value="gamemaster">Gamemaster</option>
-                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super admin</option>
                             </select>
                             <button id="btnCreateUser" style="background:#10b981; color:white; border:none; padding:6px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">Aanmaken</button>
                         </div>
@@ -99,17 +99,17 @@ export class AdminPanel {
                             <td style="padding:8px; font-weight:bold;">${u.name}</td>
                             <td style="padding:8px;">${u.email}</td>
                             <td style="padding:8px;">
-                                <span style="background:${u.role === 'admin' ? '#ef4444' : u.role === 'pro' ? '#f59e0b' : u.role === 'gamemaster' ? '#8b5cf6' : '#334155'}; padding:2px 6px; border-radius:4px; font-size:11px;">${u.role}</span>
+                                <span style="background:${(u.role === 'admin' || u.role === 'super_admin') ? '#ef4444' : u.role === 'pro' ? '#f59e0b' : u.role === 'gamemaster' ? '#8b5cf6' : '#334155'}; padding:2px 6px; border-radius:4px; font-size:11px;">${u.role === 'admin' ? 'super_admin' : (u.role === 'user' ? 'speler' : u.role)}</span>
                             </td>
                             <td style="padding:8px; color:#94a3b8; font-size:11px;">
                                 ⚓ ${u.harbors_count || 0} | 🎬 ${u.scenarios_count || 0}
                             </td>
                             <td style="padding:8px;">
                                 <select class="role-select" data-id="${u.id}" style="background:#1e293b; color:white; border:1px solid #475569; border-radius:4px; padding:2px; font-size:11px;">
-                                    <option value="speler" ${u.role === 'speler' ? 'selected' : ''}>Speler</option>
+                                    <option value="speler" ${(u.role === 'speler' || u.role === 'user') ? 'selected' : ''}>Speler</option>
                                     <option value="pro" ${u.role === 'pro' ? 'selected' : ''}>Pro</option>
                                     <option value="gamemaster" ${u.role === 'gamemaster' ? 'selected' : ''}>Gamemaster</option>
-                                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                    <option value="super_admin" ${(u.role === 'admin' || u.role === 'super_admin') ? 'selected' : ''}>Super admin</option>
                                 </select>
                             </td>
                         </tr>

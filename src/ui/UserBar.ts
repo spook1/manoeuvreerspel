@@ -53,7 +53,16 @@ export class UserBar {
     }
 
     renderLoggedIn() {
-        const roleLabel = this.user.role !== 'user' ? `(${this.user.role})` : '';
+        const normalizedRole = this.user.role === 'admin' ? 'super_admin' : this.user.role;
+        const roleDisplayMap: Record<string, string> = {
+            user: 'Speler',
+            speler: 'Speler',
+            pro: 'Pro',
+            gamemaster: 'Gamemaster',
+            super_admin: 'Super admin',
+        };
+        const roleDisplay = roleDisplayMap[normalizedRole] || normalizedRole;
+        const roleLabel = (normalizedRole !== 'user' && normalizedRole !== 'speler') ? `(${roleDisplay})` : '';
         this.container.innerHTML = `
             <span>Welkom, <b>${this.user.name}</b> ${roleLabel}</span>
             <button id="logout-btn" style="
@@ -67,8 +76,8 @@ export class UserBar {
             ">Uitloggen</button>
         `;
 
-        // Show admin button if user is admin
-        if (this.user.role === 'admin') {
+        // Show admin button if user is admin/super admin
+        if (normalizedRole === 'super_admin') {
             const btnAdmin = document.getElementById('btnAdminPanel');
             if (btnAdmin) btnAdmin.style.display = 'inline-block';
         }

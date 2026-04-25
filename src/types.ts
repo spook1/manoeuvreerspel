@@ -58,5 +58,5 @@ export interface User {
     id: number;
     name: string;
     email: string;
-    role: 'student' | 'pro' | 'admin' | 'gamemaster';
+    role: 'user' | 'speler' | 'pro' | 'gamemaster' | 'admin' | 'super_admin' | 'student';
 }

@@ -44,7 +44,7 @@ class ScenarioController extends Controller
         $scenario = Scenario::findOrFail($id);
         
         $user = Auth::guard('sanctum')->user();
-        if (!$scenario->is_official && (!$user || ($scenario->user_id !== $user->id && $user->role !== 'admin'))) {
+        if (!$scenario->is_official && (!$user || ($scenario->user_id !== $user->id && !$user->isAdmin()))) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -56,7 +56,7 @@ class ScenarioController extends Controller
         $scenario = Scenario::findOrFail($id);
 
         $user = $request->user();
-        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
+        if ($scenario->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -79,7 +79,7 @@ class ScenarioController extends Controller
         $scenario = Scenario::findOrFail($id);
 
         $user = $request->user();
-        if ($scenario->user_id !== $user->id && $user->role !== 'admin') {
+        if ($scenario->user_id !== $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
