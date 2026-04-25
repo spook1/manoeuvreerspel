@@ -41,25 +41,18 @@ export class TouchUI {
             /* === RUDDER WHEEL (bottom-left) === */
             .rudder-panel {
                 position: absolute;
-                bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-                left: calc(env(safe-area-inset-left, 0px) + 16px);
-                width: 248px;
-                padding: 10px 12px 8px;
-                background: rgba(10, 25, 50, 0.65);
-                border: 1px solid rgba(100, 150, 255, 0.15);
-                border-radius: 14px;
-                backdrop-filter: blur(8px);
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+                left: calc(env(safe-area-inset-left, 0px) + 6px);
+                width: 236px;
+                padding: 0;
                 pointer-events: auto;
                 touch-action: none;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.3);
             }
             .rudder-wheel-viewport {
                 position: relative;
                 height: 88px;
                 overflow: hidden;
-                border-radius: 10px;
-                background: linear-gradient(180deg, rgba(2,10,24,0.58), rgba(2,10,24,0.2));
-                border: 1px solid rgba(100, 150, 255, 0.14);
+                border-radius: 0;
                 touch-action: none;
             }
             .rudder-zero-mark {
@@ -104,67 +97,45 @@ export class TouchUI {
             .rudder-wheel-hit:active {
                 cursor: grabbing;
             }
-            .rudder-scale {
-                display: flex;
-                justify-content: space-between;
-                font-size: 9px;
-                color: rgba(203,213,225,0.6);
-                letter-spacing: 0.5px;
-                margin-top: 6px;
-                font-family: 'Courier New', monospace;
-            }
             .rudder-value {
+                position: absolute;
+                left: 50%;
+                top: 56px;
+                transform: translateX(-50%);
+                min-width: 58px;
                 text-align: center;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 700;
                 color: #e0f2fe;
-                margin-top: 4px;
                 font-family: 'Courier New', monospace;
                 letter-spacing: 0.5px;
+                text-shadow: 0 1px 4px rgba(0,0,0,0.75);
+                z-index: 5;
+                pointer-events: none;
             }
 
             /* === THROTTLE LEVER (bottom-right) === */
             .throttle-panel {
                 position: absolute;
-                bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-                right: calc(env(safe-area-inset-right, 0px) + 16px);
-                width: 132px;
-                padding: 10px 10px 8px;
-                background: rgba(10, 25, 50, 0.65);
-                border: 1px solid rgba(100, 150, 255, 0.15);
-                border-radius: 14px;
-                backdrop-filter: blur(8px);
-                box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+                right: calc(env(safe-area-inset-right, 0px) + 8px);
+                width: 68px;
+                padding: 0;
                 pointer-events: auto;
                 touch-action: none;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
             }
             .throttle-row {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-            }
-            .throttle-labels {
-                height: 128px;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                align-items: flex-end;
-                font-size: 10px;
-                font-weight: 700;
-                color: rgba(203,213,225,0.75);
-                letter-spacing: 0.35px;
-                text-transform: uppercase;
+                gap: 0;
             }
             .throttle-slider-shell {
-                width: 54px;
+                width: 40px;
                 height: 160px;
-                border-radius: 12px;
-                border: 1px solid rgba(100, 150, 255, 0.16);
-                background: rgba(2, 10, 24, 0.45);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -232,6 +203,7 @@ export class TouchUI {
                 color: #fde047;
                 text-transform: uppercase;
                 font-family: 'Courier New', monospace;
+                text-shadow: 0 1px 4px rgba(0,0,0,0.75);
             }
             .throttle-pct {
                 font-size: 11px;
@@ -239,14 +211,14 @@ export class TouchUI {
                 color: rgba(203,213,225,0.82);
                 font-family: 'Courier New', monospace;
                 line-height: 1;
+                text-shadow: 0 1px 4px rgba(0,0,0,0.75);
             }
 
             @media (max-width: 600px) {
-                .rudder-panel { width: 214px; }
+                .rudder-panel { width: 206px; left: calc(env(safe-area-inset-left, 0px) + 2px); }
                 .rudder-wheel-viewport { height: 80px; }
                 .rudder-wheel-image { width: 200px; height: 200px; top: 25px; }
-                .throttle-panel { width: 120px; }
-                .throttle-labels { height: 112px; }
+                .throttle-panel { width: 64px; right: calc(env(safe-area-inset-right, 0px) + 2px); }
                 .throttle-slider-shell { height: 142px; }
                 .throttle-track { height: 112px; }
             }
@@ -273,18 +245,13 @@ export class TouchUI {
         hitArea.className = 'rudder-wheel-hit';
         viewport.appendChild(hitArea);
 
-        panel.appendChild(viewport);
-
-        const scale = document.createElement('div');
-        scale.className = 'rudder-scale';
-        scale.innerHTML = '<span>-75\u00B0 BB</span><span>0\u00B0</span><span>+75\u00B0 SB</span>';
-        panel.appendChild(scale);
-
         const label = document.createElement('div');
         label.className = 'rudder-value';
         label.textContent = '0\u00B0';
         this.rudderLabel = label;
-        panel.appendChild(label);
+        viewport.appendChild(label);
+
+        panel.appendChild(viewport);
 
         this.setupRudderTouch(hitArea, wheel);
         this.container!.appendChild(panel);
@@ -350,11 +317,6 @@ export class TouchUI {
 
         const row = document.createElement('div');
         row.className = 'throttle-row';
-
-        const labels = document.createElement('div');
-        labels.className = 'throttle-labels';
-        labels.innerHTML = '<span>Vooruit</span><span>Neutraal</span><span>Achteruit</span>';
-        row.appendChild(labels);
 
         const shell = document.createElement('div');
         shell.className = 'throttle-slider-shell';
