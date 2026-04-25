@@ -60,44 +60,69 @@ export class Camera {
 
         // Mobile Pinch / Touch Drag
         let lastPinchDist = 0;
-        let activeTouches = 0;
+
+        const getCanvasTouches = (touches: TouchList): Touch[] => {
+            const canvas = document.getElementById('simCanvas');
+            if (!canvas) return [];
+            return Array.from(touches).filter((touch) => touch.target === canvas);
+        };
 
         window.addEventListener('touchstart', (e) => {
-            if (!this.active || e.target !== document.getElementById('simCanvas')) return;
-            activeTouches = e.touches.length;
-            
-            if (activeTouches === 1) {
+            if (!this.active) return;
+            const canvasTouches = getCanvasTouches(e.touches);
+            if (canvasTouches.length === 0) return;
+
+            if (canvasTouches.length === 1) {
                 this.isDragging = true;
-                this.lastDragX = e.touches[0].clientX;
-                this.lastDragY = e.touches[0].clientY;
-            } else if (activeTouches === 2) {
+                this.lastDragX = canvasTouches[0].clientX;
+                this.lastDragY = canvasTouches[0].clientY;
+                lastPinchDist = 0;
+            } else {
                 this.isDragging = false; // prioritize pinch over drag
+                this.mode = 'free';
                 lastPinchDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
+                    canvasTouches[0].clientX - canvasTouches[1].clientX,
+                    canvasTouches[0].clientY - canvasTouches[1].clientY
                 );
             }
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
             if (!this.active) return;
-            
-            if (e.touches.length === 1 && this.isDragging) {
-                const dx = (e.touches[0].clientX - this.lastDragX) / (Constants.GAME_SCALE * this.zoom);
-                const dy = (e.touches[0].clientY - this.lastDragY) / (Constants.GAME_SCALE * this.zoom);
-                
+
+            const canvasTouches = getCanvasTouches(e.touches);
+            if (canvasTouches.length === 0) {
+                this.isDragging = false;
+                lastPinchDist = 0;
+                return;
+            }
+
+            if (canvasTouches.length === 1) {
+                if (!this.isDragging) {
+                    this.isDragging = true;
+                    this.lastDragX = canvasTouches[0].clientX;
+                    this.lastDragY = canvasTouches[0].clientY;
+                    lastPinchDist = 0;
+                    return;
+                }
+
+                const dx = (canvasTouches[0].clientX - this.lastDragX) / (Constants.GAME_SCALE * this.zoom);
+                const dy = (canvasTouches[0].clientY - this.lastDragY) / (Constants.GAME_SCALE * this.zoom);
+
                 if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
                     this.x -= dx;
                     this.y -= dy;
                     this.mode = 'free';
                 }
-                
-                this.lastDragX = e.touches[0].clientX;
-                this.lastDragY = e.touches[0].clientY;
-            } else if (e.touches.length === 2) {
+
+                this.lastDragX = canvasTouches[0].clientX;
+                this.lastDragY = canvasTouches[0].clientY;
+            } else {
+                this.isDragging = false;
+                this.mode = 'free';
                 const dist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
+                    canvasTouches[0].clientX - canvasTouches[1].clientX,
+                    canvasTouches[0].clientY - canvasTouches[1].clientY
                 );
                 if (lastPinchDist > 0) {
                     const ratio = dist / lastPinchDist;
@@ -108,8 +133,16 @@ export class Camera {
         }, { passive: true });
 
         window.addEventListener('touchend', (e) => {
-            activeTouches = e.touches.length;
-            if (activeTouches === 0) this.isDragging = false;
+            const canvasTouches = getCanvasTouches(e.touches);
+            if (canvasTouches.length === 0) {
+                this.isDragging = false;
+                lastPinchDist = 0;
+            } else if (canvasTouches.length === 1) {
+                this.isDragging = true;
+                this.lastDragX = canvasTouches[0].clientX;
+                this.lastDragY = canvasTouches[0].clientY;
+                lastPinchDist = 0;
+            }
         });
     }
 

@@ -4,12 +4,13 @@ import { Constants } from '../core/Constants';
 export class TouchUI {
     private container?: HTMLDivElement;
     private isTouchDevice: boolean;
-    private rudderLabel?: HTMLSpanElement;
+    private rudderLabel?: HTMLElement;
     private throttleThumb?: HTMLDivElement;
-    private throttleTrack?: HTMLDivElement;
-    private throttleLabel?: HTMLSpanElement;
-    private gearButtons: HTMLDivElement[] = [];
-    private currentGear: 'forward' | 'neutral' | 'reverse' = 'neutral';
+    private throttleForwardFill?: HTMLDivElement;
+    private throttleReverseFill?: HTMLDivElement;
+    private throttleLabel?: HTMLElement;
+    private throttleModeLabel?: HTMLElement;
+    private lastThrottleMode: 'forward' | 'neutral' | 'reverse' = 'neutral';
 
     constructor() {
         this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -108,130 +109,139 @@ export class TouchUI {
                 position: absolute;
                 bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
                 right: calc(env(safe-area-inset-right, 0px) + 16px);
-                display: flex;
-                gap: 8px;
-                align-items: stretch;
-                pointer-events: auto;
-                touch-action: none;
-            }
-            .gear-column {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .gear-btn {
-                padding: 10px 14px;
-                font-size: 11px;
-                font-weight: 700;
-                color: #94a3b8;
-                background: rgba(10, 25, 50, 0.65);
-                border: 1px solid rgba(100, 150, 255, 0.15);
-                border-radius: 10px;
-                backdrop-filter: blur(8px);
-                text-align: center;
-                cursor: pointer;
-                transition: all 0.15s;
-                user-select: none;
-                -webkit-user-select: none;
-                letter-spacing: 0.3px;
-                min-width: 76px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            }
-            .gear-btn.active-forward {
-                background: rgba(34, 197, 94, 0.25);
-                border-color: rgba(34, 197, 94, 0.5);
-                color: #4ade80;
-            }
-            .gear-btn.active-neutral {
-                background: rgba(250, 204, 21, 0.2);
-                border-color: rgba(250, 204, 21, 0.4);
-                color: #fde047;
-            }
-            .gear-btn.active-reverse {
-                background: rgba(239, 68, 68, 0.2);
-                border-color: rgba(239, 68, 68, 0.4);
-                color: #f87171;
-            }
-            .throttle-slider-panel {
-                width: 52px;
-                height: 160px;
+                width: 132px;
+                padding: 10px 10px 8px;
                 background: rgba(10, 25, 50, 0.65);
                 border: 1px solid rgba(100, 150, 255, 0.15);
                 border-radius: 14px;
                 backdrop-filter: blur(8px);
-                position: relative;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                pointer-events: auto;
+                touch-action: none;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            .throttle-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .throttle-labels {
+                height: 128px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                align-items: flex-end;
+                font-size: 10px;
+                font-weight: 700;
+                color: rgba(203,213,225,0.75);
+                letter-spacing: 0.35px;
+                text-transform: uppercase;
+            }
+            .throttle-slider-shell {
+                width: 54px;
+                height: 160px;
+                border-radius: 12px;
+                border: 1px solid rgba(100, 150, 255, 0.16);
+                background: rgba(2, 10, 24, 0.45);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                touch-action: none;
             }
             .throttle-track {
                 position: relative;
-                width: 8px;
-                height: 120px;
-                background: rgba(255,255,255,0.08);
-                border-radius: 4px;
+                width: 10px;
+                height: 128px;
+                border-radius: 6px;
+                background: rgba(255,255,255,0.1);
             }
-            .throttle-fill {
+            .throttle-track::after {
+                content: '';
                 position: absolute;
-                bottom: 0;
+                left: 50%;
+                top: 50%;
+                width: 18px;
+                height: 2px;
+                background: rgba(250, 204, 21, 0.75);
+                transform: translate(-50%, -50%);
+                border-radius: 2px;
+            }
+            .throttle-fill-forward {
+                position: absolute;
                 left: 0;
+                bottom: 50%;
                 width: 100%;
-                background: rgba(96,165,250,0.4);
-                border-radius: 4px;
+                height: 0%;
+                background: linear-gradient(180deg, rgba(34,197,94,0.6), rgba(22,163,74,0.35));
+                border-radius: 6px 6px 0 0;
+                transition: height 0.05s;
+            }
+            .throttle-fill-reverse {
+                position: absolute;
+                left: 0;
+                top: 50%;
+                width: 100%;
+                height: 0%;
+                background: linear-gradient(180deg, rgba(248,113,113,0.35), rgba(239,68,68,0.6));
+                border-radius: 0 0 6px 6px;
                 transition: height 0.05s;
             }
             .throttle-thumb {
                 position: absolute;
-                bottom: 0;
+                top: 50%;
                 left: 50%;
-                width: 36px;
-                height: 20px;
-                background: linear-gradient(180deg, #60a5fa, #2563eb);
-                border: 2px solid rgba(255,255,255,0.3);
-                border-radius: 6px;
-                transform: translate(-50%, 50%);
-                box-shadow: 0 2px 10px rgba(37,99,235,0.5);
+                width: 34px;
+                height: 22px;
+                background: linear-gradient(180deg, #facc15, #ca8a04);
+                border: 2px solid rgba(255,255,255,0.32);
+                border-radius: 7px;
+                transform: translate(-50%, -50%);
+                box-shadow: 0 2px 10px rgba(250,204,21,0.45);
                 transition: box-shadow 0.15s;
             }
             .throttle-thumb.active {
-                box-shadow: 0 2px 18px rgba(96,165,250,0.8);
-                border-color: rgba(255,255,255,0.6);
+                box-shadow: 0 2px 18px rgba(255,255,255,0.7);
+                border-color: rgba(255,255,255,0.7);
+            }
+            .throttle-state {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.45px;
+                color: #fde047;
+                text-transform: uppercase;
+                font-family: 'Courier New', monospace;
             }
             .throttle-pct {
-                position: absolute;
-                bottom: 4px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: 700;
-                color: rgba(203,213,225,0.7);
+                color: rgba(203,213,225,0.82);
                 font-family: 'Courier New', monospace;
+                line-height: 1;
             }
 
             @media (max-width: 600px) {
                 .rudder-panel { width: 200px; }
-                .throttle-slider-panel { height: 140px; }
-                .throttle-track { height: 100px; }
+                .throttle-panel { width: 120px; }
+                .throttle-labels { height: 112px; }
+                .throttle-slider-shell { height: 142px; }
+                .throttle-track { height: 112px; }
             }
         `;
         document.head.appendChild(style);
     }
 
-    // ──────────────────────────────────────
-    //  RUDDER SLIDER
-    // ──────────────────────────────────────
     private buildRudderSlider() {
         const panel = document.createElement('div');
         panel.className = 'rudder-panel';
 
-        // Scale labels
         const scale = document.createElement('div');
         scale.className = 'rudder-scale';
-        scale.innerHTML = '<span>-75° BB</span><span>0°</span><span>+75° SB</span>';
+        scale.innerHTML = '<span>-75\u00B0 BB</span><span>0\u00B0</span><span>+75\u00B0 SB</span>';
         panel.appendChild(scale);
 
-        // Track
         const track = document.createElement('div');
         track.className = 'rudder-track';
 
@@ -240,10 +250,9 @@ export class TouchUI {
         track.appendChild(thumb);
         panel.appendChild(track);
 
-        // Value label
         const label = document.createElement('div');
         label.className = 'rudder-value';
-        label.textContent = '0°';
+        label.textContent = '0\u00B0';
         this.rudderLabel = label;
         panel.appendChild(label);
 
@@ -257,7 +266,7 @@ export class TouchUI {
         const updateFromPointer = (clientX: number) => {
             const rect = track.getBoundingClientRect();
             const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            const degrees = Math.round((ratio - 0.5) * 150); // -75 to +75
+            const degrees = Math.round((ratio - 0.5) * 150);
             const clamped = Math.max(-75, Math.min(75, degrees));
 
             const pct = ((clamped + 75) / 150) * 100;
@@ -266,7 +275,7 @@ export class TouchUI {
 
             if (this.rudderLabel) {
                 const sign = clamped > 0 ? '+' : '';
-                this.rudderLabel.textContent = `${sign}${clamped}°`;
+                this.rudderLabel.textContent = `${sign}${clamped}\u00B0`;
             }
         };
 
@@ -274,11 +283,9 @@ export class TouchUI {
             if (!isDragging) return;
             isDragging = false;
             thumb.classList.remove('active');
-            // Snap back to center
             thumb.style.left = '50%';
             input.touchRudderOverride = 0;
-            if (this.rudderLabel) this.rudderLabel.textContent = '0°';
-            // After a short delay, release override so keyboard can take over
+            if (this.rudderLabel) this.rudderLabel.textContent = '0\u00B0';
             setTimeout(() => {
                 if (!isDragging) input.touchRudderOverride = null;
             }, 300);
@@ -304,140 +311,136 @@ export class TouchUI {
         track.addEventListener('lostpointercapture', release);
     }
 
-    // ──────────────────────────────────────
-    //  THROTTLE LEVER
-    // ──────────────────────────────────────
     private buildThrottleLever() {
         const panel = document.createElement('div');
         panel.className = 'throttle-panel';
 
-        // Gear buttons
-        const gearCol = document.createElement('div');
-        gearCol.className = 'gear-column';
+        const row = document.createElement('div');
+        row.className = 'throttle-row';
 
-        const gears: { label: string; gear: 'forward' | 'neutral' | 'reverse' }[] = [
-            { label: 'Vooruit', gear: 'forward' },
-            { label: 'Neutraal', gear: 'neutral' },
-            { label: 'Achteruit', gear: 'reverse' },
-        ];
+        const labels = document.createElement('div');
+        labels.className = 'throttle-labels';
+        labels.innerHTML = '<span>Vooruit</span><span>Neutraal</span><span>Achteruit</span>';
+        row.appendChild(labels);
 
-        for (const g of gears) {
-            const btn = document.createElement('div');
-            btn.className = 'gear-btn';
-            btn.textContent = g.label;
-            if (g.gear === 'neutral') btn.classList.add('active-neutral');
-
-            btn.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                this.setGear(g.gear);
-                if (navigator.vibrate) navigator.vibrate(10);
-            });
-
-            this.gearButtons.push(btn);
-            gearCol.appendChild(btn);
-        }
-        panel.appendChild(gearCol);
-
-        // Vertical slider
-        const sliderPanel = document.createElement('div');
-        sliderPanel.className = 'throttle-slider-panel';
+        const shell = document.createElement('div');
+        shell.className = 'throttle-slider-shell';
 
         const track = document.createElement('div');
         track.className = 'throttle-track';
-        this.throttleTrack = track;
 
-        const fill = document.createElement('div');
-        fill.className = 'throttle-fill';
-        fill.style.height = '0%';
-        track.appendChild(fill);
+        const forwardFill = document.createElement('div');
+        forwardFill.className = 'throttle-fill-forward';
+        track.appendChild(forwardFill);
+
+        const reverseFill = document.createElement('div');
+        reverseFill.className = 'throttle-fill-reverse';
+        track.appendChild(reverseFill);
 
         const thumb = document.createElement('div');
         thumb.className = 'throttle-thumb';
-        this.throttleThumb = thumb;
         track.appendChild(thumb);
 
-        sliderPanel.appendChild(track);
+        shell.appendChild(track);
+        row.appendChild(shell);
+        panel.appendChild(row);
+
+        const mode = document.createElement('div');
+        mode.className = 'throttle-state';
+        mode.textContent = 'Neutraal';
+        panel.appendChild(mode);
 
         const pct = document.createElement('div');
         pct.className = 'throttle-pct';
         pct.textContent = '0%';
-        this.throttleLabel = pct;
-        sliderPanel.appendChild(pct);
+        panel.appendChild(pct);
 
-        this.setupThrottleTouch(track, thumb, fill);
-        panel.appendChild(sliderPanel);
+        this.throttleThumb = thumb;
+        this.throttleForwardFill = forwardFill;
+        this.throttleReverseFill = reverseFill;
+        this.throttleModeLabel = mode;
+        this.throttleLabel = pct;
+
+        this.setupThrottleTouch(track, thumb);
+        this.setThrottleSigned(0, false);
 
         this.container!.appendChild(panel);
     }
 
-    private setGear(gear: 'forward' | 'neutral' | 'reverse') {
-        this.currentGear = gear;
+    private setThrottleSigned(rawSigned: number, withHaptic: boolean) {
+        const thumb = this.throttleThumb;
+        const forwardFill = this.throttleForwardFill;
+        const reverseFill = this.throttleReverseFill;
+        if (!thumb || !forwardFill || !reverseFill) return;
 
-        // Update gear button visuals
-        const classes = ['active-forward', 'active-neutral', 'active-reverse'];
-        const gearNames: ('forward' | 'neutral' | 'reverse')[] = ['forward', 'neutral', 'reverse'];
-        for (let i = 0; i < this.gearButtons.length; i++) {
-            this.gearButtons[i].classList.remove(...classes);
-            if (gearNames[i] === gear) {
-                this.gearButtons[i].classList.add(`active-${gear}`);
+        const DETENT = 0.08;
+        let signed = Math.max(-1, Math.min(1, rawSigned));
+        if (Math.abs(signed) < DETENT) {
+            signed = 0;
+        }
+
+        const topPct = ((1 - signed) / 2) * 100;
+        thumb.style.top = `${topPct}%`;
+
+        forwardFill.style.height = `${Math.max(0, signed) * 50}%`;
+        reverseFill.style.height = `${Math.max(0, -signed) * 50}%`;
+
+        const pct = Math.round(Math.abs(signed) * 100);
+        if (this.throttleLabel) {
+            this.throttleLabel.textContent = `${pct}%`;
+        }
+
+        let mode: 'forward' | 'neutral' | 'reverse' = 'neutral';
+        if (signed > 0) mode = 'forward';
+        if (signed < 0) mode = 'reverse';
+
+        if (this.throttleModeLabel) {
+            if (mode === 'forward') {
+                this.throttleModeLabel.textContent = 'Vooruit';
+                this.throttleModeLabel.style.color = '#4ade80';
+            } else if (mode === 'reverse') {
+                this.throttleModeLabel.textContent = 'Achteruit';
+                this.throttleModeLabel.style.color = '#f87171';
+            } else {
+                this.throttleModeLabel.textContent = 'Neutraal';
+                this.throttleModeLabel.style.color = '#fde047';
             }
         }
 
-        // Reset slider visuals
-        if (this.throttleThumb) this.throttleThumb.style.bottom = '0';
-        const fill = this.throttleTrack?.querySelector('.throttle-fill') as HTMLDivElement;
-        if (fill) fill.style.height = '0%';
-        if (this.throttleLabel) this.throttleLabel.textContent = '0%';
-
-        // Set throttle
-        if (gear === 'neutral') {
-            input.touchThrottleOverride = 0;
+        if (mode === 'forward') {
+            thumb.style.background = 'linear-gradient(180deg, #4ade80, #16a34a)';
+        } else if (mode === 'reverse') {
+            thumb.style.background = 'linear-gradient(180deg, #f87171, #dc2626)';
         } else {
-            input.touchThrottleOverride = 0;
+            thumb.style.background = 'linear-gradient(180deg, #facc15, #ca8a04)';
         }
+
+        if (withHaptic && mode !== this.lastThrottleMode && navigator.vibrate) {
+            navigator.vibrate(8);
+        }
+        this.lastThrottleMode = mode;
+
+        input.touchThrottleOverride = signed * Constants.MAX_THROTTLE;
     }
 
-    private setupThrottleTouch(track: HTMLDivElement, thumb: HTMLDivElement, fill: HTMLDivElement) {
+    private setupThrottleTouch(track: HTMLDivElement, thumb: HTMLDivElement) {
         let isDragging = false;
 
         const updateFromPointer = (clientY: number) => {
-            if (this.currentGear === 'neutral') return;
-
             const rect = track.getBoundingClientRect();
-            // bottom = 0%, top = 100%
             const ratio = Math.max(0, Math.min(1, 1 - (clientY - rect.top) / rect.height));
-
-            const pctStr = Math.round(ratio * 100) + '%';
-            thumb.style.bottom = pctStr;
-            fill.style.height = pctStr;
-            if (this.throttleLabel) this.throttleLabel.textContent = pctStr;
-
-            // Apply throttle
-            const maxT = Constants.MAX_THROTTLE;
-            if (this.currentGear === 'forward') {
-                input.touchThrottleOverride = ratio * maxT;
-            } else {
-                input.touchThrottleOverride = -(ratio * maxT);
-            }
-
-            // Color the fill based on gear
-            if (this.currentGear === 'forward') {
-                fill.style.background = `rgba(34, 197, 94, ${0.3 + ratio * 0.4})`;
-            } else {
-                fill.style.background = `rgba(239, 68, 68, ${0.3 + ratio * 0.4})`;
-            }
+            const signed = (ratio - 0.5) * 2;
+            this.setThrottleSigned(signed, true);
         };
 
         const release = () => {
             if (!isDragging) return;
             isDragging = false;
             thumb.classList.remove('active');
-            // Keep current throttle position (don't reset on release)
         };
 
         track.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            if (this.currentGear === 'neutral') return;
             isDragging = true;
             thumb.classList.add('active');
             try { track.setPointerCapture(e.pointerId); } catch {}
@@ -458,11 +461,12 @@ export class TouchUI {
 
     public syncVisibility(gameMode: string) {
         if (!this.isTouchDevice) return;
+
         if (gameMode === 'game' || gameMode === 'practice') {
             this.container!.style.display = 'block';
         } else {
             this.container!.style.display = 'none';
-            // Clear overrides when leaving gameplay
+            this.setThrottleSigned(0, false);
             input.touchRudderOverride = null;
             input.touchThrottleOverride = null;
         }
