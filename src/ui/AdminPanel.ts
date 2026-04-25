@@ -142,7 +142,7 @@ export class AdminPanel {
                             btnCreate.setAttribute('disabled', 'true');
                             await ApiClient.createUserAdmin({ name, email, password, role });
                             alert("Gebruiker succesvol aangemaakt!");
-                            this.loadTab('users'); // Reload table
+                            await this.loadTab('users'); // Reload table
                         } catch (e: any) {
                             alert(e.message);
                             btnCreate.textContent = "Aanmaken";

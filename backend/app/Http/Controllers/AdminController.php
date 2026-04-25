@@ -39,7 +39,11 @@ class AdminController extends Controller
     // Haal alle gebruikers op
     public function users()
     {
-        return response()->json(User::withCount(['harbors', 'scenarios'])->get());
+        return response()->json(
+            User::withCount(['harbors', 'scenarios'])
+                ->orderByDesc('id')
+                ->get()
+        );
     }
 
     // Maak een nieuwe gebruiker aan

@@ -170,7 +170,8 @@ export class ApiClient {
     // --- Admin Features ---
 
     static async getUsers(): Promise<User[]> {
-        return this.request('/admin/users');
+        // Bust potential intermediary/browser cache so admin always sees fresh users.
+        return this.request(`/admin/users?ts=${Date.now()}`);
     }
 
     static async createUserAdmin(userData: any): Promise<any> {
