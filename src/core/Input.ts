@@ -38,6 +38,12 @@ export class InputManager {
     private touchSteerLeft: boolean = false;
     private touchSteerRight: boolean = false;
 
+    // --- Direct touch overrides (new slider-based UI) ---
+    /** When non-null, this value is applied directly as boat.rudder (degrees). */
+    public touchRudderOverride: number | null = null;
+    /** When non-null, this value is applied directly as boat.throttle. */
+    public touchThrottleOverride: number | null = null;
+
     // Double/multi tap logic
     private lastThrottleTapTime: number = 0;
     private lastThrottleTapDir: 'up' | 'down' | null = null;
@@ -265,6 +271,12 @@ export class InputManager {
     }
 
     private handleThrottle(boat: BoatState) {
+        // Direct touch override takes priority
+        if (this.touchThrottleOverride !== null) {
+            boat.throttle = this.touchThrottleOverride;
+            return;
+        }
+
         if (this.state.throttleStop) {
             boat.throttle = 0;
         } else if (this.state.throttleDoubleUp) {
@@ -283,6 +295,12 @@ export class InputManager {
     }
 
     private handleRudder(boat: BoatState) {
+        // Direct touch override takes priority
+        if (this.touchRudderOverride !== null) {
+            boat.rudder = this.touchRudderOverride;
+            return;
+        }
+
         const factor = this.state.rudderMultiTapFactor;
         const maxRudder = factor === 1 ? 10 : factor === 2 ? 40 : 75;
 

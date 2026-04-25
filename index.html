@@ -776,26 +776,35 @@
         </nav>
 
         <div id="playHud" aria-hidden="true">
+            <!-- TOP-LEFT: Hamburger menu -->
             <div class="hud-top-left">
-                <button onclick="window.abortGameSession()" class="hud-btn">☰ Menu / Stoppen</button>
+                <button onclick="window.abortGameSession()" class="hud-hamburger" id="playHudMenu" title="Menu">☰</button>
             </div>
-            
-            <div class="hud-top-right">
-                <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <span class="hud-label">Snelheid</span>
-                    <span class="hud-value" id="playHudSpeed">0.0 kn</span>
-                </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                    <span class="hud-label">Score</span>
-                    <span class="hud-value" style="color:#facc15;" id="playHudScore">100</span>
+
+            <!-- TOP-CENTER: Compass / heading -->
+            <div class="hud-top-center">
+                <div class="hud-compass-card">
+                    <span class="hud-compass-value" id="playHudHeading">000°</span>
+                    <span class="hud-compass-dir" id="playHudHeadingDir">N</span>
                 </div>
             </div>
 
-            <div class="hud-bottom-left">
-                <canvas id="playHudWindRoseCanvas" width="60" height="60"></canvas>
-                <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                    <span class="hud-label">Windkracht</span>
-                    <span class="hud-value" style="font-size:20px; color:#60a5fa;" id="playHudWindSpeed">0 kn</span>
+            <!-- TOP-RIGHT: Speed, Score, Wind -->
+            <div class="hud-top-right">
+                <div class="hud-info-card">
+                    <span class="hud-info-label">Snelheid</span>
+                    <span class="hud-info-value" id="playHudSpeed">0.0 kn</span>
+                </div>
+                <div class="hud-info-card">
+                    <span class="hud-info-label">Score</span>
+                    <span class="hud-info-value hud-score-value" id="playHudScore">100</span>
+                </div>
+                <div class="hud-info-card hud-wind-card">
+                    <span class="hud-info-label">Wind</span>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <span class="hud-wind-arrow" id="playHudWindArrow">↓</span>
+                        <span class="hud-info-value" id="playHudWindSpeed" style="font-size:14px;">0 kn</span>
+                    </div>
                 </div>
             </div>
         </div>

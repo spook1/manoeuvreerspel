@@ -718,8 +718,33 @@ export class Render {
         });
 
         // Wind
+        const windSpeed = gameState.activeWind.force.toFixed(0) + ' kn';
+        ['windSpeedDisplay', 'playHudWindSpeed'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = windSpeed;
+        });
         const windSpeedLabelEl = document.getElementById('windSpeedLabel');
         if (windSpeedLabelEl) windSpeedLabelEl.textContent = gameState.activeWind.force.toFixed(0);
+
+        const windArrowEl = document.getElementById('playHudWindArrow');
+        if (windArrowEl instanceof HTMLElement) {
+            const windDeg = ((gameState.activeWind.direction % 360) + 360) % 360;
+            windArrowEl.style.transform = `rotate(${windDeg}deg)`;
+            windArrowEl.title = `Windrichting ${Math.round(windDeg)}°`;
+        }
+
+        // Heading compass (000° + cardinal direction)
+        const headingDeg = ((90 - (boat.heading * 180 / Math.PI)) % 360 + 360) % 360;
+        const headingText = Math.round(headingDeg).toString().padStart(3, '0') + '°';
+        const headingEl = document.getElementById('playHudHeading');
+        if (headingEl) headingEl.textContent = headingText;
+
+        const dirEl = document.getElementById('playHudHeadingDir');
+        if (dirEl) {
+            const dirs = ['N', 'NO', 'O', 'ZO', 'Z', 'ZW', 'W', 'NW'];
+            const index = Math.round(headingDeg / 45) % 8;
+            dirEl.textContent = dirs[index];
+        }
 
         // Propeller Status
         const propEl = document.getElementById('propellerStatus');
@@ -735,7 +760,7 @@ export class Render {
             if (propBtn) propBtn.textContent = 'Links ↺';
             if (propInd) propInd.textContent = 'Links ↺';
         }
-    } // End of drawUI? No, drawUI is inside class.
+    }
 
     private drawCoins(gameState: GameState) {
         if (gameState.coins.length === 0) return;

@@ -171,7 +171,7 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 - [x] "⚙️ Admin" knop in de navigatiebalk alleen zichtbaar gemaakt voor ingelogde admins.
 
 #### 5. UC-805: De "Pro" Features 💎
-- [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's).
+- [ ] Brainstormen en conceptualiseren van functionaliteiten die specifiek achter een betaalmuur of Premium-account vallen (bijv. eigen content maken, toegang tot geavanceerde oefenscenario's, opnemen game om te delen met anderen).
 - [ ] De UI voorbereiden op states waarbij "Pro" functionaliteit vergrendeld is.
 
 #### 6. UC-806: Mobiele Controls & Camera 📱 (✅ AFGEROND)
@@ -180,13 +180,15 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 - [x] **Camera Systeem**: `Camera.ts` toegevoegd inclusief **Strict Bounds Panning** en **Handmatige Pinch-Zoom**. Inclusief 🎯 Focus Knop & 'C' shortcut.
 - [x] **Vastlopend Roer & URL Balk Fix**: State-machine van touch/keyboard volledig gescheiden ter voorkoming van hangend roer. CSS PWA `manifest.json` en `100dvh` geïmplementeerd om navigatiebalken van mobile browsers permanent te verbergen.
 
-#### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (Nieuw - Volgende Sessie) 🖥️
-*(Let op: Hiervoor is al een gedetailleerd `implementation_plan.md` en `task.md` uitgewerkt in de backend AI workspace!)*
-- [ ] Verwijderen van de `<h1>` titel linksboven ("Motorboot Manoeuvreersimulatie") om verticale canvas-ruimte te maximaliseren.
-- [ ] Dynamisch verbergen van navigatie (Spel, Oefenen, Game-kiezer) zodra een game of oefensessie actief is.
-- [ ] **Game Modus UI**: Alleen Windroos, Snelheid, Voortgang, Focus, Reset, en Help tonen.
-- [ ] **Oefen Modus UI**: Zelfde als Game Modus, plus de Settings-knop (tandwiel).
-- [ ] Oude instructietekst onderin het canvas permanent verwijderd.
+#### 7. UC-807: Interface Optimalisatie & Top Bar Overhaul (IN BEHANDELING — 25 April 2026) 🖥️
+*Doel: Professionele, nautische HUD met intuïtieve mobiele besturing.*
+
+- [x] **A. Action Layer Architectuur**: `InputManager` uitgebreid met `touchRudderOverride` en `touchThrottleOverride`.
+- [x] **B. Touch UI Redesign**: Nieuwe roerslider (-75° snap-to-center) en verticale gashendel (V/N/A + slider).
+- [x] **C. HUD Layout Overhaul**: Hamburgermenu, Digitaal Kompas en Telemetrie-kaarten geïmplementeerd.
+- [x] **D. Visuele Identiteit**: Semi-transparante nautische styling met blur-effecten.
+- [x] **E. Render Engine Sync**: `Render.ts` hersteld en gesynchroniseerd met nieuwe HUD-data.
+- [ ] **F. QA & Ergonomie**: Testen en fine-tuning op mobiel.
 
 #### 8. UC-808: Code Audit & Security Check (Gepland) 🔒
 - [ ] Grondige check op legacys code, ongebruikte componenten of dode variabelen.
