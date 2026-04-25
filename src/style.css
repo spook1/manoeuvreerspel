@@ -162,6 +162,9 @@ body.playing-session #playHud {
     top: calc(env(safe-area-inset-top, 0px) + 12px);
     left: calc(env(safe-area-inset-left, 0px) + 12px);
     pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .hud-hamburger {
@@ -185,6 +188,10 @@ body.playing-session #playHud {
 .hud-hamburger:active {
     background: rgba(10, 25, 50, 0.85);
     border-color: rgba(100, 150, 255, 0.3);
+}
+
+.hud-center-btn {
+    font-size: 18px;
 }
 
 .se-exit-hamburger {
