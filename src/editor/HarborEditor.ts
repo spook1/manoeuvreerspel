@@ -1,6 +1,7 @@
 import { GameState, gameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
 import { ApiClient } from '../core/ApiClient';
+import { hasOfficialCurationAccess } from '../core/roles';
 import { drawShores, drawNPCBoats } from '../ui/DrawHarborEnvironment';
 
 interface EditorAction {
@@ -122,24 +123,24 @@ export class HarborEditor {
         }
     }
 
-    /** Toon/verberg admin-only features */
+    /** Toon/verberg beheer-features (admin + gamemaster) */
     private updateAdminUI() {
         const adminRow = document.getElementById('adminOfficialRow');
         const user = (window as any)._currentUser;
-        const isAdmin = user?.role === 'admin';
+        const canToggleOfficial = hasOfficialCurationAccess(user?.role);
 
-        if (adminRow) adminRow.style.display = isAdmin ? 'flex' : 'none';
+        if (adminRow) adminRow.style.display = canToggleOfficial ? 'flex' : 'none';
 
         // Update button label
         const btn = document.getElementById('toggleOfficialBtn');
-        if (btn && isAdmin) {
+        if (btn && canToggleOfficial) {
             const isOfficial = (gameState.harbor as any).is_official === true;
             btn.textContent = isOfficial ? '⭐ Standaard (actief)' : '☆ Markeer als Standaard';
             btn.style.background = isOfficial ? '#16a34a' : '#a855f7';
         }
     }
 
-    /** Admin: markeer de huidige haven als officieel/standaard */
+    /** Beheer: markeer de huidige haven als officieel/standaard */
     private async toggleOfficial() {
         const dbId = (gameState.harbor as any).db_id;
         if (!dbId) {
@@ -147,13 +148,11 @@ export class HarborEditor {
             return;
         }
 
-        const isCurrentlyOfficial = (gameState.harbor as any).is_official === true;
-        const newValue = !isCurrentlyOfficial;
-
         try {
-            await ApiClient.updateHarbor(dbId, gameState.harbor as any, newValue);
-            (gameState.harbor as any).is_official = newValue;
-            this.showEditorStatus(newValue ? '⭐ Haven is nu een standaard haven!' : '☆ Haven is geen standaard meer.', 'ok');
+            const res = await ApiClient.toggleOfficial(Number(dbId));
+            const isOfficial = !!res?.harbor?.is_official;
+            (gameState.harbor as any).is_official = isOfficial;
+            this.showEditorStatus(isOfficial ? '⭐ Haven is nu een standaard haven!' : '☆ Haven is geen standaard meer.', 'ok');
             this.updateAdminUI();
             if (typeof (window as any).refreshHarbors === 'function') {
                 await (window as any).refreshHarbors();
@@ -1182,7 +1181,11 @@ export class HarborEditor {
 
         try {
             const myHarbors = await ApiClient.getMyHarbors();
-            const existing = myHarbors.find(h => h.name.toLowerCase() === name.toLowerCase());
+            const targetName = name.toLowerCase();
+            const existing = myHarbors.find((h: any) => {
+                const rawName = (h?.name ?? h?.json_data?.name ?? '').toString().trim().toLowerCase();
+                return rawName !== '' && rawName === targetName;
+            });
 
             const harborData = {
                 id: gameState.harbor.id || `custom_${Date.now()}`,

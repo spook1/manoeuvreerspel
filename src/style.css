@@ -187,6 +187,17 @@ body.playing-session #playHud {
     border-color: rgba(100, 150, 255, 0.3);
 }
 
+.se-exit-hamburger {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    border-radius: 9px;
+    margin-left: 10px;
+    background: rgba(51, 65, 85, 0.8);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #e2e8f0;
+}
+
 /* === COMPASS (top-center) === */
 .hud-top-center {
     position: absolute;

@@ -778,7 +778,7 @@
         <div id="playHud" aria-hidden="true">
             <!-- TOP-LEFT: Hamburger menu -->
             <div class="hud-top-left">
-                <button onclick="window.abortGameSession()" class="hud-hamburger" id="playHudMenu" title="Menu">☰</button>
+                <button class="hud-hamburger" id="playHudMenu" title="Menu">☰</button>
             </div>
 
             <!-- TOP-CENTER: Compass / heading -->
@@ -890,8 +890,8 @@
             </div>
         </div>
 
-        <div style="margin-top:10px; font-size:11px; color:#64748b;">
-            Use arrow keys / WASD to steer. SPACE for neutral.
+        <div id="controlHintLine" style="margin-top:10px; font-size:11px; color:#64748b;">
+            Desktop: stuur met pijltjes of WASD. Spatie voor neutraal.
         </div>
 
 
@@ -1312,7 +1312,8 @@
                 style="cursor:grab; font-size:14px; font-weight:bold; color:#a78bfa; border-bottom:1px solid rgba(139,92,246,0.2); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                 <span>🎬 Scenario Editor <span id="seHeaderHarborName" style="color:#d8b4fe; font-size:12px; margin-left:8px; font-weight:normal;"></span></span>
                 <button id="seExitBtn"
-                    style="background:#ef4444; border:none; color:white; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:11px; margin-left:10px;">✕</button>
+                    class="hud-hamburger se-exit-hamburger"
+                    title="Menu">☰</button>
             </div>
 
 

@@ -58,7 +58,7 @@ export class GameState {
 
     /** Actieve wind: scenario wint van haven (practice gebruikt haven-wind) */
     get activeWind(): { direction: number; force: number } {
-        if (this.scenario) return this.scenario.wind;
+        if (this.scenario?.wind) return this.scenario.wind;
         return this.harbor.wind ?? { direction: 0, force: 0 };
     }
 

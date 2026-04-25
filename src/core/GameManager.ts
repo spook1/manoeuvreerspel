@@ -18,6 +18,7 @@ import {
 } from '../editor/ScenarioEditorController';
 import { GameBuilderController } from '../editor/GameBuilderController';
 import { GameRunner } from './GameRunner';
+import { hasCreatorAccess } from './roles';
 
 export class GameManager {
     private customScenarios: ScenarioData[] = [];
@@ -26,11 +27,17 @@ export class GameManager {
 
     constructor() {
         this.setupModeButtons();
+        window.addEventListener('user-context-changed', () => this.setupModeButtons());
         this.fetchOfficialHarbors();
         this.fetchOfficialScenarios();
         this.fetchOfficialGames();
         this.fetchCloudScenarios();
         this.fetchCloudGames();
+    }
+
+    private canCurrentUserCreateContent(): boolean {
+        const role = (window as any)._currentUser?.role;
+        return ApiClient.isLoggedIn && hasCreatorAccess(role);
     }
 
     /** Laad officiële havens — publiek endpoint, ook zonder login */
@@ -160,10 +167,16 @@ export class GameManager {
         this.applyBodyMode('practice');
         this.updateUI();
         tutorial.start(gameState);
-        this.updateWindDisplay();
+        this.syncWindControlsToActiveWind();
     }
 
     startHarborEdit() {
+        if (!this.canCurrentUserCreateContent()) {
+            alert('Deze editor is beschikbaar voor Pro, Gamemaster en Super admin.');
+            this.startPracticeMode();
+            return;
+        }
+
         const modal = document.getElementById('introModal');
         if (modal) modal.style.display = 'none';
         const settings = document.getElementById('settingsPanel');
@@ -191,6 +204,12 @@ export class GameManager {
     }
 
     startScenarioEdit(harborId?: string) {
+        if (!this.canCurrentUserCreateContent()) {
+            alert('Deze editor is beschikbaar voor Pro, Gamemaster en Super admin.');
+            this.startPracticeMode();
+            return;
+        }
+
         const modal = document.getElementById('introModal');
         if (modal) modal.style.display = 'none';
         const settings = document.getElementById('settingsPanel');
@@ -239,6 +258,7 @@ export class GameManager {
             };
         }
 
+        this.syncWindControlsToActiveWind();
         wireScenarioEditorUI();
     }
 
@@ -250,6 +270,12 @@ export class GameManager {
     // ── GAME EDITOR ──────────────────────────────────────────────────────────
 
     startGameEdit() {
+        if (!this.canCurrentUserCreateContent()) {
+            alert('Deze editor is beschikbaar voor Pro, Gamemaster en Super admin.');
+            this.startPracticeMode();
+            return;
+        }
+
         const modal = document.getElementById('introModal');
         if (modal) modal.style.display = 'none';
 
@@ -307,6 +333,7 @@ export class GameManager {
         if (editorOverlay) editorOverlay.style.display = 'none';
         const scenarioOverlay = document.getElementById('scenarioEditorOverlay');
         if (scenarioOverlay) scenarioOverlay.style.display = 'none';
+        this.syncWindControlsToActiveWind();
     }
 
     startGameMode() {
@@ -353,7 +380,7 @@ export class GameManager {
 
         gameState.resetBoat();
         this.updateUI();
-        this.updateWindDisplay();
+        this.syncWindControlsToActiveWind();
 
         gameState.gameMode = 'game';
         this.applyBodyMode('game');
@@ -477,15 +504,27 @@ export class GameManager {
 
         if (btnGame) btnGame.onclick = () => this.startGameMode();
         if (btnPractice) btnPractice.onclick = () => this.startPracticeMode();
-        
-        if (!ApiClient.isLoggedIn) {
-            if (btnEdit) btnEdit.style.display = 'none';
-            if (btnScenarioEdit) btnScenarioEdit.style.display = 'none';
-            if (btnGameEdit) btnGameEdit.style.display = 'none';
-        } else {
+
+        const canCreate = this.canCurrentUserCreateContent();
+
+        if (btnEdit) btnEdit.style.display = canCreate ? 'inline-block' : 'none';
+        if (btnScenarioEdit) btnScenarioEdit.style.display = canCreate ? 'inline-block' : 'none';
+        if (btnGameEdit) btnGameEdit.style.display = canCreate ? 'inline-block' : 'none';
+
+        const harborCreateOption = document.querySelector('#harborSelector option[value="create"]') as HTMLOptionElement | null;
+        if (harborCreateOption) harborCreateOption.style.display = canCreate ? 'block' : 'none';
+
+        const gameCreateOption = document.querySelector('#gameSelector option[value="create"]') as HTMLOptionElement | null;
+        if (gameCreateOption) gameCreateOption.style.display = canCreate ? 'block' : 'none';
+
+        if (canCreate) {
             if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
             if (btnScenarioEdit) btnScenarioEdit.onclick = () => this.startScenarioEdit();
             if (btnGameEdit) btnGameEdit.onclick = () => this.startGameEdit();
+        }
+
+        if (!canCreate && (gameState.gameMode === 'harbor-edit' || gameState.gameMode === 'scenario-edit' || gameState.gameMode === 'game-edit')) {
+            this.startPracticeMode();
         }
     }
 
@@ -578,7 +617,12 @@ export class GameManager {
             harborSelector.addEventListener('change', () => {
                 const val = harborSelector.value;
                 if (val === 'create') {
-                    this.startHarborEdit(); harborSelector.value = '';
+                    if (this.canCurrentUserCreateContent()) {
+                        this.startHarborEdit();
+                    } else {
+                        alert('Alleen Pro, Gamemaster en Super admin kunnen een haven maken.');
+                    }
+                    harborSelector.value = '';
                 } else {
                     const harbor = getHarborById(val) || this.customHarbors.find(h => h.id === val);
                     if (harbor) {
@@ -605,7 +649,11 @@ export class GameManager {
                     this.startGame();
                 } else if (val === 'create') {
                     gameSelector.value = '';
-                    this.startGameEdit();
+                    if (this.canCurrentUserCreateContent()) {
+                        this.startGameEdit();
+                    } else {
+                        alert('Alleen Pro, Gamemaster en Super admin kunnen een game maken.');
+                    }
                 } else if (val.startsWith('g_')) {
                     const gameId = val.replace('g_', '');
                     gameSelector.value = '';
@@ -667,7 +715,16 @@ export class GameManager {
                 if (seSelector.value === 'nieuw') {
                     gameState.scenario = null;
                 } else {
-                    this.startScenario(seSelector.value);
+                    const scenario = getScenarioById(seSelector.value)
+                        ?? this.officialScenarios.find(s => s.id === seSelector.value)
+                        ?? this.customScenarios.find(s => s.id === seSelector.value);
+                    if (scenario) {
+                        const harbor = getHarborById(scenario.harborId)
+                            || this.customHarbors.find(h => h.id === scenario.harborId);
+                        if (harbor) this.loadHarborState(harbor);
+                        gameState.scenario = JSON.parse(JSON.stringify(scenario));
+                        gameState.resetBoat();
+                    }
                 }
                 this.syncSeHarborFromScenario();
                 this.startScenarioEdit(gameState.harbor.id);
@@ -689,11 +746,20 @@ export class GameManager {
         const windSpeedSlider = document.getElementById('windSpeedSlider') as HTMLInputElement | null;
         const windDirSlider = document.getElementById('windDirSlider') as HTMLInputElement | null;
 
+        const getEditableWindTarget = () => {
+            if (gameState.gameMode === 'scenario-edit' && gameState.scenario) {
+                if (!gameState.scenario.wind) gameState.scenario.wind = { direction: 0, force: 0 };
+                return gameState.scenario.wind;
+            }
+            if (!gameState.harbor.wind) gameState.harbor.wind = { direction: 0, force: 0 };
+            return gameState.harbor.wind;
+        };
+
         if (windSpeedSlider) {
             windSpeedSlider.value = gameState.activeWind.force.toString();
             windSpeedSlider.addEventListener('input', () => {
-                if (!gameState.harbor.wind) gameState.harbor.wind = { direction: 0, force: 0 };
-                gameState.harbor.wind.force = parseFloat(windSpeedSlider.value);
+                const windTarget = getEditableWindTarget();
+                windTarget.force = parseFloat(windSpeedSlider.value);
                 const label = document.getElementById('windSpeedLabel');
                 if (label) label.textContent = windSpeedSlider.value;
                 this.updateWindDisplay();
@@ -703,8 +769,8 @@ export class GameManager {
         if (windDirSlider) {
             windDirSlider.value = gameState.activeWind.direction.toString();
             windDirSlider.addEventListener('input', () => {
-                if (!gameState.harbor.wind) gameState.harbor.wind = { direction: 0, force: 0 };
-                gameState.harbor.wind.direction = parseFloat(windDirSlider.value);
+                const windTarget = getEditableWindTarget();
+                windTarget.direction = parseFloat(windDirSlider.value);
                 const label = document.getElementById('windDirLabel');
                 if (label) label.textContent = windDirSlider.value;
                 this.updateWindDisplay();
@@ -713,7 +779,7 @@ export class GameManager {
 
         this.populateHarborSelector();
         this.updateUI();
-        this.updateWindDisplay();
+        this.syncWindControlsToActiveWind();
         this.applyBodyMode('practice');
     }
 
@@ -856,6 +922,9 @@ export class GameManager {
             return;
         }
 
+        const normalizedScenarioName = (scenario.name || '').trim() || 'Naamloos scenario';
+        scenario.name = normalizedScenarioName;
+
         // Huidige wind/physics als snapshot meenemen
         scenario.wind = { ...gameState.activeWind };
         scenario.physics = {
@@ -873,7 +942,7 @@ export class GameManager {
 
             const payload = {
                 harbor_id: dbHarborId,
-                name: scenario.name,
+                name: normalizedScenarioName,
                 description: scenario.description,
                 points: 100,
                 time_limit: scenario.coinSettings?.timeLimit || 120,
@@ -889,12 +958,16 @@ export class GameManager {
             };
 
             const myScenarios = await ApiClient.getMyScenarios();
-            const existing = myScenarios.find(s => s.name.toLowerCase() === scenario.name.toLowerCase());
+            const targetName = normalizedScenarioName.toLowerCase();
+            const existing = myScenarios.find((s: any) => {
+                const currentName = (s?.name ?? '').toString().trim().toLowerCase();
+                return currentName !== '' && currentName === targetName;
+            });
 
             let returnedId = scenario.id;
 
             if (existing) {
-                if (!confirm(`Je hebt al een scenario met de naam '${scenario.name}'. Wil je deze overschrijven?`)) {
+                if (!confirm(`Je hebt al een scenario met de naam '${normalizedScenarioName}'. Wil je deze overschrijven?`)) {
                     throw new Error("Geannuleerd door gebruiker");
                 }
                 // UPDATE het bestaande scenario op de server (PUT)
@@ -987,5 +1060,23 @@ export class GameManager {
             const canvas = document.getElementById(id) as HTMLCanvasElement | null;
             if (canvas) this.drawWindRose(canvas, wind);
         });
+    }
+
+    private syncWindControlsToActiveWind() {
+        const wind = gameState.activeWind ?? { direction: 0, force: 0 };
+        const windSpeed = Number.isFinite(wind.force) ? wind.force : 0;
+        const windDirection = Number.isFinite(wind.direction) ? wind.direction : 0;
+
+        const speedSlider = document.getElementById('windSpeedSlider') as HTMLInputElement | null;
+        const speedLabel = document.getElementById('windSpeedLabel');
+        if (speedSlider) speedSlider.value = windSpeed.toString();
+        if (speedLabel) speedLabel.textContent = windSpeed.toString();
+
+        const dirSlider = document.getElementById('windDirSlider') as HTMLInputElement | null;
+        const dirLabel = document.getElementById('windDirLabel');
+        if (dirSlider) dirSlider.value = windDirection.toString();
+        if (dirLabel) dirLabel.textContent = windDirection.toString();
+
+        this.updateWindDisplay();
     }
 }

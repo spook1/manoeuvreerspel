@@ -70,16 +70,65 @@ makeDraggable('gbHeader', 'gbPanel');
 
 (window as any).practiceMenuClosed = false;
 
-(window as any).abortGameSession = () => {
-    if (gameState.gameMode === 'game') {
-        scenarioRunner.state = 'idle';
-        if ((window as any).GameRunner) (window as any).GameRunner.isPlaying = false;
-        // force reload of UI or simply clear scenario
-        gameState.scenario = null;
-    } else if (gameState.gameMode === 'practice') {
-        (window as any).practiceMenuClosed = false;
+function syncControlHint() {
+    const hintEl = document.getElementById('controlHintLine');
+    if (!hintEl) return;
+
+    const isTouchProfile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    hintEl.textContent = isTouchProfile
+        ? 'Mobiel: gebruik de roerslider en de gashendel (Vooruit / Neutraal / Achteruit).'
+        : 'Desktop: stuur met pijltjes of WASD, gas met omhoog/omlaag, en Spatie voor neutraal.';
+}
+
+function showIntroModal() {
+    const introModal = document.getElementById('introModal');
+    if (introModal) introModal.style.display = 'flex';
+}
+
+const abortGameSession = () => {
+    const wasGameMode = gameState.gameMode === 'game';
+
+    tutorial.stop();
+    scenarioRunner.reset();
+
+    const messageModal = document.getElementById('messageModal');
+    if (messageModal) messageModal.style.display = 'none';
+
+    if (GameRunner.isPlaying) {
+        GameRunner.stop();
     }
+
+    gameState.scenario = null;
+    (window as any).practiceMenuClosed = false;
+
+    if (wasGameMode) {
+        gameManager.startGameMode();
+    } else {
+        gameManager.startPracticeMode();
+    }
+
+    showIntroModal();
 };
+(window as any).abortGameSession = abortGameSession;
+
+function bindPlayHudMenuButton() {
+    const menuBtn = document.getElementById('playHudMenu') as HTMLButtonElement | null;
+    if (!menuBtn) return;
+    let guardUntil = 0;
+
+    const handleMenuTap = (e: Event) => {
+        const now = Date.now();
+        if (now < guardUntil) return;
+        guardUntil = now + 250;
+        e.preventDefault();
+        e.stopPropagation();
+        abortGameSession();
+    };
+
+    menuBtn.onclick = handleMenuTap as any;
+    menuBtn.onpointerup = handleMenuTap as any;
+    menuBtn.ontouchend = handleMenuTap as any;
+}
 
 function syncGameplayChrome() {
     const isPlayingSession = tutorial.active
@@ -125,4 +174,6 @@ function loop() {
 
 
 // Start loop
+syncControlHint();
+bindPlayHudMenuButton();
 requestAnimationFrame(loop);

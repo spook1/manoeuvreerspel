@@ -10,6 +10,7 @@
 import { gameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
 import { ApiClient } from '../core/ApiClient';
+import { hasOfficialCurationAccess } from '../core/roles';
 
 // Helper
 const g = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
@@ -47,11 +48,12 @@ export function initScenarioEditor(callbacks: {
 export function wireScenarioEditorUI() {
     const getOrMakeScenario = (): NonNullable<typeof gameState.scenario> => {
         if (!gameState.scenario) {
+            const baseWind = gameState.activeWind ?? { direction: 0, force: 0 };
             gameState.scenario = {
                 id: `new_${Date.now()}`,
                 name: 'Nieuw scenario',
                 harborId: gameState.harbor.id,
-                wind: { direction: 0, force: 0 },
+                wind: { direction: baseWind.direction, force: baseWind.force },
                 mooringSpots: [],
                 coins: []
             };
@@ -420,7 +422,11 @@ export function wireScenarioEditorUI() {
             updateSEPropertiesPanel();
             const overlay = g('scenarioEditorOverlay');
             if (overlay) overlay.style.display = 'none';
-            _onExit?.();
+            if (typeof (window as any).abortGameSession === 'function') {
+                (window as any).abortGameSession();
+            } else {
+                _onExit?.();
+            }
         };
     }
 
@@ -428,7 +434,8 @@ export function wireScenarioEditorUI() {
     const deleteBtn = g<HTMLButtonElement>('seDeleteScenarioBtn');
     if (deleteBtn) {
         deleteBtn.onclick = async () => {
-            if (!gameState.scenario || gameState.scenario.id.startsWith('new_')) {
+            const scenarioId = (gameState.scenario?.id ?? '').toString();
+            if (!gameState.scenario || scenarioId.startsWith('new_')) {
                 alert("Dit scenario is nog niet opgeslagen, bewerk gewoon verder of schakel naar een ander scenario.");
                 return;
             }
@@ -477,6 +484,7 @@ export function wireScenarioEditorUI() {
         try {
             if (_onSave) await _onSave(scenario);
             btn.textContent = '✅ Opgeslagen';
+            updateAdminUI();
         } catch (e) {
             btn.textContent = '❌ Fout';
             console.error('Save failed:', e);
@@ -495,10 +503,12 @@ export function wireScenarioEditorUI() {
     function updateAdminUI() {
         const toggleBtn = g<HTMLButtonElement>('seToggleOfficialBtn');
         const user = (window as any)._currentUser;
-        const isAdmin = user?.role === 'admin';
+        const canToggleOfficial = hasOfficialCurationAccess(user?.role);
+        const scenarioId = (gameState.scenario?.id ?? '').toString();
+        const hasSavedScenario = scenarioId !== '' && !scenarioId.startsWith('new_');
 
         if (toggleBtn) {
-            if (isAdmin && !gameState.scenario?.id?.startsWith('new_')) {
+            if (canToggleOfficial && hasSavedScenario) {
                 toggleBtn.style.display = 'block';
                 const isOfficial = (gameState.scenario as any)?.is_official === true;
                 toggleBtn.textContent = isOfficial ? '⭐ Standaard (actief)' : '☆ Markeer als Standaard';
@@ -512,10 +522,18 @@ export function wireScenarioEditorUI() {
     // Initial check on mount
     updateAdminUI();
 
+    // Keep admin UI in sync when async user context arrives/changes
+    const oldHandler = (window as any)._seAdminUiHandler;
+    if (oldHandler) window.removeEventListener('user-context-changed', oldHandler);
+    const newHandler = () => updateAdminUI();
+    (window as any)._seAdminUiHandler = newHandler;
+    window.addEventListener('user-context-changed', newHandler);
+
     const toggleBtn = g<HTMLButtonElement>('seToggleOfficialBtn');
     if (toggleBtn) {
         toggleBtn.onclick = async () => {
-            const scenId = parseInt((gameState.scenario?.id || '').replace('custom_', '').replace('official_', ''), 10);
+            const rawId = (gameState.scenario?.id ?? '').toString();
+            const scenId = parseInt(rawId.replace('custom_', '').replace('official_', ''), 10);
             if (isNaN(scenId) || scenId <= 0) {
                 alert("Scenario is nog niet opgeslagen! Sla eerst lokaal op.");
                 return;
