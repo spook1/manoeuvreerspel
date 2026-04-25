@@ -1,4 +1,5 @@
 import { ApiClient } from '../core/ApiClient';
+import { hasOfficialCurationAccess } from '../core/roles';
 
 // Define Game Interface used for the builder
 export interface GameData {
@@ -53,7 +54,7 @@ export class GameBuilderController {
         try {
             if (ApiClient.isLoggedIn) {
                 const user = await ApiClient.getUser();
-                isAdmin = user.role === 'admin' || user.role === 'gamemaster';
+                isAdmin = hasOfficialCurationAccess(user.role);
             }
         } catch (e) { }
 

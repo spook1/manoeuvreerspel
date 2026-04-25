@@ -1,9 +1,33 @@
 # Project Roadmap & Sprint Planning 🗺️
 
-> **Laatst bijgewerkt:** 20 Maart 2026
+> **Laatst bijgewerkt:** 25 April 2026
 > **Fase:** MVP — Game Builder & Game Loop voltooid, nu richting Polish & Community
 
 ---
+
+## Update 25 April 2026 (Reality Check)
+
+### Nu gerealiseerd
+- [x] Mobiele HUD overhaul: roerslider + verticale gashendel + compacte top-HUD.
+- [x] Tutorial-instructies zijn gesplitst voor desktop en mobiel.
+- [x] Hamburger in play HUD brengt sessie terug naar menu-flow (intro modal).
+- [x] Frontend role-gating voor makersmenu: editors alleen zichtbaar/toegankelijk voor `pro`, `gamemaster`, `super_admin`.
+
+### Nog open (belangrijk)
+- [ ] Backend role-enforcement voor maker-acties: harbor/scenario/game CRUD staat nog open voor elke ingelogde gebruiker.
+- [ ] Admin tabs voor volledig beheer van alle havens/scenario's/games hebben nog dedicated all-record API endpoints nodig.
+- [ ] Mobile QA op iOS/Android voor touch-ergonomie en pinch-zoom regressies.
+
+### Rolmodel (huidig doelbeeld)
+| Rol | Spelen/Oefenen | Eigen content maken | Officieel markeren | Gebruikersbeheer |
+|---|---|---|---|---|
+| `speler` | ✅ | ❌ | ❌ | ❌ |
+| `pro` | ✅ | ✅ | ❌ | ❌ |
+| `gamemaster` | ✅ | ✅ | ✅ | ❌ |
+| `super_admin` | ✅ | ✅ | ✅ | ✅ |
+
+---
+
 
 ## Sprint 1: Local Development & Core Stability 🛠️ (✅ AFGEROND)
 *Doel: De basis lokaal stabiel en schoon krijgen.*

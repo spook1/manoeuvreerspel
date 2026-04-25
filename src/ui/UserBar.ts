@@ -1,4 +1,5 @@
 import { ApiClient } from '../core/ApiClient';
+import { hasUserManagementAccess, normalizeRole } from '../core/roles';
 
 export class UserBar {
     private container: HTMLElement;
@@ -45,6 +46,8 @@ export class UserBar {
     }
 
     renderLoggedOut() {
+        (window as any)._currentUser = null;
+        window.dispatchEvent(new CustomEvent('user-context-changed', { detail: null }));
         this.container.innerHTML = `
             <a href="login.html" style="color: white; text-decoration: none; font-weight: bold;">
                 Inloggen / Registreren
@@ -53,7 +56,8 @@ export class UserBar {
     }
 
     renderLoggedIn() {
-        const normalizedRole = this.user.role === 'admin' ? 'super_admin' : this.user.role;
+        const normalizedRole = normalizeRole(this.user.role);
+        window.dispatchEvent(new CustomEvent('user-context-changed', { detail: this.user }));
         const roleDisplayMap: Record<string, string> = {
             user: 'Speler',
             speler: 'Speler',
@@ -77,7 +81,7 @@ export class UserBar {
         `;
 
         // Show admin button if user is admin/super admin
-        if (normalizedRole === 'super_admin') {
+        if (hasUserManagementAccess(this.user.role)) {
             const btnAdmin = document.getElementById('btnAdminPanel');
             if (btnAdmin) btnAdmin.style.display = 'inline-block';
         }

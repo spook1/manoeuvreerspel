@@ -24,9 +24,9 @@ De backend (Laravel/PHP) draait in een **Docker container** op de VPS. Git Actio
 
 ### Serverinformatie
 - **SSH toegang:** `ssh root@netwerkspel.nl`
-- **Backend pad op server:** `/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/`
 - **Docker container naam:** `manoeuver_app` (PHP/Laravel)
 - **Nginx container naam:** `manoeuver_nginx`
+- **Laravel projectpad in container:** `/var/www`
 
 > ⚠️ **Let op:** De host-server draait PHP 7.4. Voer `php artisan` altijd **via Docker** uit, NIET direct op de server!
 
@@ -36,29 +36,46 @@ De backend (Laravel/PHP) draait in een **Docker container** op de VPS. Git Actio
 # Vanuit de project root: d:\Gamedidactiek\AI\manoeuvreerspel-ts\
 
 # Routes
-scp backend/routes/api.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/routes/api.php
+scp backend/routes/api.php root@netwerkspel.nl:/tmp/api.php
 
 # Controllers (kopieer alleen de gewijzigde bestanden)
-scp backend/app/Http/Controllers/HarborController.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/app/Http/Controllers/HarborController.php
-scp backend/app/Http/Controllers/ScenarioController.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/app/Http/Controllers/ScenarioController.php
-scp backend/app/Http/Controllers/GameController.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/app/Http/Controllers/GameController.php
-scp backend/app/Http/Controllers/AdminController.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/app/Http/Controllers/AdminController.php
+scp backend/app/Http/Controllers/HarborController.php root@netwerkspel.nl:/tmp/HarborController.php
+scp backend/app/Http/Controllers/ScenarioController.php root@netwerkspel.nl:/tmp/ScenarioController.php
+scp backend/app/Http/Controllers/GameController.php root@netwerkspel.nl:/tmp/GameController.php
+scp backend/app/Http/Controllers/AdminController.php root@netwerkspel.nl:/tmp/AdminController.php
 
 # Models (indien gewijzigd)
-scp backend/app/Models/Harbor.php root@netwerkspel.nl:/home/admin/domains/manoeuvreerspel.netwerkspel.nl/backend/app/Models/Harbor.php
+scp backend/app/Models/Harbor.php root@netwerkspel.nl:/tmp/Harbor.php
 ```
 
-### Stap 2: Cache legen via Docker (in SSH terminal)
+### Stap 2: In container naar het juiste pad kopiëren (in SSH terminal)
 
 ```bash
 ssh root@netwerkspel.nl
-docker exec -it manoeuver_app php artisan optimize:clear
+docker cp /tmp/api.php manoeuver_app:/var/www/routes/api.php
+docker cp /tmp/HarborController.php manoeuver_app:/var/www/app/Http/Controllers/HarborController.php
+docker cp /tmp/ScenarioController.php manoeuver_app:/var/www/app/Http/Controllers/ScenarioController.php
+docker cp /tmp/GameController.php manoeuver_app:/var/www/app/Http/Controllers/GameController.php
+docker cp /tmp/AdminController.php manoeuver_app:/var/www/app/Http/Controllers/AdminController.php
+docker cp /tmp/Harbor.php manoeuver_app:/var/www/app/Models/Harbor.php
 ```
 
-### Stap 3: Database migraties uitvoeren (alleen bij nieuwe migrations)
+### Stap 3: Cache legen via Docker
 
 ```bash
-docker exec -it manoeuver_app php artisan migrate --force
+docker exec -it manoeuver_app sh -lc 'cd /var/www && php artisan optimize:clear'
+```
+
+### Stap 4: Database migraties uitvoeren (alleen bij nieuwe migrations)
+
+```bash
+docker exec -it manoeuver_app sh -lc 'cd /var/www && php artisan migrate --force'
+```
+
+### Pad-check (als er twijfel is)
+
+```bash
+docker exec manoeuver_app sh -lc 'find / -name artisan 2>/dev/null | head -n 5'
 ```
 
 ### Controleren of containers draaien
