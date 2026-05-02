@@ -241,6 +241,7 @@ export class HarborEditor {
             showGridCb.onchange = () => { this.showGrid = showGridCb.checked; };
         }
 
+        this.canvas.style.touchAction = 'none'; // Voorkom pan/zoom op mobiel tijdens tekenen
         this.bindEvents();
         this.updateAdminUI();
     }
@@ -275,17 +276,18 @@ export class HarborEditor {
     }
 
     bindEvents() {
-        this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        window.addEventListener('mousemove', this.handleMouseMove);
-        window.addEventListener('mouseup', this.handleMouseUp);
+        this.canvas.addEventListener('pointerdown', this.handlePointerDown);
+        window.addEventListener('pointermove', this.handlePointerMove);
+        window.addEventListener('pointerup', this.handlePointerUp);
         this.canvas.oncontextmenu = (e) => e.preventDefault();
     }
 
     unbindEvents() {
-        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
-        window.removeEventListener('mousemove', this.handleMouseMove);
-        window.removeEventListener('mouseup', this.handleMouseUp);
+        this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
+        window.removeEventListener('pointermove', this.handlePointerMove);
+        window.removeEventListener('pointerup', this.handlePointerUp);
         this.canvas.oncontextmenu = null;
+        this.canvas.style.touchAction = ''; // Reset
     }
 
     // Helper: Hit Test (Returns sorted list of hits, top-most first)
@@ -688,7 +690,7 @@ export class HarborEditor {
         return Math.round(v / this.gridSize) * this.gridSize;
     }
 
-    private handleMouseDown = (e: MouseEvent) => {
+    private handlePointerDown = (e: PointerEvent) => {
         const rect = this.canvas.getBoundingClientRect();
         const x = this.snap((e.clientX - rect.left) / Constants.GAME_SCALE);
         const y = this.snap((e.clientY - rect.top) / Constants.GAME_SCALE);
@@ -782,7 +784,7 @@ export class HarborEditor {
         }
     };
 
-    private handleMouseMove = (e: MouseEvent) => {
+    private handlePointerMove = (e: PointerEvent) => {
         const rect = this.canvas.getBoundingClientRect();
         this.mousePos.x = this.snap((e.clientX - rect.left) / Constants.GAME_SCALE);
         this.mousePos.y = this.snap((e.clientY - rect.top) / Constants.GAME_SCALE);
@@ -885,7 +887,7 @@ export class HarborEditor {
         }
     };
 
-    private handleMouseUp = (e?: MouseEvent) => {
+    private handlePointerUp = (e?: PointerEvent) => {
         if (!this.dragStart) return;
 
         // Finish Resize
