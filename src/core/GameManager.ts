@@ -504,7 +504,7 @@ export class GameManager {
         const btnGameEdit = document.getElementById('btnModeGameEdit');
 
         if (btnGame) btnGame.onclick = () => this.startGameMode();
-        if (btnPractice) btnPractice.onclick = () => this.startPracticeMode();
+        if (btnPractice) btnPractice.onclick = () => this.showPracticeSettingsModal();
 
         const canCreate = this.canCurrentUserCreateContent();
 
@@ -1051,6 +1051,101 @@ export class GameManager {
             ctx.fill();
             ctx.restore();
         }
+    }
+
+    /** Toont de oefen-instellingen modal vóór het starten van oefenmodus */
+    showPracticeSettingsModal() {
+        const STORAGE_KEY = 'practiceSettings';
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+        // Verwijder bestaande modal als die al bestaat
+        document.getElementById('practiceSettingsModal')?.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'practiceSettingsModal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:3500;display:flex;align-items:center;justify-content:center;';
+
+        const windForce = stored.windForce ?? gameState.harbor.wind?.force ?? 0;
+        const windDir   = stored.windDir   ?? gameState.harbor.wind?.direction ?? 225;
+        const mass      = stored.mass      ?? Constants.MASS;
+        const thrust    = stored.thrust    ?? Constants.THRUST_GAIN;
+        let   propDir   = stored.propDir   ?? gameState.boat.propDirection ?? 'rechts';
+
+        modal.innerHTML = `
+          <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(148,163,253,.25);border-radius:16px;padding:28px;width:90%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.6);color:#e2e8f0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <div><h3 style="margin:0;color:#60a5fa;font-size:18px;">⚓ Oefenmodus</h3>
+              <p style="margin:4px 0 0;font-size:12px;color:#64748b;">Stel de omstandigheden in voor je sessie</p></div>
+              <button id="pm_close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;">✕</button>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.07);">
+              <div style="font-size:11px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">💨 Wind</div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Windkracht</span><span><span id="pm_wsVal">${windForce}</span> kn</span></div>
+              <input id="pm_ws" type="range" min="0" max="35" step="1" value="${windForce}" style="width:100%;margin-bottom:10px;" oninput="document.getElementById('pm_wsVal').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Windrichting</span><span><span id="pm_wdVal">${windDir}</span>°</span></div>
+              <input id="pm_wd" type="range" min="0" max="360" step="5" value="${windDir}" style="width:100%;" oninput="document.getElementById('pm_wdVal').textContent=this.value">
+            </div>
+            <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.07);">
+              <div style="font-size:11px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">⚙️ Boot eigenschappen</div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Massa</span><span><span id="pm_mVal">${mass}</span></span></div>
+              <input id="pm_mass" type="range" min="1" max="50" step="1" value="${mass}" style="width:100%;margin-bottom:10px;" oninput="document.getElementById('pm_mVal').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Motorkracht</span><span><span id="pm_tVal">${thrust}</span></span></div>
+              <input id="pm_thrust" type="range" min="10" max="200" step="5" value="${thrust}" style="width:100%;margin-bottom:10px;" oninput="document.getElementById('pm_tVal').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+                <span>Schroefrichting</span>
+                <button id="pm_prop" style="background:#3b82f6;color:white;border:none;padding:3px 12px;border-radius:4px;cursor:pointer;font-size:12px;">${propDir === 'rechts' ? 'Rechts ↻' : 'Links ↺'}</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button id="pm_reset" style="flex:0 0 auto;padding:10px 16px;background:rgba(255,255,255,.08);color:#94a3b8;border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer;font-size:13px;">↺ Reset</button>
+              <button id="pm_start" style="flex:1;padding:10px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;">⚓ Start Oefenen</button>
+            </div>
+          </div>`;
+
+        document.body.appendChild(modal);
+
+        document.getElementById('pm_prop')!.addEventListener('click', () => {
+            propDir = propDir === 'rechts' ? 'links' : 'rechts';
+            (document.getElementById('pm_prop') as HTMLButtonElement).textContent = propDir === 'rechts' ? 'Rechts ↻' : 'Links ↺';
+        });
+
+        document.getElementById('pm_reset')!.addEventListener('click', () => {
+            (document.getElementById('pm_ws') as HTMLInputElement).value = '0';
+            document.getElementById('pm_wsVal')!.textContent = '0';
+            (document.getElementById('pm_wd') as HTMLInputElement).value = '225';
+            document.getElementById('pm_wdVal')!.textContent = '225';
+            (document.getElementById('pm_mass') as HTMLInputElement).value = String(Constants.MASS);
+            document.getElementById('pm_mVal')!.textContent = String(Constants.MASS);
+            (document.getElementById('pm_thrust') as HTMLInputElement).value = String(Constants.THRUST_GAIN);
+            document.getElementById('pm_tVal')!.textContent = String(Constants.THRUST_GAIN);
+            propDir = 'rechts';
+            (document.getElementById('pm_prop') as HTMLButtonElement).textContent = 'Rechts ↻';
+        });
+
+        document.getElementById('pm_close')!.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+        document.getElementById('pm_start')!.addEventListener('click', () => {
+            const ws = parseFloat((document.getElementById('pm_ws') as HTMLInputElement).value);
+            const wd = parseFloat((document.getElementById('pm_wd') as HTMLInputElement).value);
+            const m  = parseFloat((document.getElementById('pm_mass') as HTMLInputElement).value);
+            const th = parseFloat((document.getElementById('pm_thrust') as HTMLInputElement).value);
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ windForce: ws, windDir: wd, mass: m, thrust: th, propDir }));
+
+            if (!gameState.harbor.wind) gameState.harbor.wind = { direction: 0, force: 0 };
+            gameState.harbor.wind.force     = ws;
+            gameState.harbor.wind.direction = wd;
+
+            (Constants as any).MASS        = m;
+            (Constants as any).THRUST_GAIN = th;
+            gameState.boat.propDirection   = propDir as 'rechts' | 'links';
+
+            modal.remove();
+            this.startPracticeMode();
+            this.updateUI();
+            this.syncWindControlsToActiveWind();
+        });
     }
 
     updateWindDisplay() {
