@@ -1,8 +1,8 @@
 # Project Roadmap & Sprint Planning
 
-> **Laatst bijgewerkt:** 26 April 2026  
+> **Laatst bijgewerkt:** 2 Mei 2026  
 > **Fase:** Beta/MVP+ (core game + cloud editors + admin basis staan)  
-> **Globale voortgang:** ongeveer 85%
+> **Globale voortgang:** ongeveer 87%
 
 ---
 
@@ -243,6 +243,49 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 - [ ] Grondige check op legacys code, ongebruikte componenten of dode variabelen.
 - [ ] Security check: Controle op eventuele hardcoded passwords of test-credentials in backend en frontend omgevingen.
 - [ ] Architectuur-schoonmaak van redundante methodes in classes.
+
+#### 9. UC-809: Instellingen in Oefenmodus & Scenario Physics in Game (Nieuw — 2 Mei 2026) ⚙️
+
+**Huidige situatie (uit broncode):**
+- `ScenarioData` heeft al een `physics?: ScenarioPhysics` veld met: `mass`, `dragCoeff`, `lateralDragCoeff`, `thrustGain`, `rudderWashGain`, `rudderHydroGain`, `lineStrength`, `propDirection`.
+- Bij `startScenario()` in `GameManager.ts` (regel 379) wordt `applyScenarioPhysics()` al aangeroepen — **de scenario physics worden dus al toegepast bij het spelen van een game ✅**.
+- Wind-sliders in de settingspaneel schrijven al naar `harbor.wind` (oefenmodus) of `scenario.wind` (scenario-edit).
+- **Probleem 1:** In oefenmodus zijn de physics-sliders (`massSlider`, `dragSlider`, etc.) aanwezig maar **verborgen achter een settingsknop** en **niet gelinkt aan het actieve scenario** — de speler kan ze niet intuitiï instellen vóór het oefenen.
+- **Probleem 2:** Na het spelen van een game worden de `Constants` overschreven door het scenario en **niet teruggezet** naar standaardwaarden tenzij er een ander scenario geladen wordt — dit kan leiden tot verkeerde physics als je na een game gaat oefenen.
+
+**Te doen:**
+- [x] **A. Oefen-startscherm**: Een modal of apart paneel tonen bij het selecteren van "Oefen" waarmee de speler wind, windrichting, en belangrijkste physics (massa, stuwkracht) kan instellen vóór de sessie. Bestaande sliders hergebruiken of dupliceren in dit scherm.
+- [x] **B. Constants.reset() aanroepen** bij terugkeren naar oefenmodus na een game (`startPracticeMode()`), zodat scenario-physics niet blijven hangen.
+- [x] **C. Verificatie**: Controleren of bij spelen van een game via `GameRunner` de scenario physics ook correct meegegeven worden (zie `GameRunner.ts` r. 58 — `physics: raw.json_data?.physics`).
+- [x] **D. Laatste instellingen onthouden** voor volgende oefen-sessie (localStorage).
+
+#### 10. UC-810: Slimme Auto-Zoom Camera (Nieuw — 2 Mei 2026) 🎥
+*Wens: bij start van een game/scenario is de volledige haven zichtbaar; daarna zoomt de camera in op basis van de snelheid van de boot (langzaam = ver ingezoomd, snel = meer uitgezoomd). Pinch-to-zoom overschrijft de auto-zoom; een klik op de Focus-knop herstelt de auto-zoom.*
+- [x] **A.** Bij start haven volledig in beeld brengen (`fitToHarbor()` — min/max bounds van alle objecten berekenen).
+- [x] **B.** Auto-zoom loop in `Camera.ts`: doelzoom berekenen op basis van `ship.speed` (bijv. `targetZoom = BASE - speed * FACTOR` met min/max clamp).
+- [x] **C.** Smooth interpolatie naar doelzoom (lerp) zodat de zoom niet schokkerig is.
+- [x] **D.** Vlag `autoZoomActive: boolean` in Camera — pinch zet deze op `false`.
+- [x] **E.** Focus-knop (🎯) zet `autoZoomActive` terug op `true` én centreert op de boot (net als huidige recenter-functie, maar met zoom-reset).
+- [x] **F.** QA: snap-to-bounds voorkomen dat camera buiten havengrenzen zoemt.
+
+#### 11. UC-811: Mobiele Editor — Touch Input & Volledig Scherm (Nieuw — 2 Mei 2026) 📱
+*Wens: in de Haven Editor op mobiel werken steigers/oevers tekenen en rechthoek-selectie niet goed door touch-conflicten. Daarnaast moet de editor in volledig scherm kunnen werken met een verbergbaar menu.*
+
+**A. Touch-teken conflicten oplossen:**
+- [x] Onderscheid maken tussen 1-vinger pan/navigatie en 1-vinger tekenen (bijv. via expliciete "Teken-modus" toggle in de toolbar).
+- [x] Rechthoek-selectie werkend maken via touch: `touchstart` → `touchmove` → `touchend` zonder conflicten met scroll/pan.
+- [x] Steiger/oever-tekenen: multi-point touch-pad conflicten oplossen door canvas `touch-action: none` te forceren in editor-modus.
+
+**B. Volledig scherm editor op mobiel:**
+- [x] Tijdens tekenen de editor-toolbar/menu automatisch verbergen (fade-out na 2 seconden inactiviteit of handmatig minimaliseren).
+- [x] Verborgen menu terughalen via een zwevend **✏️ potloodknop** (altijd zichtbaar op de rand van het scherm).
+- [x] Fullscreen-knop in de editor toolbar om de browser-balk te verbergen (`document.documentElement.requestFullscreen()`).
+
+**C. Navigatie op mobiel:**
+- [x] **Hamburger-menu** in de Haven Editor (mobiel) met een "← Terug naar startscherm" optie, zodat de gebruiker niet vast zit in de editor.
+- [x] Dezelfde terugknop toevoegen aan de Scenario Editor (mobiel).
+
+**Prioriteit:** Hoog — blokkeert normaal gebruik van de editors op mobiel.
 
 ---
 
