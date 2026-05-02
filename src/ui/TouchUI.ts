@@ -75,7 +75,7 @@ export class TouchUI {
                 top: 28px;
                 transform: translateX(-50%) rotate(0deg);
                 transform-origin: 50% 50%;
-                background-image: url('/ui/helm-wheel-wooden.png');
+                background-image: url('/ui/helm-wheel.svg');
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -259,9 +259,11 @@ export class TouchUI {
 
     private setupRudderTouch(hitArea: HTMLDivElement, wheel: HTMLDivElement) {
         let isDragging = false;
-        let startAngle = 0;
+        let startX = 0;
+        let startDeg = 0;
         let currentDeg = 0;
         const MAX_DEG = 75;
+        const DEG_PER_PIXEL = 0.55;
 
         const applyRudder = (degrees: number) => {
             currentDeg = Math.max(-MAX_DEG, Math.min(MAX_DEG, Math.round(degrees)));
@@ -286,18 +288,11 @@ export class TouchUI {
             }, 300);
         };
 
-        const getAngle = (clientX: number, clientY: number) => {
-            const rect = hitArea.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
-        };
-
         hitArea.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             isDragging = true;
-            startAngle = getAngle(e.clientX, e.clientY);
-            
+            startX = e.clientX;
+            startDeg = currentDeg;
             wheel.classList.add('active');
             wheel.style.transition = 'none';
             try { hitArea.setPointerCapture(e.pointerId); } catch {}
@@ -307,17 +302,8 @@ export class TouchUI {
         hitArea.addEventListener('pointermove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
-            
-            const currentAngle = getAngle(e.clientX, e.clientY);
-            let deltaAngle = currentAngle - startAngle;
-            
-            // Handle wrap-around
-            if (deltaAngle > 180) deltaAngle -= 360;
-            if (deltaAngle < -180) deltaAngle += 360;
-            
-            // Add the delta to the current rudder angle
-            applyRudder(currentDeg + deltaAngle);
-            startAngle = currentAngle;
+            const deltaX = e.clientX - startX;
+            applyRudder(startDeg + (deltaX * DEG_PER_PIXEL));
         });
 
         hitArea.addEventListener('pointerup', release);

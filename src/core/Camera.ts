@@ -189,23 +189,6 @@ export class Camera {
                 this.x += (targetX - this.x) * this.followSmoothness;
                 this.y += (targetY - this.y) * this.followSmoothness;
             }
-
-            // AUTO-ZOOM (UC-810)
-            // Boat speed roughly in knots (Constants.GAME_SCALE is ~2 pixels per meter, but let's use a simple hypot)
-            const speed = Math.hypot(boat.vx, boat.vy) * 60; // Approximate factor for speed scaling
-
-            // Slow: zoom in to max 2.5. Fast: zoom out to zoomMin
-            const maxZoom = Math.min(2.5, this.ZOOM_MAX);
-            const minZoom = Math.max(1.0, this.zoomMin);
-            
-            // Normalize speed (0 to 12 "knots" approx)
-            const maxSpeedThreshold = 12.0; 
-            const normalizedSpeed = Math.min(1.0, Math.max(0, speed / maxSpeedThreshold));
-            
-            const targetZoom = maxZoom - normalizedSpeed * (maxZoom - minZoom);
-            
-            // Smooth zoom interpolation
-            this.setZoom(this.zoom + (targetZoom - this.zoom) * 0.05);
         }
 
         // --- CONSTRAIN CAMERA ---

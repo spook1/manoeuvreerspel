@@ -261,12 +261,12 @@ Op basis van een uitgebreide analyse wordt de interface aanzienlijk geprofession
 
 #### 10. UC-810: Slimme Auto-Zoom Camera (Nieuw — 2 Mei 2026) 🎥
 *Wens: bij start van een game/scenario is de volledige haven zichtbaar; daarna zoomt de camera in op basis van de snelheid van de boot (langzaam = ver ingezoomd, snel = meer uitgezoomd). Pinch-to-zoom overschrijft de auto-zoom; een klik op de Focus-knop herstelt de auto-zoom.*
-- [x] **A.** Bij start haven volledig in beeld brengen (`fitToHarbor()` — min/max bounds van alle objecten berekenen).
-- [x] **B.** Auto-zoom loop in `Camera.ts`: doelzoom berekenen op basis van `ship.speed` (bijv. `targetZoom = BASE - speed * FACTOR` met min/max clamp).
-- [x] **C.** Smooth interpolatie naar doelzoom (lerp) zodat de zoom niet schokkerig is.
-- [x] **D.** Vlag `autoZoomActive: boolean` in Camera — pinch zet deze op `false`.
-- [x] **E.** Focus-knop (🎯) zet `autoZoomActive` terug op `true` én centreert op de boot (net als huidige recenter-functie, maar met zoom-reset).
-- [x] **F.** QA: snap-to-bounds voorkomen dat camera buiten havengrenzen zoemt.
+- [ ] **A.** Bij start haven volledig in beeld brengen (`fitToHarbor()` — min/max bounds van alle objecten berekenen).
+- [ ] **B.** Auto-zoom loop in `Camera.ts`: doelzoom berekenen op basis van `ship.speed` (bijv. `targetZoom = BASE - speed * FACTOR` met min/max clamp).
+- [ ] **C.** Smooth interpolatie naar doelzoom (lerp) zodat de zoom niet schokkerig is.
+- [ ] **D.** Vlag `autoZoomActive: boolean` in Camera — pinch zet deze op `false`.
+- [ ] **E.** Focus-knop (🎯) zet `autoZoomActive` terug op `true` én centreert op de boot (net als huidige recenter-functie, maar met zoom-reset).
+- [ ] **F.** QA: snap-to-bounds voorkomen dat camera buiten havengrenzen zoemt.
 
 #### 11. UC-811: Mobiele Editor — Touch Input & Volledig Scherm (Nieuw — 2 Mei 2026) 📱
 *Wens: in de Haven Editor op mobiel werken steigers/oevers tekenen en rechthoek-selectie niet goed door touch-conflicten. Daarnaast moet de editor in volledig scherm kunnen werken met een verbergbaar menu.*
