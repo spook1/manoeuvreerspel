@@ -29,9 +29,6 @@ let _seMouseMove: ((e: MouseEvent) => void) | null = null;
 let _seMouseUp: ((e: MouseEvent) => void) | null = null;
 let _seKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
-// Callback naar GameManager voor mode-switches
-let _onExit: (() => void) | null = null;
-
 let _onSave: ((scenario: any) => Promise<void>) | null = null;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -40,7 +37,6 @@ export function initScenarioEditor(callbacks: {
     onExit: () => void;
     onSave?: (scenario: any) => Promise<void>;
 }) {
-    _onExit = callbacks.onExit;
     if (callbacks.onSave) _onSave = callbacks.onSave;
 }
 
@@ -415,18 +411,7 @@ export function wireScenarioEditorUI() {
     const exitBtn = g<HTMLButtonElement>('seExitBtn');
     if (exitBtn) {
         exitBtn.onclick = () => {
-            const cvs = document.getElementById('simCanvas') as HTMLCanvasElement | null;
-            if (cvs) unbindCanvasEvents(cvs);
-            gameState.selectedSEObject = null;
-            gameState.selectedHarborObjectId = null;
-            updateSEPropertiesPanel();
-            const overlay = g('scenarioEditorOverlay');
-            if (overlay) overlay.style.display = 'none';
-            if (typeof (window as any).abortGameSession === 'function') {
-                (window as any).abortGameSession();
-            } else {
-                _onExit?.();
-            }
+            (window as any).openSettingsPanel?.();
         };
     }
 

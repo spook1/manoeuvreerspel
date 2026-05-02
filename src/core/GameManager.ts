@@ -295,6 +295,13 @@ export class GameManager {
         this.syncWindControlsToActiveWind();
     }
 
+    private openSettingsPanel() {
+        const panel = document.getElementById('settingsPanel');
+        if (!panel) return;
+        panel.style.display = 'flex';
+        this.syncSettingsPanelForMode();
+    }
+
     private ensureScenarioDraftForSettings(): NonNullable<typeof gameState.scenario> {
         if (!gameState.scenario) {
             const baseWind = gameState.harbor.wind ?? { direction: 0, force: 0 };
@@ -606,6 +613,7 @@ export class GameManager {
         (window as any).startPracticeMode = () => this.startPracticeMode();
         (window as any).startGameMode = () => this.startGameMode();
         (window as any).startScenario = (id: string) => this.startScenario(id);
+        (window as any).openSettingsPanel = () => this.openSettingsPanel();
         (window as any).updateUI = () => this.updateUI();
         (window as any).refreshHarbors = () => this.fetchOfficialHarbors();
         (window as any).refreshScenarios = async () => this.refreshAllScenarios();
@@ -650,8 +658,11 @@ export class GameManager {
                 const panel = document.getElementById('settingsPanel');
                 if (panel) {
                     const willOpen = panel.style.display !== 'flex';
-                    panel.style.display = willOpen ? 'flex' : 'none';
-                    if (willOpen) this.syncSettingsPanelForMode();
+                    if (willOpen) {
+                        this.openSettingsPanel();
+                    } else {
+                        panel.style.display = 'none';
+                    }
                 }
             });
         }
