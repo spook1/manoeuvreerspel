@@ -281,6 +281,36 @@ export class GameManager {
         wireScenarioEditorUI();
     }
 
+    private syncSettingsPanelForMode() {
+        const isScenarioEdit = gameState.gameMode === 'scenario-edit';
+        const actions = document.getElementById('settingsContextActions') as HTMLElement | null;
+        const scenarioContext = document.getElementById('scenarioSettingsContext') as HTMLElement | null;
+        const editHarborBtn = document.getElementById('editHarborBtn') as HTMLButtonElement | null;
+
+        if (isScenarioEdit) this.ensureScenarioDraftForSettings();
+        if (actions) actions.style.display = isScenarioEdit ? 'none' : 'flex';
+        if (scenarioContext) scenarioContext.style.display = isScenarioEdit ? 'block' : 'none';
+        if (editHarborBtn) editHarborBtn.onclick = () => this.startHarborEdit();
+
+        this.syncWindControlsToActiveWind();
+    }
+
+    private ensureScenarioDraftForSettings(): NonNullable<typeof gameState.scenario> {
+        if (!gameState.scenario) {
+            const baseWind = gameState.harbor.wind ?? { direction: 0, force: 0 };
+            gameState.scenario = {
+                id: `new_${Date.now()}`,
+                name: 'Nieuw scenario',
+                harborId: gameState.harbor.id,
+                wind: { direction: baseWind.direction, force: baseWind.force },
+                mooringSpots: [],
+                coins: []
+            };
+        }
+        if (!gameState.scenario.wind) gameState.scenario.wind = { direction: 0, force: 0 };
+        return gameState.scenario;
+    }
+
     // ── TUTORIAL ─────────────────────────────────────────────────────────────
 
     endTutorial() { tutorial.stop(); }
@@ -618,7 +648,11 @@ export class GameManager {
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => {
                 const panel = document.getElementById('settingsPanel');
-                if (panel) panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+                if (panel) {
+                    const willOpen = panel.style.display !== 'flex';
+                    panel.style.display = willOpen ? 'flex' : 'none';
+                    if (willOpen) this.syncSettingsPanelForMode();
+                }
             });
         }
 
@@ -767,9 +801,8 @@ export class GameManager {
         const windDirSlider = document.getElementById('windDirSlider') as HTMLInputElement | null;
 
         const getEditableWindTarget = () => {
-            if (gameState.gameMode === 'scenario-edit' && gameState.scenario) {
-                if (!gameState.scenario.wind) gameState.scenario.wind = { direction: 0, force: 0 };
-                return gameState.scenario.wind;
+            if (gameState.gameMode === 'scenario-edit') {
+                return this.ensureScenarioDraftForSettings().wind;
             }
             if (!gameState.harbor.wind) gameState.harbor.wind = { direction: 0, force: 0 };
             return gameState.harbor.wind;

@@ -813,13 +813,17 @@
             </div>
 
             <!-- Harbor Edit Actions -->
-            <div style="display:flex; gap:8px; margin-bottom:10px;">
-                <button id="editHarborBtn" onclick="startHarborEdit()"
+            <div id="settingsContextActions" style="display:flex; gap:8px; margin-bottom:10px;">
+                <button id="editHarborBtn"
                     style="flex:1; padding:8px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">✏️
                     Bewerk</button>
                 <button id="deleteHarborBtn"
                     style="flex:1; display:none; padding:8px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">🗑️
                     Verwijder</button>
+            </div>
+            <div id="scenarioSettingsContext"
+                style="display:none; margin-bottom:10px; padding:8px; border:1px solid rgba(74,222,128,0.35); border-radius:6px; background:rgba(22,101,52,0.16); color:#bbf7d0; font-size:12px;">
+                Deze instellingen worden opgeslagen bij het actieve scenario.
             </div>
 
             <div class="panel-header">Weer & Omgeving</div>
