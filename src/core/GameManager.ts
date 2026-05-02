@@ -14,6 +14,7 @@ import { ApiClient } from './ApiClient';
 import { scenarioRunner } from './ScenarioRunner';
 import {
     initScenarioEditor,
+    unbindCanvasEvents,
     wireScenarioEditorUI
 } from '../editor/ScenarioEditorController';
 import { GameBuilderController } from '../editor/GameBuilderController';
@@ -300,6 +301,29 @@ export class GameManager {
         if (!panel) return;
         panel.style.display = 'flex';
         this.syncSettingsPanelForMode();
+    }
+
+    private openMainMenu() {
+        if (gameState.gameMode === 'harbor-edit') {
+            editor.stop();
+        }
+
+        const canvas = document.getElementById('simCanvas') as HTMLCanvasElement | null;
+        if (canvas) unbindCanvasEvents(canvas);
+
+        GameBuilderController.hide({ skipOnExit: true });
+
+        const settings = document.getElementById('settingsPanel');
+        if (settings) {
+            settings.style.display = 'none';
+            settings.classList.remove('hud-active');
+        }
+
+        this.startPracticeMode();
+        (window as any).practiceMenuClosed = false;
+
+        const modal = document.getElementById('introModal');
+        if (modal) modal.style.display = 'flex';
     }
 
     private ensureScenarioDraftForSettings(): NonNullable<typeof gameState.scenario> {
@@ -614,6 +638,7 @@ export class GameManager {
         (window as any).startGameMode = () => this.startGameMode();
         (window as any).startScenario = (id: string) => this.startScenario(id);
         (window as any).openSettingsPanel = () => this.openSettingsPanel();
+        (window as any).openMainMenu = () => this.openMainMenu();
         (window as any).updateUI = () => this.updateUI();
         (window as any).refreshHarbors = () => this.fetchOfficialHarbors();
         (window as any).refreshScenarios = async () => this.refreshAllScenarios();

@@ -153,14 +153,14 @@ export class GameBuilderController {
         this.mount();
     }
 
-    static hide() {
+    static hide(options: { skipOnExit?: boolean } = {}) {
         const overlay = document.getElementById('gameBuilderOverlay');
         if (overlay) overlay.style.display = 'none';
 
         // Let GameManager refresh
         if ((window as any).refreshGames) (window as any).refreshGames();
 
-        if (this.onExit) this.onExit();
+        if (!options.skipOnExit && this.onExit) this.onExit();
     }
 
     static renderAvailableScenarios(filter: string = '') {

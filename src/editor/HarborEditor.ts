@@ -101,6 +101,11 @@ export class HarborEditor {
         const exitBtn = document.getElementById('exitEditorBtn');
         if (exitBtn) exitBtn.addEventListener('click', () => this.stop());
 
+        const mainMenuBtn = document.getElementById('heMainMenuBtn');
+        if (mainMenuBtn) {
+            mainMenuBtn.addEventListener('click', () => (window as any).openMainMenu?.());
+        }
+
         // Alignment Tools
         const bindAlign = (id: string, action: () => void) => {
             const btn = document.getElementById(id);

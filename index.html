@@ -1161,6 +1161,9 @@
             
             <!-- Window controls top-right -->
             <div style="position:absolute; top:8px; right:8px; display:flex; gap:4px; z-index:100;">
+                <button id="heMainMenuBtn"
+                    class="hud-hamburger editor-menu-btn"
+                    title="Terug naar hoofdmenu">☰</button>
                 <button id="minimizeHePanelBtn"
                     style="background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:4px; transition:color 0.2s; background:rgba(255,255,255,0.1);"
                     title="Verberg toolkit (tekenmodus)" onclick="document.getElementById('hePanel').style.display='none'; document.getElementById('toggleHePanelBtn').style.display='flex';">_</button>
@@ -1318,9 +1321,14 @@
             <div id="seHeader"
                 style="cursor:grab; font-size:14px; font-weight:bold; color:#a78bfa; border-bottom:1px solid rgba(139,92,246,0.2); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                 <span>🎬 Scenario Editor <span id="seHeaderHarborName" style="color:#d8b4fe; font-size:12px; margin-left:8px; font-weight:normal;"></span></span>
-                <button id="seExitBtn"
-                    class="hud-hamburger se-exit-hamburger"
-                    title="Menu">☰</button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button id="seSettingsBtn"
+                        class="hud-hamburger se-exit-hamburger"
+                        title="Scenario instellingen">⚙️</button>
+                    <button id="seMainMenuBtn"
+                        class="hud-hamburger se-exit-hamburger"
+                        title="Terug naar hoofdmenu">☰</button>
+                </div>
             </div>
 
 
@@ -1373,7 +1381,7 @@
                 <div style="font-size:11px; color:#a78bfa; font-weight:600;">🪙 Scenario Doelen (Globale Instellingen)
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center;">
-                    <label style="font-size:11px; color:#94a3b8;">Punten p.munt:</label>
+                    <label style="font-size:11px; color:#94a3b8;">Beloning:</label>
                     <input id="seCoinValue" type="number" value="10" min="1" max="100"
                         style="background:#1e293b; border:1px solid #475569; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
                 </div>

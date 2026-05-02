@@ -239,6 +239,15 @@ export function wireScenarioEditorUI() {
         };
     };
 
+    const isInsideSpot = (spot: any, pos: { x: number; y: number }, margin: number = 8) => {
+        const w = spot.width ?? 60;
+        const h = spot.height ?? 40;
+        return pos.x >= spot.x - margin
+            && pos.x <= spot.x + w + margin
+            && pos.y >= spot.y - margin
+            && pos.y <= spot.y + h + margin;
+    };
+
     const seMouseDown = (e: MouseEvent) => {
         if (gameState.gameMode !== 'scenario-edit') return;
         const pos = getCanvasPos(e);
@@ -285,10 +294,10 @@ export function wireScenarioEditorUI() {
                 const spot = sc.mooringSpots[i];
                 const w = spot.width;
                 const h = spot.height ?? 40;
-                if (pos.x >= spot.x && pos.x <= spot.x + w && pos.y >= spot.y && pos.y <= spot.y + h) {
+                if (isInsideSpot(spot, pos)) {
                     gameState.selectedSEObject = spot;
                     seDragMode = 'move';
-                    seOriginalGeom = { x: spot.x, y: spot.y, w: spot.width };
+                    seOriginalGeom = { x: spot.x, y: spot.y, w, h };
                     const valInput = g<HTMLInputElement>('seCoinValue');
                     if (valInput && spot.points !== undefined) valInput.value = spot.points.toString();
                     updateSEPropertiesPanel();
@@ -403,15 +412,22 @@ export function wireScenarioEditorUI() {
     _seKeyDown = seKeyDown;
 
     canvas.addEventListener('mousedown', seMouseDown);
-    canvas.addEventListener('mousemove', seMouseMove);
-    canvas.addEventListener('mouseup', seMouseUp);
+    window.addEventListener('mousemove', seMouseMove);
+    window.addEventListener('mouseup', seMouseUp);
     window.addEventListener('keydown', seKeyDown);
 
     // ── EXIT ────────────────────────────────────────────────────────────────
-    const exitBtn = g<HTMLButtonElement>('seExitBtn');
-    if (exitBtn) {
-        exitBtn.onclick = () => {
+    const settingsBtn = g<HTMLButtonElement>('seSettingsBtn');
+    if (settingsBtn) {
+        settingsBtn.onclick = () => {
             (window as any).openSettingsPanel?.();
+        };
+    }
+
+    const mainMenuBtn = g<HTMLButtonElement>('seMainMenuBtn');
+    if (mainMenuBtn) {
+        mainMenuBtn.onclick = () => {
+            (window as any).openMainMenu?.();
         };
     }
 
@@ -549,8 +565,8 @@ export function wireScenarioEditorUI() {
 
 export function unbindCanvasEvents(canvas: HTMLCanvasElement) {
     if (_seMouseDown) canvas.removeEventListener('mousedown', _seMouseDown);
-    if (_seMouseMove) canvas.removeEventListener('mousemove', _seMouseMove);
-    if (_seMouseUp) canvas.removeEventListener('mouseup', _seMouseUp);
+    if (_seMouseMove) window.removeEventListener('mousemove', _seMouseMove);
+    if (_seMouseUp) window.removeEventListener('mouseup', _seMouseUp);
     if (_seKeyDown) window.removeEventListener('keydown', _seKeyDown);
     _seMouseDown = null;
     _seMouseMove = null;
