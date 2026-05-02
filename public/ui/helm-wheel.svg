@@ -1,36 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7a2f16"/>
-      <stop offset="0.45" stop-color="#9d4a26"/>
-      <stop offset="1" stop-color="#5f2412"/>
+      <stop offset="0" stop-color="#b66a32"/>
+      <stop offset="0.42" stop-color="#7d3519"/>
+      <stop offset="0.68" stop-color="#c27a39"/>
+      <stop offset="1" stop-color="#54200f"/>
+    </linearGradient>
+    <linearGradient id="woodDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b2a14"/>
+      <stop offset="1" stop-color="#351208"/>
     </linearGradient>
     <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ececec"/>
-      <stop offset="1" stop-color="#969696"/>
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset="0.48" stop-color="#c79a35"/>
+      <stop offset="1" stop-color="#75521b"/>
     </linearGradient>
+    <radialGradient id="hubShine" cx="35%" cy="28%" r="70%">
+      <stop offset="0" stop-color="#fff9cf"/>
+      <stop offset="0.35" stop-color="#d9b950"/>
+      <stop offset="1" stop-color="#6c4a16"/>
+    </radialGradient>
   </defs>
-  <circle cx="256" cy="256" r="216" fill="none" stroke="url(#wood)" stroke-width="42"/>
-  <g stroke="url(#metal)" stroke-width="8" stroke-linecap="round">
-    <line x1="256" y1="256" x2="256" y2="78"/>
-    <line x1="256" y1="256" x2="402" y2="146"/>
-    <line x1="256" y1="256" x2="434" y2="256"/>
-    <line x1="256" y1="256" x2="402" y2="366"/>
-    <line x1="256" y1="256" x2="256" y2="434"/>
-    <line x1="256" y1="256" x2="110" y2="366"/>
-    <line x1="256" y1="256" x2="78" y2="256"/>
-    <line x1="256" y1="256" x2="110" y2="146"/>
+
+  <g fill="url(#wood)" stroke="url(#woodDark)" stroke-width="4" stroke-linejoin="round">
+    <g transform="translate(256 256)">
+      <g id="spoke">
+        <path d="M-8 -34 C-11 -92 -12 -155 -8 -202 C-5 -230 -1 -246 0 -252 C1 -246 5 -230 8 -202 C12 -155 11 -92 8 -34 Z"/>
+        <ellipse cx="0" cy="-257" rx="14" ry="31"/>
+      </g>
+      <use href="#spoke" transform="rotate(45)"/>
+      <use href="#spoke" transform="rotate(90)"/>
+      <use href="#spoke" transform="rotate(135)"/>
+      <use href="#spoke" transform="rotate(180)"/>
+      <use href="#spoke" transform="rotate(225)"/>
+      <use href="#spoke" transform="rotate(270)"/>
+      <use href="#spoke" transform="rotate(315)"/>
+    </g>
   </g>
-  <g fill="url(#wood)" stroke="#4f1d0f" stroke-width="2">
-    <rect x="248" y="72" width="16" height="54" rx="7"/>
-    <rect x="386" y="134" width="16" height="54" rx="7" transform="rotate(52 394 161)"/>
-    <rect x="412" y="248" width="16" height="54" rx="7" transform="rotate(90 420 275)"/>
-    <rect x="386" y="324" width="16" height="54" rx="7" transform="rotate(128 394 351)"/>
-    <rect x="248" y="386" width="16" height="54" rx="7"/>
-    <rect x="110" y="324" width="16" height="54" rx="7" transform="rotate(-128 118 351)"/>
-    <rect x="84" y="248" width="16" height="54" rx="7" transform="rotate(-90 92 275)"/>
-    <rect x="110" y="134" width="16" height="54" rx="7" transform="rotate(-52 118 161)"/>
+
+  <circle cx="256" cy="256" r="191" fill="none" stroke="url(#woodDark)" stroke-width="52"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="url(#wood)" stroke-width="38"/>
+  <circle cx="256" cy="256" r="171" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="5"/>
+  <circle cx="256" cy="256" r="209" fill="none" stroke="#2c0f07" stroke-opacity="0.38" stroke-width="6"/>
+
+  <g stroke="url(#woodDark)" stroke-width="14" stroke-linecap="round">
+    <line x1="256" y1="256" x2="256" y2="83"/>
+    <line x1="256" y1="256" x2="378" y2="134"/>
+    <line x1="256" y1="256" x2="429" y2="256"/>
+    <line x1="256" y1="256" x2="378" y2="378"/>
+    <line x1="256" y1="256" x2="256" y2="429"/>
+    <line x1="256" y1="256" x2="134" y2="378"/>
+    <line x1="256" y1="256" x2="83" y2="256"/>
+    <line x1="256" y1="256" x2="134" y2="134"/>
   </g>
-  <circle cx="256" cy="256" r="56" fill="url(#metal)" stroke="#8a8a8a" stroke-width="4"/>
-  <circle cx="256" cy="256" r="12" fill="#c3c3c3"/>
+  <g stroke="url(#wood)" stroke-width="9" stroke-linecap="round">
+    <line x1="256" y1="256" x2="256" y2="83"/>
+    <line x1="256" y1="256" x2="378" y2="134"/>
+    <line x1="256" y1="256" x2="429" y2="256"/>
+    <line x1="256" y1="256" x2="378" y2="378"/>
+    <line x1="256" y1="256" x2="256" y2="429"/>
+    <line x1="256" y1="256" x2="134" y2="378"/>
+    <line x1="256" y1="256" x2="83" y2="256"/>
+    <line x1="256" y1="256" x2="134" y2="134"/>
+  </g>
+
+  <g fill="none" stroke="#ffdca0" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round">
+    <path d="M98 167 C154 109 242 82 322 101"/>
+    <path d="M112 342 C184 400 294 413 383 342"/>
+    <path d="M186 253 C223 226 289 224 329 253"/>
+  </g>
+
+  <circle cx="256" cy="256" r="56" fill="url(#hubShine)" stroke="#5f4519" stroke-width="5"/>
+  <circle cx="256" cy="256" r="37" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="4"/>
+  <circle cx="256" cy="256" r="17" fill="url(#metal)" stroke="#5f4519" stroke-width="3"/>
 </svg>

@@ -357,16 +357,16 @@ export class TouchUI {
         this.throttleLabel = pct;
 
         this.setupThrottleTouch(track, thumb);
-        this.setThrottleSigned(0, false);
+        this.renderThrottleSigned(0, false);
 
         this.container!.appendChild(panel);
     }
 
-    private setThrottleSigned(rawSigned: number, withHaptic: boolean) {
+    private renderThrottleSigned(rawSigned: number, withHaptic: boolean): number {
         const thumb = this.throttleThumb;
         const forwardFill = this.throttleForwardFill;
         const reverseFill = this.throttleReverseFill;
-        if (!thumb || !forwardFill || !reverseFill) return;
+        if (!thumb || !forwardFill || !reverseFill) return 0;
 
         const DETENT = 0.08;
         let signed = Math.max(-1, Math.min(1, rawSigned));
@@ -415,6 +415,11 @@ export class TouchUI {
         }
         this.lastThrottleMode = mode;
 
+        return signed;
+    }
+
+    private setThrottleSigned(rawSigned: number, withHaptic: boolean) {
+        const signed = this.renderThrottleSigned(rawSigned, withHaptic);
         input.touchThrottleOverride = signed * Constants.MAX_THROTTLE;
     }
 
@@ -495,7 +500,7 @@ export class TouchUI {
             this.container!.style.display = 'block';
         } else {
             this.container!.style.display = 'none';
-            this.setThrottleSigned(0, false);
+            this.renderThrottleSigned(0, false);
             input.touchRudderOverride = null;
             input.touchThrottleOverride = null;
         }

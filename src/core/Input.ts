@@ -75,6 +75,7 @@ export class InputManager {
 
         // Throttle triggers (keyboard only, no tap-count side-effects on rudder)
         if (['arrowup', 'w'].includes(key)) {
+            this.touchThrottleOverride = null;
             const now = Date.now();
             if (this.lastThrottleTapDir === 'up' && (now - this.lastThrottleTapTime) < 250) {
                 this.state.throttleDoubleUp = true;
@@ -85,6 +86,7 @@ export class InputManager {
             this.lastThrottleTapTime = now;
         }
         if (['arrowdown', 's'].includes(key)) {
+            this.touchThrottleOverride = null;
             const now = Date.now();
             if (this.lastThrottleTapDir === 'down' && (now - this.lastThrottleTapTime) < 250) {
                 this.state.throttleDoubleDown = true;
@@ -95,11 +97,13 @@ export class InputManager {
             this.lastThrottleTapTime = now;
         }
         if (e.code === 'Space') {
+            this.touchThrottleOverride = null;
             this.state.throttleStop = true;
         }
 
         // Rudder multi-tap on keyboard (separate from touch tap count)
         if (['arrowleft', 'a'].includes(key)) {
+            this.touchRudderOverride = null;
             const now = Date.now();
             if (this.lastRudderTapDir === 'left' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
@@ -110,6 +114,7 @@ export class InputManager {
             this.lastRudderTapTime = now;
         }
         if (['arrowright', 'd'].includes(key)) {
+            this.touchRudderOverride = null;
             const now = Date.now();
             if (this.lastRudderTapDir === 'right' && (now - this.lastRudderTapTime) < 300) {
                 this.rudderTapCount = Math.min(3, this.rudderTapCount + 1);
