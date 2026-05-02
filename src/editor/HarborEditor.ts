@@ -13,6 +13,8 @@ interface EditorAction {
 }
 
 export class HarborEditor {
+    private static readonly pendingCloudSaveKey = 'manoeuvreerspel.pendingHarborSave';
+    private isResumingPendingSave = false;
     canvas: HTMLCanvasElement;
     activeTool: 'select' | 'jetty' | 'pile' | 'cleat' | 'wind' | 'coin' | 'spot' | 'shore' | 'npc' = 'select';
 
@@ -1171,17 +1173,111 @@ export class HarborEditor {
         (statusEl as any)._hideTimer = setTimeout(() => { statusEl!.style.opacity = '0'; }, 4000);
     }
 
-    async promptCloudSave() {
-        if (!ApiClient.isLoggedIn) {
-            this.showEditorStatus('⚠️ Je moet ingelogd zijn om op te slaan.', 'warn');
-            return;
+    private buildHarborData(name: string) {
+        return {
+            id: gameState.harbor.id || `custom_${Date.now()}`,
+            name: name,
+            version: "1.0",
+            boatStart: gameState.harbor.boatStart || { x: 200, y: 500, heading: 0 },
+            jetties: gameState.harbor.jetties,
+            piles: gameState.harbor.piles,
+            npcs: gameState.harbor.npcs,
+            shores: gameState.harbor.shores
+        };
+    }
+
+    private async saveHarborDataToCloud(name: string, harborData: ReturnType<HarborEditor['buildHarborData']>, saveBtn?: HTMLButtonElement | null) {
+        const myHarbors = await ApiClient.getMyHarbors();
+        const targetName = name.toLowerCase();
+        const existing = myHarbors.find((h: any) => {
+            const rawName = (h?.name ?? h?.json_data?.name ?? '').toString().trim().toLowerCase();
+            return rawName !== '' && rawName === targetName;
+        });
+
+        if (existing) {
+            if (!confirm(`Je hebt al een haven met de naam '${name}'. Wil je deze overschrijven?`)) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Opslaan'; }
+                return false;
+            }
+            harborData.id = existing.json_data?.id || harborData.id;
+            await ApiClient.updateHarbor(existing.id, harborData, !!existing.is_official);
+            gameState.harbor.id = harborData.id;
+            (gameState.harbor as any).db_id = existing.id;
+            (gameState.harbor as any).is_official = existing.is_official;
+            gameState.harbor.name = name;
+        } else {
+            const res = await ApiClient.saveHarbor(harborData, false);
+            gameState.harbor.id = res.json_data?.id || `custom_${res.id}`;
+            (gameState.harbor as any).db_id = res.id;
+            (gameState.harbor as any).is_official = false;
+            gameState.harbor.name = name;
         }
 
+        if (typeof (window as any).refreshHarbors === 'function') {
+            await (window as any).refreshHarbors();
+        }
+
+        const nameInput = document.getElementById('harborNameInput') as HTMLInputElement | null;
+        if (nameInput) nameInput.value = name;
+
+        const heSelector = document.getElementById('heHarborSelector') as HTMLSelectElement | null;
+        if (heSelector && gameState.harbor.id) {
+            heSelector.value = gameState.harbor.id;
+        }
+        this.updateAdminUI();
+        return true;
+    }
+
+    async resumePendingCloudSave() {
+        if (!ApiClient.isLoggedIn || this.isResumingPendingSave) return;
+
+        const raw = sessionStorage.getItem(HarborEditor.pendingCloudSaveKey);
+        if (!raw) return;
+
+        this.isResumingPendingSave = true;
+        try {
+            const pending = JSON.parse(raw);
+            if (!pending?.name || !pending?.harborData) {
+                sessionStorage.removeItem(HarborEditor.pendingCloudSaveKey);
+                return;
+            }
+
+            Object.assign(gameState.harbor, pending.harborData);
+            const saved = await this.saveHarborDataToCloud(pending.name, pending.harborData);
+            if (saved) {
+                sessionStorage.removeItem(HarborEditor.pendingCloudSaveKey);
+                this.showEditorStatus('Haven opgeslagen na inloggen.', 'ok');
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert('Je bent ingelogd, maar de haven kon nog niet worden opgeslagen: ' + (e.message || 'Verbindingsfout'));
+        } finally {
+            this.isResumingPendingSave = false;
+        }
+    }
+
+    async promptCloudSave() {
         const currentName = gameState.harbor.name || 'Nieuwe Haven';
         const rawInput = window.prompt("Kies een naam voor deze opslag:", currentName);
         if (rawInput === null) return;
 
         const name = rawInput.trim() || 'Naamloze Haven';
+        const pendingHarborData = this.buildHarborData(name);
+
+        if (!ApiClient.isLoggedIn) {
+            sessionStorage.setItem(HarborEditor.pendingCloudSaveKey, JSON.stringify({
+                name,
+                harborData: pendingHarborData,
+                createdAt: Date.now()
+            }));
+
+            this.showEditorStatus('Log in of registreer om deze haven op te slaan.', 'warn');
+            const registerFirst = confirm('Je haven staat tijdelijk klaar. Registreer of log in om hem op te slaan.\n\nOK = registreren\nAnnuleren = inloggen');
+            window.location.href = registerFirst
+                ? 'login.html?mode=register&return=harbor-save'
+                : 'login.html?return=harbor-save';
+            return;
+        }
 
         const saveBtn = document.getElementById('cloudSaveBtn') as HTMLButtonElement | null;
         if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ ...'; }

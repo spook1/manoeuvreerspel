@@ -28,17 +28,26 @@ export class GameManager {
 
     constructor() {
         this.setupModeButtons();
-        window.addEventListener('user-context-changed', () => this.setupModeButtons());
+        window.addEventListener('user-context-changed', () => {
+            this.setupModeButtons();
+            this.resumePendingHarborSave();
+        });
         this.fetchOfficialHarbors();
         this.fetchOfficialScenarios();
         this.fetchOfficialGames();
         this.fetchCloudScenarios();
         this.fetchCloudGames();
+        setTimeout(() => this.resumePendingHarborSave(), 0);
     }
 
     private canCurrentUserCreateContent(): boolean {
         const role = (window as any)._currentUser?.role;
         return ApiClient.isLoggedIn && hasCreatorAccess(role);
+    }
+
+    private resumePendingHarborSave() {
+        if (!ApiClient.isLoggedIn) return;
+        editor.resumePendingCloudSave();
     }
 
     /** Laad officiële havens — publiek endpoint, ook zonder login */
@@ -173,12 +182,6 @@ export class GameManager {
     }
 
     startHarborEdit() {
-        if (!this.canCurrentUserCreateContent()) {
-            alert('Deze editor is beschikbaar voor Pro, Gamemaster en Super admin.');
-            this.startPracticeMode();
-            return;
-        }
-
         const modal = document.getElementById('introModal');
         if (modal) modal.style.display = 'none';
         const settings = document.getElementById('settingsPanel');
@@ -588,23 +591,23 @@ export class GameManager {
 
         const canCreate = this.canCurrentUserCreateContent();
 
-        if (btnEdit) btnEdit.style.display = canCreate ? 'inline-block' : 'none';
+        if (btnEdit) btnEdit.style.display = 'inline-block';
         if (btnScenarioEdit) btnScenarioEdit.style.display = canCreate ? 'inline-block' : 'none';
         if (btnGameEdit) btnGameEdit.style.display = canCreate ? 'inline-block' : 'none';
 
         const harborCreateOption = document.querySelector('#harborSelector option[value="create"]') as HTMLOptionElement | null;
-        if (harborCreateOption) harborCreateOption.style.display = canCreate ? 'block' : 'none';
+        if (harborCreateOption) harborCreateOption.style.display = 'block';
 
         const gameCreateOption = document.querySelector('#gameSelector option[value="create"]') as HTMLOptionElement | null;
         if (gameCreateOption) gameCreateOption.style.display = canCreate ? 'block' : 'none';
 
+        if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
         if (canCreate) {
-            if (btnEdit) btnEdit.onclick = () => this.startHarborEdit();
             if (btnScenarioEdit) btnScenarioEdit.onclick = () => this.startScenarioEdit();
             if (btnGameEdit) btnGameEdit.onclick = () => this.startGameEdit();
         }
 
-        if (!canCreate && (gameState.gameMode === 'harbor-edit' || gameState.gameMode === 'scenario-edit' || gameState.gameMode === 'game-edit')) {
+        if (!canCreate && (gameState.gameMode === 'scenario-edit' || gameState.gameMode === 'game-edit')) {
             this.startPracticeMode();
         }
     }
@@ -707,11 +710,7 @@ export class GameManager {
             harborSelector.addEventListener('change', () => {
                 const val = harborSelector.value;
                 if (val === 'create') {
-                    if (this.canCurrentUserCreateContent()) {
-                        this.startHarborEdit();
-                    } else {
-                        alert('Alleen Pro, Gamemaster en Super admin kunnen een haven maken.');
-                    }
+                    this.startHarborEdit();
                     harborSelector.value = '';
                 } else {
                     const harbor = getHarborById(val) || this.customHarbors.find(h => h.id === val);

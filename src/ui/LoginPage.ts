@@ -4,6 +4,11 @@ import '../style.css'; // Reuse main styles for font etc.
 // Check query params specifically
 const params = new URLSearchParams(window.location.search);
 const isRegister = params.get('mode') === 'register';
+const returnTarget = params.get('return');
+const returnQuery = returnTarget ? `&return=${encodeURIComponent(returnTarget)}` : '';
+const loginHref = returnTarget ? `login.html?return=${encodeURIComponent(returnTarget)}` : 'login.html';
+const registerHref = `login.html?mode=register${returnQuery}`;
+const successHref = returnTarget === 'harbor-save' ? 'index.html?resume=harbor-save' : 'index.html';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="login-container">
@@ -35,8 +40,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
       <div class="links">
         ${isRegister
-        ? '<p>Al een account? <a href="login.html">Log hier in</a></p>'
-        : '<p>Nog geen account? <a href="login.html?mode=register">Registreer hier</a></p>'
+        ? `<p>Al een account? <a href="${loginHref}">Log hier in</a></p>`
+        : `<p>Nog geen account? <a href="${registerHref}">Registreer hier</a></p>`
     }
         <p><a href="index.html">Terug naar het spel (Gast)</a></p>
       </div>
@@ -66,7 +71,7 @@ form.addEventListener('submit', async (e) => {
         }
 
         // Success! Redirect to game
-        window.location.href = 'index.html';
+        window.location.href = successHref;
     } catch (err: any) {
         console.error(err);
         errorMsg.innerText = 'Fout: ' + (err.message || 'Onbekende fout');

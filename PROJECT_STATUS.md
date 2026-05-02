@@ -24,7 +24,7 @@
 - [ ] **Backend autorisatie aanscherpen**: rechten server-side afdwingen volgens doelmodel (speler: haven, pro: scenario/opname, gamemaster: games/delen, super_admin: alles).
 - [ ] **Admin full-management API's** voor alle havens/scenario's/games (nu deels via losse editors en toggles).
 - [ ] **Mobiele QA ronde** op echte devices (Android + iOS): ergonomie, touch-gedrag, pinch/zoom regressies, safe-area gedrag.
-- [ ] **Guest-save funnel**: als niet-ingelogde gebruiker op "Opslaan" klikt, direct register/login-flow tonen en na succesvolle account-aanmaak de save automatisch afronden.
+- [x] **Guest-save funnel**: als niet-ingelogde gebruiker op "Opslaan" klikt, direct register/login-flow tonen en na succesvolle account-aanmaak de save automatisch afronden.
 - [ ] **UX polish**:
   - [ ] eenduidige iconset (nu mix van emoji en teksticonen),
   - [ ] duidelijke scheiding "Speler" vs "Makers/Beheer",
@@ -181,7 +181,7 @@
 - [x] **Admin Rechten (Backend & UI)**: De `destroy`, `update` en `show` logica is 100% cloud-based en Admin-proof gemaakt met de juiste rolverificaties.
 - [x] **UC-801: Verwijderen Ingebouwde Oude Games**: Alle hardcoded 'Tutorial' en 'Startgame' mock-ups zijn volledig verwijderd. De database is nu leidend.
 - [x] **Draggable Editors**: De panelen van de Haven, Scenario en Game Builder editors zijn nu zwevend en versleepbaar gemaakt via een globale `makeDraggable` helper.
-- [x] **Beveiligde UI voor Gasten**: "Niet ingelogde" gebruikers zien de Bewerk-knoppen nu helemaal niet meer, ter voorkoming van verwarring en dead-ends.
+- [x] **Gastvriendelijke Haveneditor**: niet-ingelogde gebruikers mogen de haveneditor openen; opslaan leidt naar login/registratie en rondt daarna de save af.
 - [x] **Anchor-Based Resizing**: De resize-hendels in de editor behouden nu feilloos hun verankerde X/Y positie aan de tegenovergestelde zijde.
 
 ### 🛠️ Nieuwe Use Cases (Gepland voor volgende sessies)
