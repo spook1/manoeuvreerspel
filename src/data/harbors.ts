@@ -139,6 +139,10 @@ export interface ScenarioData {
     id: string;
     name: string;
     description?: string;
+    instructions?: {
+        desktop?: string;
+        mobile?: string;
+    };
     harborId: string;      // verwijst naar HarborData.id
     wind: { direction: number; force: number; };
     mooringSpots: HarborMooringSpot[];

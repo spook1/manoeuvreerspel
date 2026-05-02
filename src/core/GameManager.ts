@@ -95,6 +95,7 @@ export class GameManager {
             id: s.id.toString(),
             name: s.name,
             description: s.description,
+            instructions: s.json_data?.instructions,
             harborId: (s.harbor?.is_official) ? `official_${s.harbor_id}` : `custom_${s.harbor_id}`,
             is_official: isOfficial,
             wind: s.json_data?.wind || { direction: 0, force: 0 },
@@ -251,10 +252,28 @@ export class GameManager {
         }
 
         const descInput = document.getElementById('scenarioDescInput') as HTMLTextAreaElement | null;
+        const desktopInput = document.getElementById('scenarioDescDesktopInput') as HTMLTextAreaElement | null;
+        const mobileInput = document.getElementById('scenarioDescMobileInput') as HTMLTextAreaElement | null;
         if (descInput) {
             descInput.value = (gameState.scenario?.description) || '';
             descInput.onchange = () => {
                 if (gameState.scenario) gameState.scenario.description = descInput.value;
+            };
+        }
+        if (desktopInput) {
+            desktopInput.value = gameState.scenario?.instructions?.desktop || '';
+            desktopInput.onchange = () => {
+                if (!gameState.scenario) return;
+                if (!gameState.scenario.instructions) gameState.scenario.instructions = {};
+                gameState.scenario.instructions.desktop = desktopInput.value;
+            };
+        }
+        if (mobileInput) {
+            mobileInput.value = gameState.scenario?.instructions?.mobile || '';
+            mobileInput.onchange = () => {
+                if (!gameState.scenario) return;
+                if (!gameState.scenario.instructions) gameState.scenario.instructions = {};
+                gameState.scenario.instructions.mobile = mobileInput.value;
             };
         }
 
@@ -953,6 +972,7 @@ export class GameManager {
                     coins: scenario.coins,
                     boatStart: scenario.boatStart,
                     physics: scenario.physics,
+                    instructions: scenario.instructions,
                     coinSettings: scenario.coinSettings,
                     objectPenalties: scenario.objectPenalties
                 }

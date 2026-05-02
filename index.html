@@ -1346,9 +1346,22 @@
             </div>
 
             <div style="display:flex; flex-direction:column; gap:4px;">
-                <label style="font-size:11px; color:#94a3b8;">Uitleg / Opdracht (Optioneel):</label>
+                <label style="font-size:11px; color:#94a3b8;">Uitleg / Opdracht algemeen (fallback):</label>
                 <textarea id="scenarioDescInput" placeholder="Bijv: Vaar rustig naar de achterste steiger..."
                     style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:12px; width:100%; box-sizing:border-box; resize:vertical; min-height:60px;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px;">
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-size:11px; color:#94a3b8;">Opdracht desktop:</label>
+                    <textarea id="scenarioDescDesktopInput" placeholder="Bijv: Gebruik toetsenbord en muis om..."
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:12px; width:100%; box-sizing:border-box; resize:vertical; min-height:58px;"></textarea>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-size:11px; color:#94a3b8;">Opdracht mobiel:</label>
+                    <textarea id="scenarioDescMobileInput" placeholder="Bijv: Gebruik stuurwiel en gashendel om..."
+                        style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:12px; width:100%; box-sizing:border-box; resize:vertical; min-height:58px;"></textarea>
+                </div>
             </div>
 
             <div

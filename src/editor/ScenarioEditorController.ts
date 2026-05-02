@@ -474,9 +474,14 @@ export function wireScenarioEditorUI() {
         const scenario = getOrMakeScenario();
         const nameInput = g<HTMLInputElement>('scenarioNameInput');
         const descInput = g<HTMLTextAreaElement>('scenarioDescInput');
+        const desktopInput = g<HTMLTextAreaElement>('scenarioDescDesktopInput');
+        const mobileInput = g<HTMLTextAreaElement>('scenarioDescMobileInput');
 
         if (nameInput?.value) scenario.name = nameInput.value;
         if (descInput) scenario.description = descInput.value;
+        if (!scenario.instructions) scenario.instructions = {};
+        if (desktopInput) scenario.instructions.desktop = desktopInput.value;
+        if (mobileInput) scenario.instructions.mobile = mobileInput.value;
 
         btn.textContent = '⏳ ...';
         btn.disabled = true;

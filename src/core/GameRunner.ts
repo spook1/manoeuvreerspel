@@ -47,6 +47,7 @@ export class GameRunner {
             id: String(raw.id),
             name: raw.name,
             description: raw.description || '',
+            instructions: raw.json_data?.instructions,
             harborId: raw.harbor
                 ? (raw.harbor.is_official ? `official_${raw.harbor_id}` : `custom_${raw.harbor_id}`)
                 : `official_${raw.harbor_id}`,
@@ -67,7 +68,7 @@ export class GameRunner {
             desc += `${this.activeGame.description}\n\n`;
         }
         
-        const scDesc = sc.description ? sc.description : 'Probeer alle opdrachten binnen de tijd te voltooien.';
+        const scDesc = this.getScenarioInstruction(sc);
         desc += `Opdracht (${sc.name}):\n${scDesc}`;
 
         this.updateUI();
@@ -79,6 +80,19 @@ export class GameRunner {
             scenarioRunner.onComplete = () => this.onScenarioComplete();
             scenarioRunner.onFail = () => this.onScenarioFail();
         });
+    }
+
+    static getScenarioInstruction(sc: any): string {
+        const isMobileInterface = window.matchMedia('(pointer: coarse), (max-width: 900px)').matches
+            || navigator.maxTouchPoints > 0;
+        const desktopText = sc.instructions?.desktop?.trim();
+        const mobileText = sc.instructions?.mobile?.trim();
+        const defaultText = sc.description?.trim();
+
+        if (isMobileInterface) {
+            return mobileText || desktopText || defaultText || 'Probeer alle opdrachten binnen de tijd te voltooien.';
+        }
+        return desktopText || defaultText || mobileText || 'Probeer alle opdrachten binnen de tijd te voltooien.';
     }
 
     static showTransitionScreen(title: string, desc: string, onContinue: () => void) {
