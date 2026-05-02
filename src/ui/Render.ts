@@ -733,18 +733,7 @@ export class Render {
             windArrowEl.title = `Windrichting ${Math.round(windDeg)}°`;
         }
 
-        // Heading compass (000° + cardinal direction)
-        const headingDeg = ((90 - (boat.heading * 180 / Math.PI)) % 360 + 360) % 360;
-        const headingText = Math.round(headingDeg).toString().padStart(3, '0') + '°';
-        const headingEl = document.getElementById('playHudHeading');
-        if (headingEl) headingEl.textContent = headingText;
 
-        const dirEl = document.getElementById('playHudHeadingDir');
-        if (dirEl) {
-            const dirs = ['N', 'NO', 'O', 'ZO', 'Z', 'ZW', 'W', 'NW'];
-            const index = Math.round(headingDeg / 45) % 8;
-            dirEl.textContent = dirs[index];
-        }
 
         // Propeller Status
         const propEl = document.getElementById('propellerStatus');
