@@ -50,7 +50,7 @@ export class TouchUI {
             }
             .rudder-wheel-viewport {
                 position: relative;
-                height: 88px;
+                height: 104px;
                 overflow: hidden;
                 border-radius: 0;
                 touch-action: none;
@@ -69,13 +69,13 @@ export class TouchUI {
             }
             .rudder-wheel-image {
                 position: absolute;
-                width: 228px;
-                height: 228px;
+                width: 248px;
+                height: 248px;
                 left: 50%;
-                top: 28px;
+                top: 10px;
                 transform: translateX(-50%) rotate(0deg);
                 transform-origin: 50% 50%;
-                background-image: url('/ui/helm-wheel.svg');
+                background-image: url('/ui/helm-wheel.svg?v=cartoon-2');
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -216,8 +216,8 @@ export class TouchUI {
 
             @media (max-width: 600px) {
                 .rudder-panel { width: 206px; left: calc(env(safe-area-inset-left, 0px) + 2px); }
-                .rudder-wheel-viewport { height: 80px; }
-                .rudder-wheel-image { width: 200px; height: 200px; top: 25px; }
+                .rudder-wheel-viewport { height: 94px; }
+                .rudder-wheel-image { width: 218px; height: 218px; top: 8px; }
                 .throttle-panel { width: 64px; right: calc(env(safe-area-inset-right, 0px) + 2px); }
                 .throttle-slider-shell { height: 142px; }
                 .throttle-track { height: 112px; }
