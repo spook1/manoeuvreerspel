@@ -128,6 +128,26 @@ function bindPlayHudMenuButton() {
     menuBtn.onclick = handleMenuTap as any;
     menuBtn.onpointerup = handleMenuTap as any;
     menuBtn.ontouchend = handleMenuTap as any;
+
+    const hudSettingsBtn = document.getElementById('playHudSettingsBtn') as HTMLButtonElement | null;
+    if (hudSettingsBtn) {
+        const handleSettingsTap = (e: Event) => {
+            const now = Date.now();
+            if (now < guardUntil) return;
+            guardUntil = now + 250;
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const pnl = document.getElementById('settingsPanel');
+            if (pnl) {
+                pnl.classList.add('hud-active');
+                pnl.style.display = 'block';
+            }
+        };
+        hudSettingsBtn.onclick = handleSettingsTap as any;
+        hudSettingsBtn.onpointerup = handleSettingsTap as any;
+        hudSettingsBtn.ontouchend = handleSettingsTap as any;
+    }
 }
 
 function syncGameplayChrome() {

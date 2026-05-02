@@ -140,7 +140,21 @@ body.playing-session #gameDashboard {
 }
 
 body.playing-session #user-bar,
-body.playing-session #settingsPanel {
+body.playing-session #settingsPanel:not(.hud-active) {
+    display: none !important;
+}
+
+body.playing-session #settingsPanel.hud-active {
+    display: block !important;
+    z-index: 3000;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+body:not(.mode-practice) .practice-only {
     display: none !important;
 }
 

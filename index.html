@@ -780,6 +780,7 @@
             <div class="hud-top-left">
                 <button class="hud-hamburger" id="playHudMenu" title="Menu">☰</button>
                 <button class="hud-hamburger hud-center-btn" id="playHudCenterBtn" onclick="centerCamera()" title="Centreer op boot">🎯</button>
+                <button class="hud-hamburger practice-only" id="playHudSettingsBtn" title="Instellingen">⚙️</button>
             </div>
 
             <!-- TOP-CENTER: Compass / heading -->
@@ -814,7 +815,7 @@
         <div id="settingsPanel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h3 style="margin:0; color:#fff;">Instellingen</h3>
-                <button onclick="document.getElementById('settingsPanel').style.display='none'"
+                <button onclick="document.getElementById('settingsPanel').style.display='none'; document.getElementById('settingsPanel').classList.remove('hud-active');"
                     style="background:none; border:none; color:#94a3b8; cursor:pointer;">✕</button>
             </div>
 
