@@ -123,8 +123,8 @@ export class Render {
         this.drawWater(gameState);
         this.drawHarbor(gameState);
         this.drawPropwash(gameState);
-        this.drawLines(gameState);
         this.drawBoat(gameState);
+        this.drawLines(gameState);
         this.drawBrokenLines(gameState);
         tutorial.draw(ctx);
         this.drawCoins(gameState);

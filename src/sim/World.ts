@@ -1,20 +1,28 @@
 import { GameState } from '../core/GameState';
 import { Constants } from '../core/Constants';
 import { BoatState } from '../types';
+import { NPC_SPECS } from '../ui/DrawNPC';
 
 export class World {
     private static lastCollisionTime: Record<string, number> = {};
 
-    private static applyPenalty(gameState: GameState, objectId: string | undefined, vRelSpeed: number, isFender: boolean) {
+    private static applyPenalty(gameState: GameState, objectId: string | number | undefined, vRelSpeed: number, isFender: boolean) {
         if (!objectId || gameState.gameMode !== 'game') return;
+        const key = objectId.toString();
 
         const now = Date.now();
-        if (this.lastCollisionTime[objectId] && now - this.lastCollisionTime[objectId] < 1000) {
+        if (this.lastCollisionTime[key] && now - this.lastCollisionTime[key] < 1000) {
             return;
         }
 
-        const pen = gameState.scenario?.objectPenalties?.[objectId];
-        if (!pen) return;
+        const pen = gameState.scenario?.objectPenalties?.[key] ?? {
+            speedThresholdSoft: 1,
+            speedThresholdHard: 2,
+            hullPenaltySoft: 2,
+            hullPenaltyHard: 40,
+            fenderPenaltySoft: 1,
+            fenderPenaltyHard: 3
+        };
 
         const vKnot = Math.abs(vRelSpeed) / Constants.PX_PER_KNOT;
         const tSoft = pen.speedThresholdSoft ?? 1;
@@ -32,7 +40,7 @@ export class World {
         }
 
         if (penalty > 0) {
-            this.lastCollisionTime[objectId] = now;
+            this.lastCollisionTime[key] = now;
             gameState.score -= penalty;
             console.log(`[Penalty] ${typeStr} met ${objectId} (${vKnot.toFixed(1)} kn) → -${penalty} pt. Score: ${gameState.score}`);
 
@@ -45,6 +53,62 @@ export class World {
                 setTimeout(() => box.style.display = 'none', 2000);
             }
         }
+    }
+
+    private static getFenderLocalY(boat: BoatState, fx: number): number {
+        const halfWidth = boat.width / 2;
+        const sternHalfWidth = halfWidth * 0.55;
+        if (fx > boat.length / 4) {
+            const t = (fx - boat.length / 4) / (boat.length / 4);
+            return halfWidth * (1 - t * 0.6);
+        }
+        if (fx < -boat.length / 4) return sternHalfWidth + 1;
+        return halfWidth;
+    }
+
+    private static resolveCircleContact(
+        boat: BoatState,
+        gameState: GameState,
+        objectId: string | number | undefined,
+        circleX: number,
+        circleY: number,
+        radius: number,
+        contactLocalX: number,
+        contactLocalY: number,
+        isFender: boolean,
+        mass: number,
+        inertia: number
+    ) {
+        const cosH = Math.cos(boat.heading);
+        const sinH = Math.sin(boat.heading);
+        const wx = boat.x + contactLocalX * cosH - contactLocalY * sinH;
+        const wy = boat.y + contactLocalX * sinH + contactLocalY * cosH;
+        const dx = wx - circleX;
+        const dy = wy - circleY;
+        const dist = Math.hypot(dx, dy);
+        if (dist <= 0.001 || dist >= radius) return;
+
+        const penetration = radius - dist;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const contactWorldX = wx - boat.x;
+        const contactWorldY = wy - boat.y;
+        const vContactX = boat.vx - boat.omega * contactWorldY;
+        const vContactY = boat.vy + boat.omega * contactWorldX;
+        const vRel = vContactX * nx + vContactY * ny;
+
+        if (vRel < 0) {
+            this.applyPenalty(gameState, objectId, vRel, isFender);
+            const rCrossN = contactWorldX * ny - contactWorldY * nx;
+            const effectiveMass = 1 / (1 / mass + (rCrossN * rCrossN) / inertia);
+            const impulseMag = -vRel * effectiveMass;
+            boat.vx += impulseMag * nx / mass;
+            boat.vy += impulseMag * ny / mass;
+            boat.omega += (rCrossN * impulseMag) / inertia;
+        }
+
+        boat.x += nx * penetration * 0.08;
+        boat.y += ny * penetration * 0.08;
     }
 
     static checkCollisions(boat: BoatState, gameState: GameState): void {
@@ -169,10 +233,9 @@ export class World {
             }
 
             // 2B. Check Fenders (Priority)
-            const hullHalfWidth = boat.width / 2;
             for (const side of [-1, 1]) {
-                const fy = side * hullHalfWidth;
                 for (const fx of Constants.FENDER_POSITIONS) {
+                    const fy = side * this.getFenderLocalY(boat, fx);
                     const wx = boat.x + fx * cosH - fy * sinH;
                     const wy = boat.y + fx * sinH + fy * cosH;
 
@@ -283,10 +346,9 @@ export class World {
                 }
 
                 // Fenders
-                const hullHalfWidth = boat.width / 2;
                 for (const side of [-1, 1]) {
-                    const fy = side * hullHalfWidth;
                     for (const fx of Constants.FENDER_POSITIONS) {
+                        const fy = side * this.getFenderLocalY(boat, fx);
                         const wx = boat.x + fx * cosH - fy * sinH;
                         const wy = boat.y + fx * sinH + fy * cosH;
                         const cx2 = Math.max(shore.x, Math.min(wx, shore.x + shore.w));
@@ -334,18 +396,39 @@ export class World {
         }
 
         // 4. NPC COLLISION (circle-based — radius proportional to scale)
+        for (const pile of gameState.harbor.piles || []) {
+            const pileRadius = pile.type === 'cleat' ? 4 : (Constants.PILE_RADIUS ?? 5);
+            const broad = L + W + pileRadius + Constants.FENDER_RADIUS;
+            if (Math.hypot(boat.x - pile.x, boat.y - pile.y) > broad) continue;
+
+            for (const c of corners) {
+                this.resolveCircleContact(boat, gameState, pile.id, pile.x, pile.y, pileRadius, c.x, c.y, false, mass, inertia);
+            }
+
+            for (const side of [-1, 1]) {
+                for (const fx of Constants.FENDER_POSITIONS) {
+                    const fy = side * this.getFenderLocalY(boat, fx);
+                    this.resolveCircleContact(boat, gameState, pile.id, pile.x, pile.y, pileRadius + Constants.FENDER_RADIUS, fx, fy, true, mass, inertia);
+                }
+            }
+        }
+
         if (gameState.harbor.npcs) {
             for (const npc of gameState.harbor.npcs) {
-                const npcRadius = 30 * (npc.scale ?? 1);
-                const npcL = 28 * (npc.scale ?? 1); // half-length for broad phase
+                const scale = npc.scale ?? 1;
+                const spec = NPC_SPECS[npc.type] ?? NPC_SPECS.motorboat;
+                const npcRadius = spec.W * 0.85 * scale;
+                const npcL = spec.L * scale; // half-length for broad phase
+                const npcHeading = (npc.heading ?? 0) * Math.PI / 180;
+                const nCos = Math.cos(npcHeading);
+                const nSin = Math.sin(npcHeading);
 
                 if (Math.hypot(boat.x - npc.x, boat.y - npc.y) > L + npcL + npcRadius) continue;
 
                 // Check fenders against NPC circle
-                const hullHalfWidth = boat.width / 2;
                 for (const side of [-1, 1]) {
-                    const fy = side * hullHalfWidth;
                     for (const fx of Constants.FENDER_POSITIONS) {
+                        const fy = side * this.getFenderLocalY(boat, fx);
                         const wx = boat.x + fx * cosH - fy * sinH;
                         const wy = boat.y + fx * sinH + fy * cosH;
                         const dist = Math.hypot(wx - npc.x, wy - npc.y);
@@ -369,6 +452,25 @@ export class World {
                                 boat.x += nx * pen * 0.03;
                                 boat.y += ny * pen * 0.03;
                             }
+                        }
+                    }
+                }
+
+                const endCircles = [
+                    { lx: -npcL * 0.62, r: npcRadius * 0.9 },
+                    { lx: npcL * 0.58, r: npcRadius * 0.75 }
+                ];
+
+                for (const circle of endCircles) {
+                    const cx = npc.x + circle.lx * nCos;
+                    const cy = npc.y + circle.lx * nSin;
+                    for (const c of corners) {
+                        this.resolveCircleContact(boat, gameState, npc.id, cx, cy, circle.r, c.x, c.y, false, mass, inertia);
+                    }
+                    for (const side of [-1, 1]) {
+                        for (const fx of Constants.FENDER_POSITIONS) {
+                            const fy = side * this.getFenderLocalY(boat, fx);
+                            this.resolveCircleContact(boat, gameState, npc.id, cx, cy, circle.r + Constants.FENDER_RADIUS, fx, fy, true, mass, inertia);
                         }
                     }
                 }
