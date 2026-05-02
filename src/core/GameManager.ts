@@ -321,6 +321,7 @@ export class GameManager {
     startPracticeMode() {
         gameState.gameMode = 'practice';
         gameState.scenario = null;
+        Constants.reset(); // Voorkom dat scenario-physics blijven hangen na een game
         this.applyBodyMode('practice');
 
         const dash = document.getElementById('gameDashboard');
